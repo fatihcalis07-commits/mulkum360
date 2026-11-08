@@ -272,3 +272,13 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 3.3 (08.11.2026) Yönetim
 - Yönetim özeti: uyarı şeridi (şikayet, kredi talebi, test ilanı), Üyeler / İlanlar / Kredi ve rapor gruplarında pastel simgeli kutular (.yon-k). Grup sekmeleri 3 eşit sütun. Hesabım'da Yönetim kartı en alta (Çıkış'ın üstü).
+
+## VERİ MOTORU FAZ 0-1 (08.11 gece — ayrı analiz oturumu)
+- Analiz raporu: `VERI-MOTORU-ANALIZ.md` (depolarda). Özet: ChatGPT'nin 8 önerisinden 6'sı mevcut yapıda var; gerçek eksik ingestion günlüğü + veri kaynağı envanteri + araç piyasası verisi + ilçe granularity. `market_observations` gibi İKİNCİ tablo KURULMAYACAK — hepsi `bolge_gostergeleri`ne gösterge adıyla yazılır.
+- **EMSALLER HATASI DÜZELTİLDİ**: `app.js emsaller()` test ilanlarını (`ornek=true`) havuzdan ayırmıyordu; 692 test ilanı değerlemeyi kirletiyordu → `&& !i.ornek` eklendi, APK yeniden derlendi (BUILD SUCCESSFUL 53 sn, `android/app/build/outputs/apk/debug/app-debug.apk`).
+- **Git başlatıldı**: `git init -b main`, ilk commit `68be07d` (299 dosya; .gizli/apk/jks hariç — .gitignore genişletildi). GitHub uzak deposu + push KULLANICIDA (gh yok; `git remote add origin https://github.com/<kullanıcı>/mulkum360.git && git push -u origin main`).
+- **Yeni migration `20261108200000_ingestion` CANLIDA** (db query ile uygulandı + schema_migrations'a tescil edildi): `ingestion_logs` (kim/nezaman/kaç satır/hata) + `veri_kaynaklari` (10 kaynak envanteri, son_calisma) + `ingestion-log-temizlik` cron (180 gün). RLS: insert authenticated, select yönetici.
+- **evds-kredi ve evds-kfe** artık her çalışmada ingestion_logs yazıyor + veri_kaynaklari.son_calisma güncelliyor; deploy edildi. CANLI TEST: evds-kredi → 24 satır, log 'ok' görüldü (08.11 20:28 UTC).
+- **kredi-guncelle cron'u yoktu** (sebep belirsiz — DEVIR'de silme notu yok); yeniden planlandı `0 6 * * *`. cron.job artık 7 iş.
+- **TÜİK API keşfi YARIM KALDI (dürüst not)**: `data.tuik.gov.tr/api` canlı ama v1.0.1126 kök banner'dan uç listesi yok; `edatun.tuik.gov.tr` bu makinede DNS'siz; databrowser2 JSON-stat gerçek ucu SPA lazy-chunk'larında. Yarın yapılacak: CDP ile databrowser2'de tablo açılırken `tuik-kekikle.js` (harness chrome-ctrl/) Fetch yakalaması → gerçek GET/POST deseni çıkar → `tuik` Edge fonksiyonu (evds şablonu) yazılır. Anahtar gerekmiyor olabilir (eskiden JSON-stat anahtarsız çalışıyordu) — EDATUN başvurusu kullanıcı adımı.
+- Görevler 1-4 TAMAM, 5 kısmen. Rapor §10'daki faz 2 (tuik edge, betam betiği deposu, araç göstergeleri) sıra bekliyor.
