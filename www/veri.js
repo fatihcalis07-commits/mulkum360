@@ -99,8 +99,8 @@ async function kvYaz(k, v) {
 
 // Uygulama durumu
 // Sunucu verisi (ilanlar, üyeler, mesajlar) sb.js ile gelir; cihazda yalnız tercihler tutulur.
-const S = { kullanicilar: [], ilanlar: [], sohbetler: [], kayitliAramalar: [], favSayilari: {}, oturum: null, tema: 'acik', gorulen: [], karsilandi: false, donus: null };
-const YEREL = ['tema', 'gorulen', 'karsilandi', 'donus'];
+const S = { kullanicilar: [], ilanlar: [], sohbetler: [], kayitliAramalar: [], favSayilari: {}, oturum: null, tema: 'acik', palet: 'prestij', gorulen: [], karsilandi: false, donus: null };
+const YEREL = ['tema', 'palet', 'gorulen', 'karsilandi', 'donus'];
 let _yazZaman = null;
 async function yukle() { const v = await kvAl('tercihler'); if (v) YEREL.forEach((k) => v[k] !== undefined && (S[k] = v[k])); }
 function kaydet() { clearTimeout(_yazZaman); _yazZaman = setTimeout(() => kvYaz('tercihler', Object.fromEntries(YEREL.map((k) => [k, S[k]]))), 150); }

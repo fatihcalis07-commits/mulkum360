@@ -1577,7 +1577,7 @@ EKRAN.hesap = () => {
     app.innerHTML = ustBar('Hesabım', '', false) + `<div class="ic">${bosDurum('kisi', 'Mülküm360’a hoş geldin', 'Üyelik ücretsiz, bir dakikada açılır.', '<a class="btn" href="#/kayit">Üye ol</a><a class="btn cizgili" href="#/giris">Giriş yap</a>')}
       <div class="kart"><h3>Üye olunca</h3><div class="liste">${[['ev', 'Ücretsiz ilan ver', 'Linkini yapıştır ya da tapunun fotoğrafını çek, ilanın hazırlansın'], ['grafik', 'Mülkünün değerini öğren', 'Benzer ilanlar ve TCMB endeksiyle PDF değer raporu'], ['kredi', 'Yeni üyeye 1 kredi hediye', 'İlk değer raporun ya da ilk MülkümDeko görselin bizden']].map(([ik, b, a]) => `<div class="oge" style="align-items:flex-start">${ic(ik, 20)}<div class="ara"><b>${b}</b><div class="k soluk">${a}</div></div></div>`).join('')}</div></div>
       <div class="liste">${menuSatir('#/metin/guvenlik', 'kalkan', 'Yardım ve yasal metinler')}${dilSatiri()}<div class="oge" style="cursor:default">${ic('ayar', 20)}Uygulama sürümü<span class="ok" style="font-weight:600">${SURUM}</span></div><button class="oge" id="tema">${ic('ay', 20)}Koyu tema<span class="ok">${S.tema === 'koyu' ? 'Açık' : 'Kapalı'}</span></button></div></div>`;
-    $('#tema').onclick = temaDegis; app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil))); navCiz('hesap'); return;
+    $('#tema').onclick = temaDegis; { const pb = $('#palet'); if (pb) pb.onclick = paletSecimi; } app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil))); navCiz('hesap'); return;
   }
   const benim = S.ilanlar.filter((i) => i.sahip === b.id);
   const sekme = sorgu().s || 'yayinda';
@@ -1613,6 +1613,7 @@ EKRAN.hesap = () => {
         <a class="ayar-d" href="#/profil">${ic('profil', 22)}<span>Profil ve şifre</span></a>
         <button class="ayar-d" data-dilac>${ic('dil', 22)}<span>Dil · ${DILLER.find(([k]) => k === DIL)[1]}</span></button>
         <button class="ayar-d" id="tema">${ic('tema', 22)}<span>${S.tema === 'koyu' ? 'Açık tema' : 'Koyu tema'}</span></button>
+        <button class="ayar-d" id="palet">${ic('ayar', 22)}<span>Tema · ${PALETLER.find((p) => p[0] === (S.palet || 'prestij'))[1]}</span></button>
         ${BLD ? `<button class="ayar-d" id="bldAyar">${ic('bildirim', 22)}<span>Bildirim ${bldAcik() ? 'açık' : 'kapalı'}</span></button>` : ''}
         <a class="ayar-d" href="#/metin/guvenlik">${ic('yardim', 22)}<span>Yardım</span></a>
         <a class="ayar-d" href="#/metin/kosullar">${ic('yasal', 22)}<span>Yasal metinler</span></a>
@@ -1628,7 +1629,7 @@ EKRAN.hesap = () => {
     if (!(await onayla('İlan silinsin mi?', 'İlan, fotoğrafları ve ona ait konuşmalar kalıcı olarak silinir.', 'Sil', true))) return;
     if (await dene(() => ilanSil(x.dataset.ilansil), 'İlan silindi')) ciz();
   }));
-  $('#tema').onclick = temaDegis; app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil)));
+  $('#tema').onclick = temaDegis; { const pb = $('#palet'); if (pb) pb.onclick = paletSecimi; } app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil)));
   $('#davet').onclick = () => paylas(davetMetni());
   $('#kvFoto').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -1685,7 +1686,21 @@ function kartvizit(b, benim, favAlan) {
 }
 const menuSatir = (h, ik, ad, say) =>`<a href="${h}">${ic(ik, 20)}${ad}<span class="ok">${say ? say + ' ' : ''}›</span></a>`;
 function temaDegis() { S.tema = S.tema === 'koyu' ? 'acik' : 'koyu'; temaUygula(); kaydet(); ciz(); }
-function temaUygula() { document.documentElement.classList.toggle('koyu', S.tema === 'koyu'); }
+const PALETLER = [['prestij', 'Prestij', 'Lacivert · altın — kurumsal', ['#0B1B33', '#FFC72C']], ['vitrin', 'Vitrin', 'Gök mavisi · sarı — pazar yeri', ['#558ED2', '#FFE800', '#1064BC']], ['alev', 'Alev', 'Kırmızı · turkuaz — cesur', ['#F03245', '#00A699']]];
+function paletSec(kod) { S.palet = kod; temaUygula(); kaydet(); sheetKapat(); ciz(); }
+function paletSecimi() {
+  sheetAc(`<h2 style="font-size:19px;font-weight:800">Tema</h2><div class="k soluk" style="margin:4px 0 12px">Renk paleti ve yazı tipi. Koyu tema her paletle çalışır; değer raporları her zaman kurumsal görünür.</div>` +
+    PALETLER.map(([k, ad, ac, renkler]) => {
+      const secili = (S.palet || 'prestij') === k;
+      return `<button class="kart" data-palet="${k}" style="width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px;margin-bottom:8px;border:${secili ? '2px solid var(--vurgu-koyu)' : '1px solid var(--cizgi)'}">${renkler.map((c) => `<i style="width:22px;height:22px;border-radius:50%;background:${c};border:1px solid #0002;flex-shrink:0"></i>`).join('')}<div class="ara"><b>${ad}</b><div class="k soluk">${ac}</div></div>${secili ? '<span style="color:var(--vurgu-koyu);font-weight:800">✓</span>' : ''}</button>`;
+    }).join(''), (s) => s.querySelectorAll('[data-palet]').forEach((b) => (b.onclick = () => paletSec(b.dataset.palet))));
+}
+function temaUygula() {
+  document.documentElement.classList.toggle('koyu', S.tema === 'koyu');
+  const p = S.palet && S.palet !== 'prestij' ? S.palet : '';
+  if (p) document.documentElement.dataset.tema = p; else document.documentElement.removeAttribute('data-tema');
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = { vitrin: '#558ED2', alev: '#F03245' }[S.palet] || '#1B2A41';
+}
 
 EKRAN.profil = () => {
   if (girisGerek()) return;
@@ -2167,7 +2182,9 @@ function ciz() {
 addEventListener('hashchange', ciz);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheetEl.hidden) sheetKapat(); });
 async function basla() {
-  await yukle(); temaUygula();
+  await yukle();
+  const uTema = new URLSearchParams(location.search).get('tema'); if (['prestij', 'vitrin', 'alev'].includes(uTema)) S.palet = uTema; // test/derin bağlantı: ?tema=vitrin
+  temaUygula();
   app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak Ve Vasıtada Yapay Zekâ Destekli İlan</div></div>
     <div class="acilis-alt"><div class="acilis-cubuk"><span></span></div><div class="acilis-not">Değer Raporu · MülkümDeko · MülkümVideo</div></div></div>`;
   try {

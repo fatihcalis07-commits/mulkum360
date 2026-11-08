@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><title>Mülküm360 — Tema Önizleme</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @font-face{font-family:Tektur;src:url(../www/fonts/tektur-latin-400-normal.woff2) format("woff2");font-weight:400}
+  @font-face{font-family:Tektur;src:url(../www/fonts/tektur-latin-700-normal.woff2) format("woff2");font-weight:700}
+  @font-face{font-family:Inter;src:url(../www/fonts/inter-latin-wght-normal.woff2) format("woff2");font-weight:100 900}
+  *{box-sizing:border-box;margin:0}
+  body{background:#1c1e22;font-family:Inter,sans-serif;padding:28px;display:flex;gap:26px;justify-content:center}
+  .kul{width:352px}
+  .baslik{color:#fff;font-size:14px;font-weight:700;margin:0 4px 10px;display:flex;gap:8px;align-items:center}
+  .baslik em{font-style:normal;font-weight:400;font-size:11px;color:#9aa0a8}
+  .tel{border-radius:30px;border:8px solid #000;background:var(--zemin);overflow:hidden;height:660px;display:flex;flex-direction:column;box-shadow:0 14px 40px #0009}
+  /* TEMALAR */
+  .t-mevcut{--vurgu:#FFC72C;--vurgu-koyu:#8A6516;--vurgu-acik:#FFF4CC;--vurgu-yazi:#0B1B33;--murekkep:#0B1B33;--soluk:#5B5F68;--zemin:#F6F6F3;--yuzey:#fff;--cizgi:#E6E4DC;--font:Tektur,sans-serif;--ikinci:#0B1B33}
+  .t-sb{--vurgu:#558ED2;--vurgu-koyu:#1064BC;--vurgu-acik:#E6F0FA;--vurgu-yazi:#fff;--murekkep:#333;--soluk:#666;--zemin:#F2F2F2;--yuzey:#fff;--cizgi:#E3E3E3;--font:Roboto,sans-serif;--ikinci:#8FBCE8}
+  .t-sb .ust b{color:#fff}
+  .t-sb .btn{background:#FFE800;color:#1064BC}
+  .t-sb .alt .arti i{background:#FFE800;color:#1064BC}
+  .t-sb .cip.sec{background:#FFE800;color:#1064BC}
+  .t-hem{--vurgu:#F03245;--vurgu-koyu:#D11F31;--vurgu-acik:#FFF0F3;--vurgu-yazi:#fff;--murekkep:#222;--soluk:#717171;--zemin:#F7F7F7;--yuzey:#fff;--cizgi:#E9E9E9;--font:"Plus Jakarta Sans",sans-serif;--ikinci:#00A699}
+  .tel{font-family:var(--font);color:var(--murekkep)}
+  .ust{background:var(--vurgu);color:var(--vurgu-yazi);padding:14px 16px 12px;display:flex;align-items:center;gap:10px}
+  .t-mevcut .ust b span{color:var(--murekkep)}
+  .ust b{font-size:19px;letter-spacing:.2px}
+  .ust .a{margin-left:auto;width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--vurgu-yazi) 18%,transparent);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .govde{flex:1;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .ara{background:var(--yuzey);border:1.5px solid var(--cizgi);border-radius:14px;padding:13px 14px;font-size:13px;color:var(--soluk)}
+  .cips{display:flex;gap:7px;flex-wrap:wrap}
+  .cip{font-size:12px;font-weight:600;padding:7px 12px;border-radius:999px;background:var(--yuzey);border:1.5px solid var(--cizgi);color:var(--murekkep)}
+  .cip.sec{background:var(--vurgu-acik);border-color:transparent;color:var(--vurgu-koyu)}
+  .kart{background:var(--yuzey);border-radius:16px;overflow:hidden;border:1px solid var(--cizgi)}
+  .fot{height:120px;background:linear-gradient(135deg,var(--ikinci),color-mix(in srgb,var(--ikinci) 55%,white));display:flex;align-items:center;justify-content:center;font-size:38px}
+  .kart .ic{padding:11px 13px 13px}
+  .fiyat{font-size:18px;font-weight:700;color:var(--vurgu-koyu)}
+  .baslik2{font-size:13.5px;font-weight:600;margin:3px 0 2px}
+  .yer{font-size:12px;color:var(--soluk)}
+  .btn{background:var(--vurgu);color:var(--vurgu-yazi);font-weight:700;font-size:14px;border-radius:14px;padding:14px;text-align:center}
+  .btn2{background:var(--ikinci);color:#fff;font-weight:600;font-size:12.5px;border-radius:999px;padding:9px 16px;display:inline-block}
+  .alt{display:flex;background:var(--yuzey);border-top:1px solid var(--cizgi);padding:10px 6px 14px;justify-content:space-around;font-size:10px;color:var(--soluk)}
+  .alt i{display:block;font-style:normal;font-size:18px;text-align:center}
+  .alt .ac{color:var(--vurgu-koyu);font-weight:700}
+  .alt .arti i{background:var(--vurgu);color:var(--vurgu-yazi);width:38px;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin:-16px auto 2px}
+</style></head><body>
+  <div class="kul"><div class="baslik">Mülküm360 — Mevcut <em>Tektur · lacivert/altın</em></div>
+    <div class="tel t-mevcut">
+      <div class="ust"><b>mülküm<span>360</span></b><div class="a">👤</div></div>
+      <div class="govde">
+        <div class="ara">🔍 İlan, mahalle, okul ara…</div>
+        <div class="cips"><span class="cip sec">Satılır ev</span><span class="cip">Kiralık</span><span class="cip">Arsa</span><span class="cip">Araba</span></div>
+        <div class="kart"><div class="fot">🏠</div><div class="ic"><div class="fiyat">4.750.000 ₺</div><div class="baslik2">Satılık 3+1 Eşyalı Daire</div><div class="yer">Çankaya · 132 m² · 12 yaş</div></div></div>
+        <div class="btn">İlan ver</div>
+      </div>
+      <div class="alt"><span class="ac"><i>🏠</i>Keşfet</span><span><i>⭐</i>Favori</span><span class="arti"><i>＋</i></span><span><i>💬</i>Mesaj</span><span><i>👤</i>Hesabım</span></div>
+    </div></div>
+
+  <div class="kul"><div class="baslik">Sahibinden tarzı <em>Roboto · gök mavisi #558ED2 + sarı #FFE800</em></div>
+    <div class="tel t-sb">
+      <div class="ust"><b>mülküm<span>360</span></b><div class="a">👤</div></div>
+      <div class="govde">
+        <div class="ara">🔍 İlan, mahalle, okul ara…</div>
+        <div class="cips"><span class="cip sec">Satılır ev</span><span class="cip">Kiralık</span><span class="cip">Arsa</span><span class="cip">Araba</span></div>
+        <div class="kart"><div class="fot">🏠</div><div class="ic"><div class="fiyat">4.750.000 ₺</div><div class="baslik2">Satılık 3+1 Eşyalı Daire</div><div class="yer">Çankaya · 132 m² · 12 yaş</div></div></div>
+        <div class="btn">İlan ver</div>
+      </div>
+      <div class="alt"><span class="ac"><i>🏠</i>Keşfet</span><span><i>⭐</i>Favori</span><span class="arti"><i>＋</i></span><span><i>💬</i>Mesaj</span><span><i>👤</i>Hesabım</span></div>
+    </div></div>
+
+  <div class="kul"><div class="baslik">Hepsiemlak tarzı <em>Plus Jakarta Sans · #F03245 / #00A699</em></div>
+    <div class="tel t-hem">
+      <div class="ust"><b>mülküm<span>360</span></b><div class="a">👤</div></div>
+      <div class="govde">
+        <div class="ara">🔍 İlan, mahalle, okul ara…</div>
+        <div class="cips"><span class="cip sec">Satılır ev</span><span class="cip">Kiralık</span><span class="cip">Arsa</span><span class="cip">Araba</span></div>
+        <div class="kart"><div class="fot">🏠</div><div class="ic"><div class="fiyat">4.750.000 ₺</div><div class="baslik2">Satılık 3+1 Eşyalı Daire</div><div class="yer">Çankaya · 132 m² · 12 yaş</div></div></div>
+        <div class="btn">İlan ver</div>
+      </div>
+      <div class="alt"><span class="ac"><i>🏠</i>Keşfet</span><span><i>⭐</i>Favori</span><span class="arti"><i>＋</i></span><span><i>💬</i>Mesaj</span><span><i>👤</i>Hesabım</span></div>
+    </div></div>
+</body></html>
