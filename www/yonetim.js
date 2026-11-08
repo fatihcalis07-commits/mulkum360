@@ -130,7 +130,7 @@ YON.dogrulama = async (el) => {
   el.innerHTML = `<div class="liste">${l.map((t) => { const k = kullanici(t.sahip), i = t.ilan && ilan(t.ilan); return `<div class="oge" style="flex-direction:column;align-items:stretch;gap:6px"><div><b>${t.tur === 'emlakci' ? 'Emlak ofisi' : 'Tapu / ilan'}</b> · ${kac(k.ad)}${k.firma ? ' · ' + kac(k.firma) : ''}</div>
     <div class="k soluk">${t.tur === 'emlakci' ? 'Yetki belgesi no: ' + kac(k.yetkiNo || '—') : i ? `<a href="#/ilan/${i.id}">${kac(i.baslik)}</a>` : 'İlan silinmiş'} · ${tarihSaat(t.olusturma)}${t.notu ? '<br>Not: ' + kac(t.notu) : ''}</div>
     <div class="izgara2"><button class="btn sade kucuk" data-karar="${t.id}" data-onay="0">Reddet</button><button class="btn guven kucuk" data-karar="${t.id}" data-onay="1">Onayla</button></div></div>`; }).join('')}</div>
-    <div class="k soluk">Onaylamadan önce belgeyi resmî kaynaktan (yetki belgesi: Ticaret Bakanlığı TTBS; tapu: e-Devlet / TKGM) kontrol et.</div>`;
+    <div class="k soluk">Onaylamadan önce belgeyi resmî kaynaktan kontrol et: yetki belgesi → Ticaret Bakanlığı TTBS (ttbs.gtb.gov.tr/BelgeSorgula); tapu → e-Devlet barkodlu belgeyi turkiye.gov.tr/belge-dogrulama'da teyit et (belge yaşı ≤ 30 gün). Ayrıntı: TAPU-DOGRULAMA.md.</div>`;
   el.querySelectorAll('[data-karar]').forEach((b) => (b.onclick = async () => { if (await dene(() => dogrulamaKarar(b.dataset.karar, b.dataset.onay === '1'), b.dataset.onay === '1' ? 'Onaylandı' : 'Reddedildi')) YON.dogrulama(el); }));
 };
 

@@ -255,15 +255,20 @@ function sorguYap(o) { const p = new URLSearchParams(); Object.entries(o).forEac
 // ---------- Emsal ve değerleme ----------
 const TEST_DAHIL = true; // GEÇİCİ: gerçek ilan az, test ilanları değerlemeye katılır. YAYINDAN ÖNCE MUTLAKA false yap (test ilanlarıyla birlikte silinecek).
 function emsaller(o) {
-  // o: {ana, alt, il, ilce, islem, oda, m2net, marka, model, yil, haric}
+  // o: {ana, alt, il, ilce, mahalle, sokak, islem, oda, m2net, marka, model, yil, haric}
   let l = S.ilanlar.filter((i) => i.ana === o.ana && i.id !== o.haric && i.fiyat > 0 && (TEST_DAHIL || !i.ornek));
   if (o.ana === 'emlak') {
-    // Kademeli kapsam: ilçe -> il -> Türkiye geneli (aynı tür ve işlem); kapsam sonuca yazılır
+    // Kademeli kapsam: sokak -> mahalle -> ilçe -> il -> Türkiye geneli (her kademe en az 3 emsal); kapsam sonuca yazılır
     const tur = l.filter((i) => i.alt === o.alt && i.alanlar?.islem === o.islem && +i.alanlar?.m2net > 0);
     const ilde = tur.filter((i) => i.il === o.il);
     const ilcede = ilde.filter((i) => o.ilce && kucuk(i.ilce) === kucuk(o.ilce));
+    const yolAd = (x) => kucuk(String(x || '')).replace(/\s+/g, ' ').replace(/\s*(soka(ğ|g)(ı|i)?|sok(a|ı)k|caddesi|cadd\.?|cad\.?|cd\.?|sok\.?|sk\.?|bulvar(ı|i)?|bulvar|kavşak(ı|i)?|şerit|şeridi)$/, '').trim();
+    const mahallece = o.mahalle ? ilcede.filter((i) => kucuk(i.alanlar?.mahalle) === kucuk(o.mahalle)) : [];
+    const sokakta = o.sokak && o.mahalle ? mahallece.filter((i) => yolAd(i.alanlar?.sokak) === yolAd(o.sokak)) : [];
     let kapsam;
-    if (ilcede.length >= 3) { l = ilcede; kapsam = `${o.ilce}, ${o.il}`; }
+    if (sokakta.length >= 3) { l = sokakta; kapsam = `${o.sokak}, ${o.mahalle} Mah., ${o.ilce} (aynı sokak)`; }
+    else if (mahallece.length >= 3) { l = mahallece; kapsam = `${o.mahalle} Mah., ${o.ilce}`; }
+    else if (ilcede.length >= 3) { l = ilcede; kapsam = `${o.ilce}, ${o.il}`; }
     else if (ilde.length >= 3) { l = ilde; kapsam = `${o.il} geneli`; }
     else { l = tur; kapsam = 'Türkiye geneli'; }
     const odali = l.filter((i) => o.oda && i.alanlar?.oda === o.oda);
@@ -297,7 +302,7 @@ function emsalDurumu(i) {
   if (i.durum !== 'yayinda') return null;
   const f = i.alanlar || {};
   const o = i.ana === 'emlak'
-    ? { ana: 'emlak', alt: i.alt, il: i.il, ilce: i.ilce, islem: f.islem, oda: f.oda, m2net: f.m2net, haric: i.id }
+    ? { ana: 'emlak', alt: i.alt, il: i.il, ilce: i.ilce, mahalle: f.mahalle, sokak: f.sokak, islem: f.islem, oda: f.oda, m2net: f.m2net, haric: i.id }
     : { ana: 'vasita', marka: f.marka, model: f.model, yil: f.yil, km: f.km, haric: i.id };
   if (i.ana === 'emlak' && !(+f.m2net > 0)) return null;
   const h = hesapla(o);
@@ -693,8 +698,9 @@ EKRAN.ilan = (id) => {
   const kH = () => { const pes = Math.min(90, +$('#kPes').value || 0) / 100, n = +$('#kVade').value || 0, r = +String($('#kFaiz').value).replace(',', '.') / 100, P = i.fiyat * (1 - pes);
     $('#kSonuc').innerHTML = r > 0 && n > 0 ? `Kredi tutarı <b>${tl(P)}</b> · aylık taksit <b>${tl((P * r) / (1 - Math.pow(1 + r, -n)))}</b> · toplam geri ödeme ${tl(((P * r) / (1 - Math.pow(1 + r, -n))) * n)}<br>Peşinat ${tl(i.fiyat * pes)}. Masraf, sigorta ve vergiler dahil değildir.` : 'Bankanın güncel aylık faiz oranını yaz; taksit hesaplansın.'; };
   if ($('#krediK')) { if (typeof ilanKrediTeklifleri === 'function') ilanKrediTeklifleri(i); else ['kPes', 'kVade', 'kFaiz'].forEach((x) => ($('#' + x).oninput = kH)); }
-  const ti = $('#tapuIste'); if (ti) ti.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:700">Tapu doğrulaması</h2><div class="k soluk" style="line-height:1.5">Ekibimiz tapu bilgisini (il, ilçe, ada/parsel ve malik) e-Devlet / TKGM üzerinden kontrol eder; gerekirse seninle mesajlaşır. Tapu belgesinin fotoğrafını buraya yükleme.</div>
-    <label class="alan">Ada / parsel ve not <span style="font-weight:500">(isteğe bağlı)</span><textarea id="tNot" maxlength="500" placeholder="örn. 1234 ada 5 parsel, kat mülkiyetli"></textarea></label><button class="btn tam" id="tGonder">Talep gönder</button>`, (s) => ($('#tGonder', s).onclick = async () => { if (await dene(() => dogrulamaIste('ilan', i.id, $('#tNot', s).value.trim()), 'Talebin alındı; sonuç ilanında görünecek')) sheetKapat(); }));
+  const ti = $('#tapuIste'); if (ti) ti.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:700">Tapu doğrulaması</h2><div class="k soluk" style="line-height:1.5">İlan verme yetkin resmî kaynaktan (EİDS · e-Devlet / TKGM barkodlu belge) kontrol edilir; gerekirse seninle mesajlaşırız. Tapu belgesinin fotoğrafını yükleme, şifreni asla istemeyiz.</div>
+    <label class="alan">Taşınmaz no <span style="font-weight:500">(e-Devlet → Tapu Bilgileri Sorgulama)</span><input id="tNo" maxlength="40" placeholder="örn. 34123456789"></label>
+    <label class="alan">Ada / parsel ve not <span style="font-weight:500">(isteğe bağlı)</span><textarea id="tNot" maxlength="500" placeholder="örn. 1234 ada 5 parsel, kat mülkiyetli"></textarea></label><button class="btn tam" id="tGonder">Talep gönder</button>`, (s) => ($('#tGonder', s).onclick = async () => { const no = $('#tNo', s).value.trim(), nt = $('#tNot', s).value.trim(); if (no && !/^[0-9]{8,20}$/.test(no)) return toast('Taşınmaz no en az 8 haneli rakam olmalı.'); if (await dene(() => dogrulamaIste('ilan', i.id, (no ? 'Taşınmaz No: ' + no : '') + (nt ? (no ? ' · ' : '') + nt : '')), 'Talebin alındı; sonuç ilanında görünecek')) sheetKapat(); }));
   const rv = $('#randevu'); if (rv) rv.onclick = () => {
     if (girisGerek('Randevu için giriş yap')) return;
     const gun = (g) => { const d = new Date(); d.setDate(d.getDate() + g); return d.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }); };
@@ -1038,17 +1044,19 @@ EKRAN.toplu = () => {
 // ---------- Üye profili (satıcının görünmesini istediği bilgiler ve ilanları) ----------
 EKRAN.uye = (id) => {
   const k = kullanici(id), l = yayinda().filter((i) => i.sahip === id);
+  const gecmis = S.ilanlar.filter((i) => i.sahip === id && i.durum === 'satildi');
   app.innerHTML = ustBar(kac(gorunenAd(k))) + `<div class="ic">
-    <div class="kart satir"><div class="avatar" style="width:56px;height:56px;font-size:20px">${basHarf(k.ad)}</div><div class="ara">
+    <div class="kart satir">${k.foto ? `<img src="${kac(k.foto)}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0">` : `<div class="avatar" style="width:56px;height:56px;font-size:20px">${basHarf(k.ad)}</div>`}<div class="ara">
       <b style="font-size:17px">${kac(gorunenAd(k))}</b> ${rozet(k)}
       ${k.unvan || k.firma ? `<div class="k">${kac([k.unvan, k.firma].filter(Boolean).join(' · '))}</div>` : ''}
-      <div class="k soluk">${k.olusturma ? 'Üyelik: ' + new Date(k.olusturma).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) + ' · ' : ''}${l.length} yayında ilan</div>
+      <div class="k soluk">${k.olusturma ? 'Üyelik: ' + new Date(k.olusturma).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) + ' · ' : ''}${l.length} yayında ilan${gecmis.length ? ` · ${gecmis.length} satıldı` : ''}</div>
       ${k.yetkiNo ? `<div class="k soluk">Yetki belgesi no: ${kac(k.yetkiNo)} (üye beyanı)</div>` : ''}
       ${k.acikTel ? `<a class="k" href="tel:${kac(k.acikTel)}" style="font-weight:700">${kac(k.acikTel)}</a>` : ''}
     </div></div>
     ${k.hakkinda ? `<div class="kart"><h3>Hakkında</h3><div style="white-space:pre-wrap;line-height:1.55;font-size:14px">${kac(k.hakkinda)}</div></div>` : ''}
     <div class="bolum-bas"><h2>İlanları</h2></div>
     ${l.length ? `<div class="ilan-izgara">${l.map(ilanKart).join('')}</div>` : bosDurum('ev', 'Yayında ilanı yok', 'Bu üyenin şu an yayında ilanı bulunmuyor.')}
+    ${gecmis.length ? `<div class="bolum-bas"><h2>Satılanlar</h2></div><div class="ilan-izgara">${gecmis.map(ilanKart).join('')}</div>` : ''}
   </div>`;
   navCiz();
 };
@@ -1753,6 +1761,8 @@ EKRAN.degerle = () => {
     <form id="df" class="ic" style="padding:0">${d.ana === 'emlak' ? `
       <div class="izgara2"><label class="alan">Tür<select name="alt">${altlari('emlak').map((k) => `<option value="${k}" ${d.alt === k ? 'selected' : ''}>${ALT[k].ad}</option>`).join('')}</select></label>${sec('islem', 'İşlem', ['Satılık', 'Kiralık'])}</div>
       <div class="izgara2">${sec('il', 'İl', ILLER)}<label class="alan">İlçe<select name="ilce"><option value="">Seç</option>${d.ilce ? `<option selected>${kac(d.ilce)}</option>` : ''}</select></label></div>
+      <div class="izgara2"><label class="alan">Mahalle <span style="font-weight:500">(isteğe bağlı)</span><select name="mahalle" data-bos="${d.ilce ? 'Farketmez' : 'Önce ilçe seç'}"><option value="">${d.ilce ? 'Farketmez' : 'Önce ilçe seç'}</option>${d.mahalle ? `<option selected>${kac(d.mahalle)}</option>` : ''}</select></label>
+      <label class="alan">Sokak / cadde <span style="font-weight:500">(isteğe bağlı)</span><input name="sokak" id="sokak" list="sokakOn" maxlength="80" autocomplete="off" placeholder="Yazmaya başla" value="${kac(d.sokak || '')}"><datalist id="sokakOn">${d.sokak ? `<option value="${kac(d.sokak)}">` : ''}</datalist></label></div>
       <div class="izgara3"><label class="alan">Net ㎡<input name="m2net" inputmode="numeric" list="on-m2net" autocomplete="off" value="${kac(d.m2net || '')}"></label><datalist id="on-m2net">${ONERI.m2net.map((o) => `<option value="${o}">`).join('')}</datalist>${sec('oda', 'Oda', ALANLAR.emlak[2][3])}<label class="alan">Bina yaşı<input name="binaYasi" inputmode="numeric" list="on-binaYasi" autocomplete="off" value="${kac(d.binaYasi || '')}"></label><datalist id="on-binaYasi">${ONERI.binaYasi.map((o) => `<option value="${o}">`).join('')}</datalist></div>
       <div class="kart" id="elEmsalK"></div>`
       : `<div class="izgara2"><label class="alan">Marka<input name="marka" list="dlm" value="${kac(d.marka || '')}"><datalist id="dlm">${MARKALAR.map((m) => `<option value="${m}">`).join('')}</datalist></label><label class="alan">Model<input name="model" value="${kac(d.model || '')}"></label></div>
@@ -1773,7 +1783,11 @@ EKRAN.degerle = () => {
       <label class="alan">Not (kaynak)<input name="not" maxlength="60" placeholder="örn. komşu site, Ekim 2026"></label><button class="btn tam">Ekle</button></form>`, (s) => ($('#ef', s).onsubmit = (e) => { e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)); v.fiyat = +v.fiyat.replace(/\D/g, ''); v.m2net = +v.m2net.replace(/\D/g, ''); if (!(v.fiyat > 0 && v.m2net > 0)) return toast('Fiyat ve m² gerekli.'); elListe.push(v); sheetKapat(); elCiz(); }));
   };
   elCiz();
-  if ($('#df [name=ilce]')) konumSecBagla($('#df [name=il]'), $('#df [name=ilce]'), null);
+  if ($('#df [name=ilce]')) {
+    const M = $('#df [name=mahalle]');
+    konumSecBagla($('#df [name=il]'), $('#df [name=ilce]'), M, () => { if (M) M.dataset.bos = $('#df [name=ilce]').value ? 'Farketmez' : 'Önce ilçe seç'; });
+    $('#df [name=il]').id = 'il'; $('#df [name=ilce]').id = 'ilce'; sokakOneriBagla();
+  }
   app.querySelectorAll('[data-ana]').forEach((x) => (x.onclick = () => { sonDegerleme = null; git('#/degerle?ana=' + x.dataset.ana); }));
   const hesapGoster = (v) => {
     const h = hesapla(v), el = $('#sonuc');
