@@ -36,6 +36,7 @@ async function profilleriGetir(idler) {
 async function veriYukle() {
   const { data: { session } } = await sb.auth.getSession();
   S.oturum = session?.user?.id || null;
+  S.AYARLAR.vitrinler = vitrinAyar();
   const il = await islem(sb.from('ilanlar').select('*').order('olusturma', { ascending: false }).limit(1000));
   S.ilanlar = il.map(ilanEsle);
   S.kullanicilar = [];

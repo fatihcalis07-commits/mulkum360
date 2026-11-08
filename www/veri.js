@@ -36,7 +36,7 @@ const MARKALAR = ['Alfa Romeo','Audi','BMW','BYD','Chery','Citroën','Dacia','Fi
 // Alan tanımı: [anahtar, etiket, tür, seçenekler?, zorunlu?]
 const ALANLAR = {
   emlak: [
-    ['islem', 'İşlem', 'sec', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Devren'], true],
+    ['islem', 'İşlem', 'sec', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Sezonluk', 'Devren'], true],
     ['tip', 'Tip', 'sec', ['Daire', 'Rezidans', 'Müstakil Ev', 'Villa', 'Çiftlik Evi', 'Yazlık', 'Arsa', 'Tarla', 'Bağ & Bahçe', 'Dükkan', 'Ofis', 'Depo', 'Fabrika', 'Bina', 'Otel', 'Devre Mülk'], true],
     ['oda', 'Oda sayısı', 'sec', ['Stüdyo (1+0)', '1+1', '2+1', '3+1', '4+1', '5+1', '6+ oda']],
     ['m2net', 'Net ㎡', 'sayi', null, true],
@@ -59,7 +59,8 @@ const ALANLAR = {
     // Tapu ve ilan doğrulama (isteğe bağlı): ada/parsel ile TKGM'den parsel bilgisi ve tam konum gelir
     ['ada', 'Ada no', 'metin'],
     ['parsel', 'Parsel no', 'metin'],
-    ['eids', 'EİDS ilan doğrulama no', 'metin']
+    ['eids', 'EİDS ilan doğrulama no', 'metin'],
+    ['proje', 'Proje adı (yeni konut projelerinde)', 'metin']
   ],
   vasita: [
     ['marka', 'Marka', 'liste', MARKALAR, true],
@@ -99,8 +100,12 @@ async function kvYaz(k, v) {
 
 // Uygulama durumu
 // Sunucu verisi (ilanlar, üyeler, mesajlar) sb.js ile gelir; cihazda yalnız tercihler tutulur.
-const S = { kullanicilar: [], ilanlar: [], sohbetler: [], kayitliAramalar: [], favSayilari: {}, oturum: null, tema: 'acik', palet: 'prestij', gorulen: [], karsilandi: false, donus: null };
+const S = { kullanicilar: [], ilanlar: [], sohbetler: [], kayitliAramalar: [], favSayilari: {}, oturum: null, tema: 'acik', palet: 'prestij', gorulen: [], karsilandi: false, donus: null, AYARLAR: {} };
 const YEREL = ['tema', 'palet', 'gorulen', 'karsilandi', 'donus'];
+// Ana sayfa vitrin ayarı: sıra + her vitrinin görünürlüğü. Yönetim panelinden değişir.
+// Şimdilik cihazda saklanır; ayarlar tablosu (migration onay bekliyor) gelince sunucudan da okunur.
+const VITRIN_VARSAYILAN = { sira: ['onecikan', 'firsat', 'dusen', 'proje'], aktif: { onecikan: true, firsat: true, dusen: true, proje: true }, ad: { onecikan: 'Öne çıkan ilanlar', firsat: 'Fırsat ilanları', dusen: 'Fiyatı düşen ilanlar', proje: 'Proje vitrini' } };
+function vitrinAyar() { try { const v = JSON.parse(localStorage.getItem('vitrin_ayarlari') || 'null'); if (v && Array.isArray(v.sira)) return Object.assign({}, VITRIN_VARSAYILAN, v); } catch (_) {} return Object.assign({}, VITRIN_VARSAYILAN); }
 let _yazZaman = null;
 async function yukle() { const v = await kvAl('tercihler'); if (v) YEREL.forEach((k) => v[k] !== undefined && (S[k] = v[k])); }
 function kaydet() { clearTimeout(_yazZaman); _yazZaman = setTimeout(() => kvYaz('tercihler', Object.fromEntries(YEREL.map((k) => [k, S[k]]))), 150); }
@@ -211,6 +216,7 @@ function sorguCoz(q) {
   al(/\b(\d)\s*\+\s*(\d)(?=\s)/, (m) => { f.oda = `${m[1]}+${m[2]}`; anlasilan.push(f.oda); });
   al(/\bstüdyo\b|\b1\s*\+\s*0(?=\s)/, () => { f.oda = 'Stüdyo (1+0)'; anlasilan.push('Stüdyo'); });
   al(/\bgünlük( kiralık)?(?=\s)/, () => { f.islem = 'Günlük Kiralık'; anlasilan.push('Günlük kiralık'); });
+  al(/\bsezonluk(?=\s)/, () => { f.islem = 'Sezonluk'; anlasilan.push('Sezonluk kiralama'); });
   al(/\bsatılık(?=\s)/, () => { f.islem = 'Satılık'; anlasilan.push('Satılık'); });
   al(/\bkiralık(?=\s)/, () => { f.islem = 'Kiralık'; anlasilan.push('Kiralık'); });
   al(/\bdevren(?=\s)/, () => { f.islem = 'Devren'; anlasilan.push('Devren'); });

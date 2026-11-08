@@ -1,8 +1,8 @@
 // Mülküm360 — Yönetim (yalnız yönetici; tüm işlemleri sunucu kuralları da denetler)
 'use strict';
 
-const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Tanımla'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim'], ['gosterge', 'grafik', 'Göstergeler']];
-const YON_GRUP = [['Kullanıcı ve kredi', ['ozet', 'uyeler', 'kredi', 'satis']], ['Denetim', ['sikayet', 'dogrulama']], ['Veri', ['bolge', 'secim', 'gosterge', 'banka']]];
+const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Tanımla'], ['vitrin', 'yildiz', 'Ana Sayfa'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim'], ['gosterge', 'grafik', 'Göstergeler']];
+const YON_GRUP = [['Kullanıcı ve kredi', ['ozet', 'uyeler', 'kredi', 'satis']], ['Denetim', ['sikayet', 'dogrulama']], ['Görünürlük', ['vitrin']], ['Veri', ['bolge', 'secim', 'gosterge', 'banka']]];
 let YON_BEKLEYEN = 0; // bekleyen kredi satın alma talebi sayısı (satis.js günceller)
 const HAREKET_IKON ={ kayit: 'kisi', giris: 'kilit', ilan: 'ev', rapor: 'belge', kredi: 'kredi', mesaj: 'mesaj', sikayet: 'bayrak', ai: 'yildiz' };
 const tarihSaat = (t) => (t ? new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
@@ -132,6 +132,18 @@ YON.dogrulama = async (el) => {
     <div class="izgara2"><button class="btn sade kucuk" data-karar="${t.id}" data-onay="0">Reddet</button><button class="btn guven kucuk" data-karar="${t.id}" data-onay="1">Onayla</button></div></div>`; }).join('')}</div>
     <div class="k soluk">Onaylamadan önce belgeyi resmî kaynaktan kontrol et: yetki belgesi → Ticaret Bakanlığı TTBS (ttbs.gtb.gov.tr/BelgeSorgula); tapu → e-Devlet barkodlu belgeyi turkiye.gov.tr/belge-dogrulama'da teyit et (belge yaşı ≤ 30 gün). Ayrıntı: TAPU-DOGRULAMA.md.</div>`;
   el.querySelectorAll('[data-karar]').forEach((b) => (b.onclick = async () => { if (await dene(() => dogrulamaKarar(b.dataset.karar, b.dataset.onay === '1'), b.dataset.onay === '1' ? 'Onaylandı' : 'Reddedildi')) YON.dogrulama(el); }));
+};
+
+YON.vitrin = async (el) => {
+  const V = S.AYARLAR.vitrinler || vitrinAyar();
+  const aciklama = { onecikan: 'Doğrulanmış ve zengin fotoğraflı ilanlar (doping sistemi gelince dopingliler başa geçer)', firsat: 'Fiyatı en az %7 düşürülmüş ilanlar', dusen: 'Fiyatı düşen tüm ilanlar', proje: '"Proje adı" işaretli ilanlar' };
+  const satir = (k, i) => { const a = V.aktif[k] !== false; return `<div class="kart satir" data-vk="${k}"><button class="btn sade kucuk" data-yuk="${k}" ${i ? '' : 'disabled'}>↑</button><button class="btn sade kucuk" data-asagI="${k}" ${i === V.sira.length - 1 ? '' : 'disabled'}>↓</button><div class="ara"><b>${kac(V.ad[k] || k)}</b><div class="k soluk">${aciklama[k] || ''}</div></div><button class="btn ${a ? 'guven' : 'sade'} kucuk" data-cevir="${k}">${a ? 'Açık' : 'Kapalı'}</button></div>`;
+  };
+  el.innerHTML = `${V.sira.map((k, i) => satir(k, i)).join('')}<div class="k soluk" style="margin-top:8px">Sıra ve görünürlük bu cihazda anında geçerli olur; tüm kullanıcılara yayılması ayarlar tablosu migration'ının uygulanmasına bağlıdır (MODULLER-12-16.md).</div>`;
+  const kaydet = () => { S.AYARLAR.vitrinler = V; try { localStorage.setItem('vitrin_ayarlari', JSON.stringify(V)); } catch (_) {} };
+  el.querySelectorAll('[data-yuk]').forEach((b) => (b.onclick = () => { const i = V.sira.indexOf(b.dataset.yuk); if (i > 0) { V.sira.splice(i - 1, 0, V.sira.splice(i, 1)[0]); kaydet(); YON.vitrin(el); } }));
+  el.querySelectorAll('[data-asagI]').forEach((b) => (b.onclick = () => { const i = V.sira.indexOf(b.dataset.asagi); if (i < V.sira.length - 1) { V.sira.splice(i + 1, 0, V.sira.splice(i, 1)[0]); kaydet(); YON.vitrin(el); } }));
+  el.querySelectorAll('[data-cevir]').forEach((b) => (b.onclick = () => { const k = b.dataset.cevir; V.aktif[k] = V.aktif[k] === false; kaydet(); YON.vitrin(el); }));
 };
 
 YON.bolge = async (el) => {
