@@ -253,9 +253,10 @@ function sorgu() { const q = location.hash.split('?')[1] || ''; return Object.fr
 function sorguYap(o) { const p = new URLSearchParams(); Object.entries(o).forEach(([k, v]) => v !== '' && v != null && p.set(k, v)); return p.toString(); }
 
 // ---------- Emsal ve değerleme ----------
+const TEST_DAHIL = true; // GEÇİCİ: gerçek ilan az, test ilanları değerlemeye katılır. YAYINDAN ÖNCE MUTLAKA false yap (test ilanlarıyla birlikte silinecek).
 function emsaller(o) {
   // o: {ana, alt, il, ilce, islem, oda, m2net, marka, model, yil, haric}
-  let l = S.ilanlar.filter((i) => i.ana === o.ana && i.id !== o.haric && i.fiyat > 0 && !i.ornek);
+  let l = S.ilanlar.filter((i) => i.ana === o.ana && i.id !== o.haric && i.fiyat > 0 && (TEST_DAHIL || !i.ornek));
   if (o.ana === 'emlak') {
     // Kademeli kapsam: ilçe -> il -> Türkiye geneli (aynı tür ve işlem); kapsam sonuca yazılır
     const tur = l.filter((i) => i.alt === o.alt && i.alanlar?.islem === o.islem && +i.alanlar?.m2net > 0);
