@@ -1,0 +1,11 @@
+.gizli/
+node_modules/
+*.apk
+*.zip
+*.jks
+supabase/.temp/
+android/.gradle/
+android/**/build/
+android/local.properties
+pazarlama/instagram/gorseller/
+www-mirror/

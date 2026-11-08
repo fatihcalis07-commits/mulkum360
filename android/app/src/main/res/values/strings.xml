@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mülküm360</string>
+    <string name="title_activity_main">Mülküm360</string>
+    <string name="package_name">com.vitrin.prototip</string>
+    <string name="custom_url_scheme">com.vitrin.prototip</string>
+</resources>
