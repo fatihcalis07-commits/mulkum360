@@ -1,10 +1,10 @@
-// Türkçe arayüz/ilan metinlerini İngilizce ya da Rusçaya çevirir; sonuçlar 'ceviri' tablosunda saklanır (bir kez çevrilir).
-// Girdi: { dil: 'en'|'ru', metinler: string[] (en çok 60, her biri en çok 600 karakter) }. Çıktı: { ceviri: { kaynak: hedef } }
+// Türkçe arayüz/ilan metinlerini İngilizce/Rusça/Almanca/Arapçaya çevirir; sonuçlar 'ceviri' tablosunda saklanır (bir kez çevrilir).
+// Girdi: { dil: 'en'|'ru'|'de'|'ar', metinler: string[] (en çok 60, her biri en çok 600 karakter) }. Çıktı: { ceviri: { kaynak: hedef } }
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const yanit = (g: unknown, d = 200) => new Response(JSON.stringify(g), { status: d, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const MODELLER = ['gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-3.8-flash'];
-const DIL: Record<string, string> = { en: 'English', ru: 'Russian' };
+const DIL: Record<string, string> = { en: 'English', ru: 'Russian', de: 'German', ar: 'Modern Standard Arabic' };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });

@@ -604,7 +604,8 @@ EKRAN.ilan = (id) => {
       <div style="display:flex;flex-direction:column;gap:4px">
         <div style="font-size:26px;font-weight:800;letter-spacing:-.5px">${tl(i.fiyat)}${f.islem === 'Kiralık' ? '<span class="soluk" style="font-size:14px;font-weight:500"> / ay</span>' : ''}</div>
         ${+f.oncekiFiyat > i.fiyat || (i.ana === 'emlak' && +f.m2net > 0) ? `<div class="k soluk">${+f.oncekiFiyat > i.fiyat ? `<s>${tl(+f.oncekiFiyat)}</s> <b style="color:var(--guven)">%${Math.round((1 - i.fiyat / f.oncekiFiyat) * 100)} indirim</b>` : ''}${+f.oncekiFiyat > i.fiyat && +f.m2net > 0 ? ' · ' : ''}${i.ana === 'emlak' && +f.m2net > 0 ? tl(i.fiyat / f.m2net) + '/m² (net)' : ''}</div>` : ''}
-        <h2 style="font-size:17px;font-weight:600">${kac(i.baslik)}</h2>
+        <h2 style="font-size:17px;font-weight:600" id="ilanBaslik">${kac(i.baslik)}</h2>
+        ${DIL !== 'tr' ? `<button class="btn sade kucuk" id="orjBtn" data-cevirme style="margin:2px 0 6px">${ic('dil', 14)}<span>Orijinalini göster</span></button>` : ''}
         ${i.dogrulanmis ? `<div><span class="rozet dogru">${ic('kalkan', 12)}Tapu bilgisi doğrulandı</span></div>` : ''}
         ${f.eids ? `<div><span class="rozet" style="background:#E8F1FB;color:#1064BC">${ic('kalkan', 12)}EİDS ilan doğrulama no: ${kac(f.eids)}</span></div>` : ''}
         <div class="konum-yol">${ic('konum', 14)}${[i.il, i.ilce, f.mahalle && f.mahalle + ' Mah.'].filter(Boolean).map((x) => `<span>${kac(x)}</span>`).join('<span class="soluk">›</span>')}</div>
@@ -698,6 +699,7 @@ EKRAN.ilan = (id) => {
   const kH = () => { const pes = Math.min(90, +$('#kPes').value || 0) / 100, n = +$('#kVade').value || 0, r = +String($('#kFaiz').value).replace(',', '.') / 100, P = i.fiyat * (1 - pes);
     $('#kSonuc').innerHTML = r > 0 && n > 0 ? `Kredi tutarı <b>${tl(P)}</b> · aylık taksit <b>${tl((P * r) / (1 - Math.pow(1 + r, -n)))}</b> · toplam geri ödeme ${tl(((P * r) / (1 - Math.pow(1 + r, -n))) * n)}<br>Peşinat ${tl(i.fiyat * pes)}. Masraf, sigorta ve vergiler dahil değildir.` : 'Bankanın güncel aylık faiz oranını yaz; taksit hesaplansın.'; };
   if ($('#krediK')) { if (typeof ilanKrediTeklifleri === 'function') ilanKrediTeklifleri(i); else ['kPes', 'kVade', 'kFaiz'].forEach((x) => ($('#' + x).oninput = kH)); }
+  const oj = $('#orjBtn'); if (oj) oj.onclick = () => { const kok = $('#ilanBaslik').closest('.ic'), ac = !kok.dataset.orj, w = () => document.createTreeWalker(kok, NodeFilter.SHOW_TEXT); if (ac) { kok.dataset.orj = '1'; for (let n, d = w(); (n = d.nextNode());) if (n.__ham) { n.parentElement.dataset.cevirme = ''; n.nodeValue = n.__ham; } toast('Türkçe orijinal'); } else { delete kok.dataset.orj; for (let n, d = w(); (n = d.nextNode());) { n.parentElement.removeAttribute('data-cevirme'); if (n.__ham) n.nodeValue = n.__ham; } toast('Çeviri'); } };
   const ti = $('#tapuIste'); if (ti) ti.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:700">Tapu doğrulaması</h2><div class="k soluk" style="line-height:1.5">İlan verme yetkin resmî kaynaktan (EİDS · e-Devlet / TKGM barkodlu belge) kontrol edilir; gerekirse seninle mesajlaşırız. Tapu belgesinin fotoğrafını yükleme, şifreni asla istemeyiz.</div>
     <label class="alan">Taşınmaz no <span style="font-weight:500">(e-Devlet → Tapu Bilgileri Sorgulama)</span><input id="tNo" maxlength="40" placeholder="örn. 34123456789"></label>
     <label class="alan">Ada / parsel ve not <span style="font-weight:500">(isteğe bağlı)</span><textarea id="tNot" maxlength="500" placeholder="örn. 1234 ada 5 parsel, kat mülkiyetli"></textarea></label><button class="btn tam" id="tGonder">Talep gönder</button>`, (s) => ($('#tGonder', s).onclick = async () => { const no = $('#tNo', s).value.trim(), nt = $('#tNot', s).value.trim(); if (no && !/^[0-9]{8,20}$/.test(no)) return toast('Taşınmaz no en az 8 haneli rakam olmalı.'); if (await dene(() => dogrulamaIste('ilan', i.id, (no ? 'Taşınmaz No: ' + no : '') + (nt ? (no ? ' · ' : '') + nt : '')), 'Talebin alındı; sonuç ilanında görünecek')) sheetKapat(); }));
@@ -1674,9 +1676,9 @@ EKRAN.hesap = () => {
 // Kredi cüzdanı: bakiye + tek dokunuşla kredi alma (Hesabım, yan menü)
 const cuzdanKarti = (b, kucuk) => `<a class="cuzdan${kucuk ? ' kucuk' : ''}" href="#/kredi"><span class="cuzdan-ikon">${ic('kredi', kucuk ? 18 : 22)}</span><div class="ara"><div class="cuzdan-ust">Kredin</div><b>${b.kredi ?? 0} kredi</b>${kucuk ? '' : '<div class="cuzdan-alt">Değer raporu, MülkümDeko ve MülkümVideo için</div>'}</div><span class="cuzdan-btn">Kredi al</span></a>`;
 // Dil: tek satır (seçili dil görünür), dokununca seçim penceresi açılır
-const dilSatiri = () => `<button class="oge" data-dilac data-cevirme>${ic('dil', 20)}Dil / Language / Язык<span class="ok">${DILLER.find(([k]) => k === DIL)[1]} ›</span></button>`;
+const dilSatiri = () => `<button class="oge" data-dilac data-cevirme>${ic('dil', 20)}Dil / Language / Язык / اللغة<span class="ok">${DILLER.find(([k]) => k === DIL)[1]} ›</span></button>`;
 function dilSheet() {
-  sheetAc(`<div data-cevirme><h2 style="font-size:19px;font-weight:800">Dil / Language / Язык</h2><div class="liste">${DILLER.map(([k, a]) => `<button class="oge" onclick="dilSec('${k}')">${ic('dil', 20)}${a}<span class="ok">${k === DIL ? ic('tik', 20, 'var(--birincil)') : ''}</span></button>`).join('')}</div></div>`);
+  sheetAc(`<div data-cevirme><h2 style="font-size:19px;font-weight:800">Dil / Language / Язык / Deutsch / العربية</h2><div class="liste">${DILLER.map(([k, a]) => `<button class="oge" onclick="dilSec('${k}')">${ic('dil', 20)}${a}<span class="ok">${k === DIL ? ic('tik', 20, 'var(--birincil)') : ''}</span></button>`).join('')}</div></div>`);
 }
 document.addEventListener('click', (e) => { if (e.target.closest('[data-dilac]')) { e.preventDefault(); e.stopPropagation(); sheetKapat(); setTimeout(dilSheet, 220); } }, true);
 // Avatar: profil fotoğrafı varsa o, yoksa baş harfler

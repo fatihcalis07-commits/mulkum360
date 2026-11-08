@@ -1,11 +1,17 @@
-// Dil desteği (Türkçe / English / Русский): ekrandaki Türkçe metinler 'cevir' fonksiyonuyla anında çevrilir.
+// Dil desteği (Türkçe / English / Русский / Deutsch / العربية): ekrandaki Türkçe metinler 'cevir' fonksiyonuyla anında çevrilir.
 // Çeviriler sunucuda (ceviri tablosu) ve cihazda saklanır; aynı metin bir kez çevrilir. İlan başlık ve açıklamaları da çevrilir.
 // Bu dosya app.js'ten ÖNCE yüklenir: html lang ayarı Türkçe büyük harf düzeltmesini kapatır.
-const DILLER = [['tr', 'Türkçe'], ['en', 'English'], ['ru', 'Русский']];
+const DILLER = [['tr', 'Türkçe'], ['en', 'English'], ['ru', 'Русский'], ['de', 'Deutsch'], ['ar', 'العربية']];
 let DIL = 'tr';
-try { DIL = localStorage.getItem('dil') || 'tr'; } catch (_) {}
-if (!DILLER.some(([k]) => k === DIL)) DIL = 'tr';
+try {
+  const u = new URLSearchParams(location.search).get('dil'); // QA/derin bağlantı: ?dil=de
+  const kayitli = localStorage.getItem('dil');
+  const tarayici = (navigator.language || 'tr').slice(0, 2);
+  DIL = [u, kayitli, DILLER.some(([k]) => k === tarayici) && tarayici].find((x) => DILLER.some(([k]) => k === x)) || 'tr';
+  if (u) localStorage.setItem('dil', u);
+} catch (_) {}
 document.documentElement.lang = DIL;
+document.documentElement.dir = DIL === 'ar' ? 'rtl' : 'ltr';
 
 function dilSec(k) { try { localStorage.setItem('dil', k); } catch (_) {} location.reload(); }
 

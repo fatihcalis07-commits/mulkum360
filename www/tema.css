@@ -52,3 +52,13 @@ html[data-tema] #raporSayfa,html[data-tema] .rapor{
   --baslik-zemin:linear-gradient(135deg,#1B2A41 0%,#1064BC 100%);
   font-family:'Tektur',system-ui,sans-serif;
 }
+
+/* ---------- Arapça RTL (dir=rtl) ---------- */
+/* app.css flex-first yazıldı; burası okuma yönü + yönü olan ikonları çevirir. İnce ayar cihaz QA'sında. */
+html[dir='rtl'] body{text-align:right}
+html[dir='rtl'] [class*='ok']:not(.paket-k),html[dir='rtl'] .ok{transform:scaleX(-1)}
+html[dir='rtl'] button[data-geri] svg{transform:scaleX(-1)}
+html[dir='rtl'] .sag,html[dir='rtl'] .saga{text-align:left}
+html[dir='rtl'] input,html[dir='rtl'] textarea,html[dir='rtl'] select{text-align:right;direction:rtl}
+html[dir='rtl'] input[name='m2net'],html[dir='rtl'] input[inputmode='numeric'],html[dir='rtl'] input[inputmode='decimal'],html[dir='rtl'] input[type='number'],html[dir='rtl'] input[type='date'],html[dir='rtl'] input[type='email'],html[dir='rtl'] input[type='tel'],html[dir='rtl'] input[type='password']{text-align:left;direction:ltr}
+html[dir='rtl'] .konum-yol{direction:rtl}
