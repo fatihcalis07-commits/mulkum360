@@ -45,18 +45,19 @@ create policy "eids yönetici onaydakini görür" on public.ilanlar for select t
 
 -- 4) YAYIN KAPISI: emlak ilanı, doğrulaması onaylıysa yayına çıkabilir (yönetici müdahalesi ve vasita hariç)
 create or replace function public.ilan_eids_kapisi() returns trigger language plpgsql security definer set search_path = public as $$
-declare faz text; s text;
+declare v_faz text; v_s text;
 begin
-  select faz into faz from public.eids_ayar where id = 1;
-  if coalesce(faz, 'kapali') = 'kapali' or public.yonetici() or new.ana <> 'emlak' then return new; end if;
+  select faz into v_faz from public.eids_ayar where id = 1;
+  if coalesce(v_faz, 'kapali') = 'kapali' or public.yonetici() or new.ana <> 'emlak' then return new; end if;
   if new.durum = 'yayinda' then
-    select sonuc into s from public.ilan_dogrulama where ilan = new.id;
-    if s is distinct from 'onayli' then new.durum := 'onayda'; end if;
+    select sonuc into v_s from public.ilan_dogrulama where ilan = new.id;
+    if v_s is distinct from 'onayli' then new.durum := 'onayda'; end if;
   end if;
   return new;
 end $$;
 drop trigger if exists ilanlar_eids_kapisi on public.ilanlar;
-create trigger ilanlar_eids_kapisi before insert or update on public.ilanlar for each row execute function public.ilan_eids_kapisi();
+-- yalnız yeni kayıt (insert) veya durum YAZILDIĞINDA (yayınlama/geçiş) çalışır; fiyat/başlık/foto düzenlemesi durumu yazmaz → yayındaki ilanı yanlışlıkla yayından düşürmez
+create trigger ilanlar_eids_kapisi before insert or update of durum on public.ilanlar for each row execute function public.ilan_eids_kapisi();
 
 -- 5) Üye doğrulama talebi açar / yeniler → ilan 'onayda'ya çekilir
 create or replace function public.eids_iste(p_ilan uuid, p_yontem text, p_tasinmaz_no text, p_yetki_belge_no text default null) returns void language plpgsql security definer set search_path = public as $$
