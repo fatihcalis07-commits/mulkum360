@@ -37,7 +37,10 @@ async function veriYukle() {
   const { data: { session } } = await sb.auth.getSession();
   S.oturum = session?.user?.id || null;
   S.AYARLAR.vitrinler = vitrinAyar();
-  const il = await islem(sb.from('ilanlar').select('*').order('olusturma', { ascending: false }).limit(1000));
+  const [il] = await Promise.all([
+    islem(sb.from('ilanlar').select('*').order('olusturma', { ascending: false }).limit(1000)),
+    dopingYukle()
+  ]);
   S.ilanlar = il.map(ilanEsle);
   S.kullanicilar = [];
   await profilleriGetir(S.ilanlar.map((i) => i.sahip));

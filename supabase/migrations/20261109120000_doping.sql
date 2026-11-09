@@ -71,14 +71,14 @@ create index if not exists ilan_fiyat_log_idx on public.ilan_fiyat_log (ilan, ta
 
 create or replace function public.ilan_fiyat_kayit() returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  if new.satis_fiyati is distinct from old.satis_fiyati and new.satis_fiyati is not null then
-    insert into ilan_fiyat_log (ilan, fiyat) values (new.id, new.satis_fiyati);
+  if new.fiyat is distinct from old.fiyat and new.fiyat is not null then
+    insert into ilan_fiyat_log (ilan, fiyat) values (new.id, new.fiyat);
   end if;
   return new;
 end $$;
 
 drop trigger if exists ilan_fiyat_kayit on public.ilanlar;
-create trigger ilan_fiyat_kayit after update of satis_fiyati on public.ilanlar for each row execute function public.ilan_fiyat_kayit();
+create trigger ilan_fiyat_kayit after update of fiyat on public.ilanlar for each row execute function public.ilan_fiyat_kayit();
 
 -- 6) RLS
 alter table public.doping_turleri enable row level security;

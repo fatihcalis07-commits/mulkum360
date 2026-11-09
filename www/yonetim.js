@@ -1,8 +1,8 @@
 // Mülküm360 — Yönetim (yalnız yönetici; tüm işlemleri sunucu kuralları da denetler)
 'use strict';
 
-const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Tanımla'], ['vitrin', 'yildiz', 'Ana Sayfa'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim'], ['gosterge', 'grafik', 'Göstergeler']];
-const YON_GRUP = [['Kullanıcı ve kredi', ['ozet', 'uyeler', 'kredi', 'satis']], ['Denetim', ['sikayet', 'dogrulama']], ['Görünürlük', ['vitrin']], ['Veri', ['bolge', 'secim', 'gosterge', 'banka']]];
+const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Tanımla'], ['vitrin', 'yildiz', 'Ana Sayfa'], ['doping', 'tik', 'Doping'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim'], ['gosterge', 'grafik', 'Göstergeler']];
+const YON_GRUP = [['Kullanıcı ve kredi', ['ozet', 'uyeler', 'kredi', 'satis']], ['Denetim', ['sikayet', 'dogrulama']], ['Görünürlük', ['vitrin', 'doping']], ['Veri', ['bolge', 'secim', 'gosterge', 'banka']]];
 let YON_BEKLEYEN = 0; // bekleyen kredi satın alma talebi sayısı (satis.js günceller)
 const HAREKET_IKON ={ kayit: 'kisi', giris: 'kilit', ilan: 'ev', rapor: 'belge', kredi: 'kredi', mesaj: 'mesaj', sikayet: 'bayrak', ai: 'yildiz' };
 const tarihSaat = (t) => (t ? new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
@@ -28,13 +28,13 @@ EKRAN.yonetim = async (sekme) => {
 const YON = {};
 
 YON.ozet = async (el) => {
-  const [st, l] = await Promise.all([istatistik(), uyeler('')]);
+  const [st, l, dopBek] = await Promise.all([istatistik(), uyeler(''), sb.from('doping_satislari').select('id', { head: true, count: 'exact' }).eq('durum', 'bekliyor').then((r) => r.count || 0).catch(() => 0)]);
   const gun = 86400000, simdi = Date.now();
   const yeni7 = l.filter((u) => simdi - u.kayit < 7 * gun).length, aktif7 = l.filter((u) => u.son_giris && simdi - u.son_giris < 7 * gun).length;
   const toplamKredi = l.reduce((t, u) => t + (u.kredi || 0), 0), rapor = l.reduce((t, u) => t + u.rapor, 0);
   const k = (ik, b, a, h, renk) => `<a class="yon-k ${renk}" href="${h || '#/yonetim/ozet'}"><span>${ic(ik, 18)}</span><b>${b}</b><small>${a}</small></a>`;
   const test = S.ilanlar.filter((i) => i.ornek).length;
-  const uyari = [st.sikayet ? [`${st.sikayet} açık şikayet`, '#/yonetim/sikayet'] : null, YON_BEKLEYEN ? [`${YON_BEKLEYEN} kredi talebi`, '#/yonetim/satis'] : null, test ? [`${test} test ilanı yayında`, '#/yonetim/ozet'] : null].filter(Boolean);
+  const uyari = [st.sikayet ? [`${st.sikayet} açık şikayet`, '#/yonetim/sikayet'] : null, YON_BEKLEYEN ? [`${YON_BEKLEYEN} kredi talebi`, '#/yonetim/satis'] : null, dopBek ? [`${dopBek} doping talebi`, '#/yonetim/doping'] : null, test ? [`${test} test ilanı yayında`, '#/yonetim/ozet'] : null].filter(Boolean);
   el.innerHTML = `${uyari.length ? `<div class="yon-uyari">${uyari.map(([m, h]) => `<a href="${h}">${ic('uyari', 15)}${m}</a>`).join('')}</div>` : ''}
     <div class="bolum-bas"><h2>Üyeler</h2></div>
     <div class="yon-izgara">${k('kisi', st.uye, 'Toplam üye', '#/yonetim/uyeler', 'p2')}${k('davet', yeni7, 'Yeni (7 gün)', '#/yonetim/uyeler', 'p3')}${k('goz', aktif7, 'Aktif (7 gün)', '#/yonetim/uyeler', 'p4')}</div>
@@ -136,7 +136,7 @@ YON.dogrulama = async (el) => {
 
 YON.vitrin = async (el) => {
   const V = S.AYARLAR.vitrinler || vitrinAyar();
-  const aciklama = { onecikan: 'Doğrulanmış ve zengin fotoğraflı ilanlar (doping sistemi gelince dopingliler başa geçer)', firsat: 'Fiyatı en az %7 düşürülmüş ilanlar', dusen: 'Fiyatı düşen tüm ilanlar', proje: '"Proje adı" işaretli ilanlar' };
+  const aciklama = { onecikan: 'Dopingteki ilanlar başta; sonra doğrulanmış ve zengin fotoğraflılar', firsat: 'Fiyatı en az %7 düşürülmüş ilanlar', dusen: 'Fiyatı düşen tüm ilanlar', proje: '"Proje adı" işaretli ilanlar' };
   const satir = (k, i) => { const a = V.aktif[k] !== false; return `<div class="kart satir" data-vk="${k}"><button class="btn sade kucuk" data-yuk="${k}" ${i ? '' : 'disabled'}>↑</button><button class="btn sade kucuk" data-asagI="${k}" ${i === V.sira.length - 1 ? '' : 'disabled'}>↓</button><div class="ara"><b>${kac(V.ad[k] || k)}</b><div class="k soluk">${aciklama[k] || ''}</div></div><button class="btn ${a ? 'guven' : 'sade'} kucuk" data-cevir="${k}">${a ? 'Açık' : 'Kapalı'}</button></div>`;
   };
   el.innerHTML = `${V.sira.map((k, i) => satir(k, i)).join('')}<div class="k soluk" style="margin-top:8px">Sıra ve görünürlük bu cihazda anında geçerli olur; tüm kullanıcılara yayılması ayarlar tablosu migration'ının uygulanmasına bağlıdır (MODULLER-12-16.md).</div>`;
@@ -201,4 +201,59 @@ YON.gosterge = async (el) => {
     const r = { il: v.il, ilce: v.ilce.trim(), donem: v.donem.trim(), gosterge: v.gosterge.trim(), deger: d, birim: v.birim.trim() || null, kaynak: v.kaynak.trim(), guncelleme: new Date().toISOString() };
     if (await dene(() => gostergeKaydet(r), 'Gösterge kaydedildi')) { e.target.deger.value = ''; }
   };
+};
+
+// FAZ 4 — Doping: satın alma talepleri (onaylayınca başlar), aktifler, ücretsiz başlatma ve paket/fiyat yönetimi.
+let YON_DOP_BEK = 0;
+YON.doping = async (el) => {
+  const [talepler, akt, paketler] = await Promise.all([
+    dopingTaleplerGetir(),
+    sb.from('ilan_doping').select('*').eq('durum', 'aktif').order('bitis').then((r) => r.data || []),
+    sb.from('doping_paketleri').select('*').order('sira').then((r) => r.data || [])
+  ]);
+  YON_DOP_BEK = talepler.length;
+  const tAd = (k) => (S.DOPING.turler[k] || {}).ad || k;
+  const yayinla = (id) => { const i = ilan(id); return i ? `<a href="#/ilan/${i.id}">${kac(i.baslik)}</a>` : '<span class="soluk">İlan silinmiş</span>'; };
+  el.innerHTML = `
+    <div class="bolum-bas"><h2 style="font-size:15px">Bekleyen talepler</h2></div>
+    ${talepler.length ? `<div class="liste">${talepler.map((t) => { const k = kullanici(t.kullanici); return `<div class="oge" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div><b>${tAd(paketler.find((p) => p.id === t.paket)?.tur)} · ${kac(t.paket)}</b> · ${tl(t.tutar)} · ${kac(k ? k.ad : 'Üye')} · ${tarihSaat(t.olusturma)}</div>
+      <div class="k soluk">${yayinla(t.ilan)}</div>
+      <div class="izgara2"><button class="btn sade kucuk" data-red="${t.id}">Reddet</button><button class="btn guven kucuk" data-onay="${t.id}" data-ilan="${t.ilan}" data-paket="${t.paket}">Onayla ve başlat</button></div></div>`; }).join('')}</div>` : '<div class="bos">Bekleyen doping talebi yok</div>'}
+    <div class="bolum-bas"><h2 style="font-size:15px">Dopingte olan ilanlar</h2></div>
+    ${akt.length ? `<div class="liste">${akt.map((d) => `<div class="oge" style="align-items:center">${d.anlik ? '' : ''}<div class="ara" style="min-width:0"><div>${yayinla(d.ilan)}</div><div class="k soluk">${tAd(d.tur)} · bitiş ${tarihSaat(d.bitis)}${d.anlik ? ` · başlangıçta ${d.anlik.g || 0} görüntülenme` : ''}</div></div><button class="btn sade kucuk" data-bitir="${d.id}">Bitir</button></div>`).join('')}</div>` : '<div class="bos">Şu anda dopingte ilan yok</div>'}
+    <form class="kart" id="df" style="display:flex;flex-direction:column;gap:10px"><h3 style="margin:0">Ücretsiz başlat (deneme / hediye)</h3>
+      <div class="k soluk">Satın alma olmadan yönetici olarak başlatır; rozet ve sıralama avantajı anında devreye girer.</div>
+      <label class="alan">İlan<select name="ilan" required>${S.ilanlar.filter((x) => x.durum === 'yayinda').slice(0, 300).map((x) => `<option value="${x.id}">${kac(x.baslik)} — ${kac(x.il)}</option>`).join('')}</select></label>
+      <label class="alan">Paket<select name="paket" required>${paketler.map((p) => `<option value="${p.id}">${tAd(p.tur)} · ${p.gun} gün${p.aktif ? '' : ' (satışta değil)'}</option>`).join('')}</select></label>
+      <button class="btn koyu">Dopingi başlat</button></form>
+    <div class="bolum-bas"><h2 style="font-size:15px">Paketler ve fiyatlar</h2></div>
+    <div class="k soluk" style="margin-bottom:6px">Fiyatı girip "Satışta"yı açtığın an kullanıcılar o paketi görebilir. İndirim istersen oran ve son tarihi doldur.</div>
+    ${paketler.map((p) => `<form class="kart" data-pk="${p.id}" style="display:flex;flex-direction:column;gap:8px">
+      <b style="font-size:13.5px">${tAd(p.tur)} · ${p.gun} gün <span class="k soluk">(${p.id}${p.play_urun ? ' · Play: ' + kac(p.play_urun) : ' · Play ürünü yok'})</span></b>
+      <div class="izgara3"><label class="alan">Fiyat (TL)<input name="fiyat" inputmode="decimal" value="${+p.fiyat || ''}" placeholder="0"></label>
+      <label class="alan">İndirim %<input name="indirim" inputmode="decimal" value="${p.indirim_orani != null ? +p.indirim_orani * 100 : ''}"></label>
+      <label class="alan">Kampanya bitiş<input name="gecerlilik" type="date" value="${p.gecerlilik || ''}"></label></div>
+      <div class="izgara2"><button class="btn ${p.aktif ? 'guven' : 'sade'} kucuk" type="button" data-togglesat>${p.aktif ? 'Satışta ✓' : 'Satışta değil'}</button><button class="btn koyu kucuk">Kaydet</button></div></form>`).join('')}`;
+  el.querySelectorAll('[data-onay]').forEach((b) => (b.onclick = async () => {
+    if (await dene(() => dopingBaslat(b.dataset.ilan, b.dataset.paket, b.dataset.onay), 'Doping başlatıldı — rozet ve sıra avantajı aktif')) YON.doping(el);
+  }));
+  el.querySelectorAll('[data-red]').forEach((b) => (b.onclick = async () => { if (await dene(() => dopingTalepRed(b.dataset.red), 'Talep reddedildi')) YON.doping(el); }));
+  el.querySelectorAll('[data-bitir]').forEach((b) => (b.onclick = async () => { if (await dene(() => dopingBitir(b.dataset.bitir), 'Doping sonlandırıldı')) { await dopingYukle(); ciz(); } YON.doping(el); }));
+  $('#df').onsubmit = async (e) => {
+    e.preventDefault(); const v = Object.fromEntries(new FormData(e.target));
+    if (await dene(() => dopingBaslat(v.ilan, v.paket), 'Doping başlatıldı')) { await dopingYukle(); ciz(); }
+  };
+  el.querySelectorAll('[data-pk]').forEach((f) => {
+    const id = f.dataset.pk, kaydet = async (aktif) => {
+      const v = Object.fromEntries(new FormData(f));
+      const ind = v.indirim === '' ? null : Math.min(0.95, Math.max(0, +v.indirim / 100));
+      const fiyat = v.fiyat === '' ? 0 : +v.fiyat;
+      if (isNaN(fiyat) || fiyat < 0) return toast('Fiyatı kontrol et');
+      const g = { fiyat, indirim_orani: ind, gecerlilik: v.gecerlilik || null, ...(aktif != null ? { aktif } : {}) };
+      if (await dene(() => islem(sb.from('doping_paketleri').update(g).eq('id', id)), 'Paket güncellendi')) YON.doping(el);
+    };
+    f.onsubmit = (e) => { e.preventDefault(); kaydet(null); };
+    f.querySelector('[data-togglesat]').onclick = () => kaydet(!f.querySelector('[data-togglesat]').textContent.includes('✓'));
+  });
 };
