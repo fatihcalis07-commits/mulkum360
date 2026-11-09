@@ -187,6 +187,7 @@ function ozetSatir(i) {
 }
 function etiketHtml(i) {
   if (i.durum === 'satildi') return `<span class="etiket satildi">${i.ana === 'emlak' && i.alanlar?.islem === 'Kiralık' ? 'Kiralandı' : 'Satıldı'}</span>`;
+  if (i.durum === 'onayda') return eidsOnayda();
   if (i.ornek) return `<span class="etiket" style="background:#0B1B33;color:#fff">Test ilanı</span>`;
   const e = emsalDurumu(i);
   if (+i.alanlar?.oncekiFiyat > i.fiyat) return `<span class="etiket uygun">Fiyat düştü</span>`;
@@ -687,7 +688,7 @@ EKRAN.ilan = (id) => {
       ${sahip ? `<div class="bolum-bas"><h2>İlanını güçlendir</h2><a href="#/kredi">${b.kredi ?? 0} kredi · Kredi al</a></div>` : ''}
       ${(sahip && fotolar.length) || (f.videolar || []).length ? '<div class="kart" id="videoK"><div class="k soluk">Videolar yükleniyor…</div></div>' : ''}
       ${sahip && fotolar.length ? `<button class="kart satir" id="dekoAc" style="text-align:left;width:100%;border:0;font:inherit;color:inherit;cursor:pointer">${ic('yildiz', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümDeko ile fotoğraf oluştur</b><div class="k soluk">Odalarını Modern, Klasik, İskandinav ya da Rustik stilde yapay zekâyla döşe · görsel başına 1 kredi</div></div><span class="ok">›</span></button>` : ''}
-      ${sahip && i.ana === 'emlak' && !i.dogrulanmis ? `<button class="kart satir" id="tapuIste" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>Tapu doğrulaması iste</b><div class="k soluk">Onaylanırsa ilanında "Tapu bilgisi doğrulandı" rozeti çıkar; alıcı güveni artar</div></div><span class="ok">›</span></button>` : ''}
+      ${sahip && i.ana === 'emlak' && eidsAcik() && i.durum === 'onayda' ? `<button class="kart satir" data-eids="${i.id}" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>EİDS doğrulaması sürüyor</b><div class="k soluk">Onaylanınca ilanın otomatik yayına çıkar; bilgileri güncellemek için talebi yenileyebilirsin</div></div><span class="ok">›</span></button>` : sahip && i.ana === 'emlak' && !i.dogrulanmis ? `<button class="kart satir" id="tapuIste" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>Tapu doğrulaması iste</b><div class="k soluk">Onaylanırsa ilanında "Tapu bilgisi doğrulandı" rozeti çıkar; alıcı güveni artar</div></div><span class="ok">›</span></button>` : ''}
       ${!sahip && !satildi ? `<button class="kart satir" id="randevu" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('takvim', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Yerinde görmek için randevu iste</b><div class="k soluk">Uygun zamanını seç, satıcıya mesaj olarak gitsin</div></div><span class="ok">›</span></button>` : ''}
       ${(f.deko || []).length ? `<div class="kart" id="dekoKart"><h3>Yapay zekâ ile dekorasyon önerileri</h3>
         <div class="ciplar">${f.deko.map((d, n) => `<button class="cip ${n ? '' : 'secili'}" data-deko="${n}">${kac(d.oda)} · ${kac(d.stil)}</button>`).join('')}</div>
@@ -1427,7 +1428,10 @@ EKRAN.ver = (id) => {
     govde = `<div style="max-width:220px">${ilanKart(i).replace('href="#/ilan/onizleme"', '')}</div>
       <div class="kart"><b>${kac(t.baslik)}</b><div class="k soluk" style="margin-top:4px">${ALT[t.alt].ad} · ${ozetSatir(i)} · ${konum(i)}</div><div class="k soluk">${t.fotolar.length} fotoğraf</div></div>
       <label class="satir k" style="align-items:flex-start"><input type="checkbox" id="dogru" style="width:22px;height:22px;flex-shrink:0"><span style="line-height:1.5">Bilgilerin doğru olduğunu, ${i.ana === 'emlak' ? 'mülkün sahibi ya da yetkili temsilcisi' : 'aracın sahibi ya da yetkili satıcısı'} olduğumu ve <a href="#/metin/kosullar">ilan kurallarını</a> kabul ettiğimi onaylıyorum.</span></label>
-      ${i.ana === 'emlak' ? `<div class="bilgi-k">${ic('belge', 18)}<div>Emlak ilanlarında, yürürlükteki mevzuat gereği ilan sahibinin tapu bilgisiyle doğrulanması istenebilir. Bu doğrulama sunucu bağlantısıyla eklenecek.</div></div>` : ''}`;
+      ${i.ana === 'emlak' ? (eidsAcik() ? `<div class="bilgi-k">${ic('kalkan', 18)}<div><b>EİDS doğrulaması zorunlu.</b> İlanın, kimlik ve mülkiyet/yetki doğrulandıktan sonra yayına çıkar. Taşınmaz numarasını e-Devlet "Tapu Bilgileri Sorgulama" hizmetinden veya yeni tip tapu senedinden alabilirsin.</div></div>
+      <label class="alan">İlanı kim veriyor?<select id="eYontem"><option value="sahibim" ${t.eids?.yontem === 'sahibim' || !t.eids ? 'selected' : ''}>Taşınmazın sahibiyim</option><option value="hisim" ${t.eids?.yontem === 'hisim' ? 'selected' : ''}>Eşim ya da 1./2. derece kan hısmımın taşınmazı</option>${ben()?.ofis ? `<option value="yetkili" ${t.eids?.yontem === 'yetkili' ? 'selected' : ''}>Yetkili emlak işletmesiyim (sahibi e-Devlet'ten yetkilendirdi)</option>` : ''}</select></label>
+      <label class="alan">Taşınmaz numarası <span style="font-weight:500">(zorunlu)</span><input id="eNo" inputmode="numeric" maxlength="20" value="${kac(t.eids?.no || '')}"></label>
+      <label class="alan" id="eYetkiK"${t.eids?.yontem === 'yetkili' ? '' : ' hidden'}>Yetki belge numarası <span style="font-weight:500">(yetkili işletme için)</span><input id="eYetki" maxlength="20" value="${kac(t.eids?.yetki || '')}"></label>` : `<div class="bilgi-k">${ic('belge', 18)}<div>Emlak ilanlarında, yürürlükteki mevzuat gereği ilan sahibinin tapu bilgisiyle doğrulanması istenebilir. Bu doğrulama sunucu bağlantısıyla eklenecek.</div></div>`) : ''}`;
   }
   app.innerHTML = bas + `<div class="ic" style="padding-bottom:110px">${t.adim > 0 ? `<div id="guc">${gucHtml(t)}</div>` : ''}${govde}<div class="hata-yazi" id="hata" role="alert"></div></div>
     <div class="alt-bar"><div class="alt-bar-ic">${t.adim > (t.id ? 1 : 0) ? `<button class="btn sade" id="geriAdim" style="flex:.6">Geri</button>` : ''}<button class="btn" id="ileri">${t.adim === 3 ? (t.id ? 'Değişiklikleri kaydet' : 'İlanı yayınla') : 'Devam et'}</button></div></div>`;
@@ -1462,6 +1466,7 @@ EKRAN.ver = (id) => {
   const bi = $('#baslik'); if (bi) bi.oninput = () => { t.baslik = bi.value.trim(); $('#guc').innerHTML = gucHtml(t); };
   const ac = $('#aciklama'); if (ac) ac.addEventListener('input', () => { t.aciklama = ac.value.trim(); $('#guc').innerHTML = gucHtml(t); });
   if (t.adim === 2) { konumSecBagla($('#il'), $('#ilce'), $('#mahalle'), () => { oneriCiz(); const m = $('#mahalle'); if (m) m.dataset.bos = $('#ilce').value ? 'Seç' : 'Önce ilçe seç'; }); oneriCiz(); sokakOneriBagla(); app.querySelectorAll('[data-alan],#il,#ilce').forEach((x) => (x.onchange = oneriCiz)); const fy = $('#fiyat'); fy.oninput = () => { const n = fy.value.replace(/\D/g, ''); fy.value = n ? sayiBicim(+n) : ''; }; }
+  if (t.adim === 3) { const ey = $('#eYontem'); if (ey) ey.onchange = () => { const k = $('#eYetkiK'); if (k) k.hidden = ey.value !== 'yetkili'; }; }
   if (typeof belgeOkuBagla === 'function') belgeOkuBagla();
   const ia = $('#iceAktar'); if (ia) ia.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:800">İlanını aktar</h2>
       <div class="k soluk">${tarayiciVar() ? 'İlanının bağlantısını yapıştır (sahibinden dahil). İlan açılır, okunur ve kendiliğinden kapanır; başlık, fiyat, m², özellikler, açıklama ve fotoğraflar otomatik gelir. İstersen ilan metnini de yapıştırabilirsin.' : 'İlanının bağlantısını ya da başlık, fiyat, özellikler ve açıklama metnini yapıştır. Bazı siteler (ör. sahibinden) bağlantıdan okumaya izin vermez; o zaman metni kopyala.'}</div>
@@ -1564,12 +1569,23 @@ EKRAN.ver = (id) => {
     }
     if (t.adim === 3) {
       if (!$('#dogru').checked) return hataGoster(h, 'Yayınlamak için onay kutusunu işaretle.');
+      let eid = null;
+      if (eidsAcik() && ALT[t.alt].ana === 'emlak') {
+        const no = ($('#eNo')?.value || '').replace(/\D/g, ''), yt = $('#eYontem')?.value || 'sahibim', yk = ($('#eYetki')?.value || '').trim();
+        if (!t.id || no || yk || yt !== 'sahibim') {
+          if (!/^[0-9]{8,20}$/.test(no)) return hataGoster(h, 'EİDS doğrulaması için taşınmaz numarası (8–20 hane) gerekli — e-Devlet Tapu Bilgileri Sorgulama.');
+          if (yt === 'yetkili' && yk.length < 6) return hataGoster(h, 'Yetki belge numarasını gir.');
+          eid = { yontem: yt, no, yetki: yk }; t.eids = eid;
+        }
+      }
       const btn = $('#ileri'); btn.disabled = true; btn.textContent = 'Kaydediliyor…';
       const duzenleme = !!t.id;
       const i = await dene(() => ilanKaydet(t, (m) => (btn.textContent = m)));
       if (!i) { btn.disabled = false; btn.textContent = duzenleme ? 'Değişiklikleri kaydet' : 'İlanı yayınla'; return; }
-      taslak = null; toast(duzenleme ? 'İlan güncellendi' : 'İlanın yayında!'); git('#/ilan/' + i.id);
-      if (!duzenleme) setTimeout(() => yayinSonrasi(ilan(i.id) || i), 900);
+      let eidsOldu = false;
+      if (eid) { try { await eidsIste(i.id, eid.yontem, eid.no, eid.yetki); eidsOldu = true; } catch (x) { toast('İlan kaydedildi; doğrulama talebi gönderilemedi: ' + hataMetni(x)); } }
+      taslak = null; toast(duzenleme ? (eidsOldu ? 'Kaydedildi — doğrulama sonrası yayına çıkacak' : 'İlan güncellendi') : eidsOldu ? 'İlanın doğrulamaya alındı — onaylanınca otomatik yayına çıkacak' : 'İlanın yayında!'); git('#/ilan/' + i.id);
+      if (!duzenleme && !eid) setTimeout(() => yayinSonrasi(ilan(i.id) || i), 900);
       return;
     }
     t.adim++; ciz();
@@ -1636,12 +1652,12 @@ EKRAN.hesap = () => {
     <div class="ic">
       ${cuzdanKarti(b)}
       <div class="bolum-bas"><h2>İlanlarım</h2>${benim.length ? `<a href="#/ver">+ Yeni ilan</a>` : ''}</div>
-      <div class="ciplar"><button class="cip ${sekme === 'yayinda' ? 'secili' : ''}" data-s="yayinda">Yayında · ${benim.filter((i) => i.durum === 'yayinda').length}</button><button class="cip ${sekme === 'satildi' ? 'secili' : ''}" data-s="satildi">Satıldı / kiralandı · ${benim.filter((i) => i.durum === 'satildi').length}</button></div>
+      <div class="ciplar"><button class="cip ${sekme === 'yayinda' ? 'secili' : ''}" data-s="yayinda">Yayında · ${benim.filter((i) => i.durum === 'yayinda').length}</button>${eidsAcik() && benim.some((i) => i.durum === 'onayda') ? `<button class="cip ${sekme === 'onayda' ? 'secili' : ''}" data-s="onayda">Doğrulanıyor · ${benim.filter((i) => i.durum === 'onayda').length}</button>` : ''}<button class="cip ${sekme === 'satildi' ? 'secili' : ''}" data-s="satildi">Satıldı / kiralandı · ${benim.filter((i) => i.durum === 'satildi').length}</button></div>
       ${liste.length ? liste.map((i) => {
         const e = emsalDurumu(i);
         const ip = e && e.konum > 0.7 && Date.now() - i.olusturma > 7 * 86400000 ? `<div class="uyari-k" style="margin-top:6px">${ic('grafik', 16)}<div>Fiyatın benzer ilanların üstünde. ${tl(e.orta)} civarı daha çok ilgi görebilir.<br><a href="#/degerle?ilan=${i.id}" style="font-weight:700">Değer raporu al · 1 kredi ›</a></div></div>` : '';
         return `<div style="display:flex;flex-direction:column;gap:6px">${ilanSatir(i, `<div class="perf"><span>${ic('goz', 12)} ${i.goruntulenme || 0}</span><span>${ic('kalp', 12)} ${(S.favSayilari || {})[i.id] || 0}</span><span>${ic('mesaj', 12)} ${S.sohbetler.filter((s) => s.ilanId === i.id && s.mesajlar.length).length}</span><span>${Math.max(1, Math.round((Date.now() - i.olusturma) / 86400000))}. gün</span></div>`)}${ip}
-          <div class="izgara3"><a class="btn sade kucuk" href="#/ver/${i.id}">Düzenle</a><button class="btn sade kucuk" data-durum="${i.id}">${i.durum === 'yayinda' ? 'Satıldı' : 'Yayına al'}</button><button class="btn sade kucuk" data-ilansil="${i.id}" style="color:var(--hata)">Sil</button></div>
+          <div class="izgara3"><a class="btn sade kucuk" href="#/ver/${i.id}">Düzenle</a>${i.durum === 'onayda' && eidsAcik() ? `<button class="btn sade kucuk" data-eids="${i.id}">EİDS doğrulaması</button>` : `<button class="btn sade kucuk" data-durum="${i.id}">${i.durum === 'yayinda' ? 'Satıldı' : 'Yayına al'}</button>`}<button class="btn sade kucuk" data-ilansil="${i.id}" style="color:var(--hata)">Sil</button></div>
           ${(i.fotolar || []).length < FOTO_SINIR ? `<label class="btn ${(i.fotolar || []).length ? 'sade' : 'cizgili'} kucuk tam">${ic('foto', 16)}${(i.fotolar || []).length ? 'Fotoğraf ekle (' + i.fotolar.length + '/' + FOTO_SINIR + ')' : 'Fotoğraf ekle — bu ilanda fotoğraf yok'}<input type="file" accept="image/*" multiple hidden data-fotoekle="${i.id}"></label>` : ''}</div>`;
       }).join('') : bosDurum('ev', sekme === 'yayinda' ? 'Yayında ilanın yok' : 'Henüz satış yok', sekme === 'yayinda' ? 'İlk ilanını bir dakikada ver.' : 'Satılan ya da kiralanan ilanların burada listelenir.', sekme === 'yayinda' ? '<a class="btn" href="#/ver">İlan ver</a>' : '')}
       ${b.ofis ? '' : `<a class="kart satir" href="#/profil" style="text-decoration:none;color:inherit">${ic('kalkan', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Emlak ofisi misin?</b><div class="k soluk">Hesabını ofise çevir; panel, toplu yükleme ve ofis rozeti açılsın</div></div><span class="ok">›</span></a>`}

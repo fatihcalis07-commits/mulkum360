@@ -124,15 +124,36 @@ YON.sikayet = async (el) => {
 
 // Emlak ofisi (yetki belgesi) ve ilan (tapu) doğrulama talepleri: belge yönetici tarafından ayrıca kontrol edilir
 YON.dogrulama = async (el) => {
+  let eidsHtml = '';
+  if (await eidsFazGetir() !== 'kapali') {
+    const k = await eidsKuyruk();
+    if (k.length) {
+      await profilleriGetir(k.map((t) => t.sahip));
+      const eksik = [...new Set(k.map((t) => t.ilan).filter((id) => id && !ilan(id)))];
+      if (eksik.length) (await islem(sb.from('ilanlar').select('*').in('id', eksik))).forEach((r) => S.ilanlar.push(ilanEsle(r)));
+      eidsHtml = `<div class="bolum-bas"><h2 style="font-size:15px">EİDS doğrulama kuyruğu · ${k.length}</h2></div><div class="liste">${k.map((t) => { const i = ilan(t.ilan), u = kullanici(t.sahip); return `<div class="oge" style="flex-direction:column;align-items:stretch;gap:6px"><div><b>${t.yontem === 'yetkili' ? 'Yetkili işletme ilanı' : t.yontem === 'hisim' ? 'Eş / hısım ilanı' : 'Sahibinden ilan'}</b> · ${kac(u.ad)}${u.firma ? ' · ' + kac(u.firma) : ''}</div>
+        <div class="k soluk">${i ? `<a href="#/ilan/${i.id}">${kac(i.baslik)}</a> · ` : ''}Taşınmaz no: <b>${kac(t.tasinmaz_no)}</b>${t.yetki_belge_no ? ' · Yetki belge: <b>' + kac(t.yetki_belge_no) + '</b>' : ''} · ${tarihSaat(t.olusturma)}</div>
+        <div class="izgara2"><button class="btn sade kucuk" data-eidsred="${t.ilan}">Reddet</button><button class="btn guven kucuk" data-eidsonay="${t.ilan}">Onayla ve yayınla</button></div></div>`; }).join('')}</div>`;
+    } else eidsHtml = `<div class="bolum-bas"><h2 style="font-size:15px">EİDS doğrulama kuyruğu</h2></div><div class="k soluk">Bekleyen doğrulama yok.</div>`;
+  }
   const l = await dogrulamaTalepleri();
-  if (!l.length) { el.innerHTML = bosDurum('kalkan', 'Bekleyen talep yok', 'Üyeler profilinden ya da ilanından doğrulama istediğinde burada görünür.'); return; }
+  if (!l.length) { el.innerHTML = eidsHtml + bosDurum('kalkan', 'Bekleyen talep yok', 'Üyeler profilinden ya da ilanından doğrulama istediğinde burada görünür.'); baglaEids(el); return; }
   await profilleriGetir(l.map((t) => t.sahip));
-  el.innerHTML = `<div class="liste">${l.map((t) => { const k = kullanici(t.sahip), i = t.ilan && ilan(t.ilan); return `<div class="oge" style="flex-direction:column;align-items:stretch;gap:6px"><div><b>${t.tur === 'emlakci' ? 'Emlak ofisi' : 'Tapu / ilan'}</b> · ${kac(k.ad)}${k.firma ? ' · ' + kac(k.firma) : ''}</div>
+  el.innerHTML = eidsHtml + `<div class="liste">${l.map((t) => { const k = kullanici(t.sahip), i = t.ilan && ilan(t.ilan); return `<div class="oge" style="flex-direction:column;align-items:stretch;gap:6px"><div><b>${t.tur === 'emlakci' ? 'Emlak ofisi' : 'Tapu / ilan'}</b> · ${kac(k.ad)}${k.firma ? ' · ' + kac(k.firma) : ''}</div>
     <div class="k soluk">${t.tur === 'emlakci' ? 'Yetki belgesi no: ' + kac(k.yetkiNo || '—') : i ? `<a href="#/ilan/${i.id}">${kac(i.baslik)}</a>` : 'İlan silinmiş'} · ${tarihSaat(t.olusturma)}${t.notu ? '<br>Not: ' + kac(t.notu) : ''}</div>
     <div class="izgara2"><button class="btn sade kucuk" data-karar="${t.id}" data-onay="0">Reddet</button><button class="btn guven kucuk" data-karar="${t.id}" data-onay="1">Onayla</button></div></div>`; }).join('')}</div>
-    <div class="k soluk">Onaylamadan önce belgeyi resmî kaynaktan kontrol et: yetki belgesi → Ticaret Bakanlığı TTBS (ttbs.gtb.gov.tr/BelgeSorgula); tapu → e-Devlet barkodlu belgeyi turkiye.gov.tr/belge-dogrulama'da teyit et (belge yaşı ≤ 30 gün). Ayrıntı: TAPU-DOGRULAMA.md.</div>`;
+    <div class="k soluk">Onaylamadan önce belgeyi resmî kaynaktan kontrol et: yetki belgesi → Ticaret Bakanlığı TTBS (ttbs.gtb.gov.tr/BelgeSorgula); tapu → e-Devlet barkodlu belgeyi turkiye.gov.tr/belge-dogrulama'da teyit et (belge yaşı ≤ 30 gün). EİDS: bireyselde malik/hısımlık, yetkilide belge + malikin e-Devlet yetkilendirmesi aranır; onay → ilan yayına çıkar. Ayrıntı: docs/EIDS.md · TAPU-DOGRULAMA.md.</div>`;
   el.querySelectorAll('[data-karar]').forEach((b) => (b.onclick = async () => { if (await dene(() => dogrulamaKarar(b.dataset.karar, b.dataset.onay === '1'), b.dataset.onay === '1' ? 'Onaylandı' : 'Reddedildi')) YON.dogrulama(el); }));
+  baglaEids(el);
 };
+function baglaEids(el) {
+  el.querySelectorAll('[data-eidsonay],[data-eidsred]').forEach((b) => (b.onclick = async () => {
+    const onay = !!b.dataset.eidsonay;
+    if (onay && !(await onayla('EİDS doğrulaması', 'Taşınmaz no ve yöntem resmî kayıtlardan (tapu/e-Devlet, gerekiyorsa TTBS + malik yetkilendirmesi) kontrol edildi mi? Onaylanan ilan yayına çıkar.', 'Evet, kontrol ettim — onayla'))) return;
+    await dene(() => eidsKarar(b.dataset.eidsonay || b.dataset.eidsred, onay, onay ? 'Yönetici resmî sorgu teyidi (manuel faz)' : null), onay ? 'Onaylandı — ilan yayında' : 'Reddedildi — ilan kaldırıldı');
+    YON.dogrulama(el);
+  }));
+}
 
 YON.vitrin = async (el) => {
   const V = S.AYARLAR.vitrinler || vitrinAyar();
