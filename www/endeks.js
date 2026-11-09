@@ -81,4 +81,6 @@ async function endeksKartiYukle(i) {
       </div>` : ''}
       <div class="k soluk" style="font-size:12px;margin-top:8px;line-height:1.5">${mh ? `Bugünkü m² fiyatı Mülküm360'taki ${kac(mh.ad)} satılık ilanlarından hesaplanır.` : `Bugünkü m² fiyatı TCMB'nin ${kac(i.il)} değerleme verisidir; mahallede yeterli ilan olunca mahalle fiyatı gösterilir.`} Mahalle düzeyinde resmî endeks yayımlanmadığından geçmiş fiyatlar, TCMB Konut Fiyat Endeksi'nin ${bolge === 'TR' ? 'Türkiye geneli' : KFE_BOLGE[bolge].length > 1 ? `${KFE_BOLGE[bolge].join(', ')} bölgesi` : `${KFE_BOLGE[bolge][0]}`} değişimiyle geriye hesaplanan tahminlerdir. Rakamlar enflasyondan arındırılmamıştır.</div>`;
   } catch (x) { console.error('endeks', x); kap.remove(); }
+  // İl yatırım endeksi şeridi (FAZ 2, TÜİK+TCMB): kartı bloklamadan sonuna eklenir
+  if (i.il && typeof yatirimEndeksi === 'function') yatirimEndeksi(i.il).then((e) => { const k2 = document.getElementById('endeksK'); if (k2 && e && e.skor != null && !k2.querySelector('.yat-endeks')) { const d = document.createElement('div'); d.className = 'yat-endeks'; d.innerHTML = yatirimEndeksiHtml(e); k2.appendChild(d); } }).catch(() => {});
 }

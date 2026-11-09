@@ -113,7 +113,8 @@ async function raporEkVeri(v, h, adim = () => {}) {
   const b = ben(), emlak = v.ana === 'emlak';
   const resmi = Promise.all([
     emlak && v.il ? secimSonuclari(v.il, v.ilce).catch(() => null) : null,
-    v.il ? gostergeler(v.il, v.ilce).catch(() => []) : []
+    v.il ? gostergeler(v.il, v.ilce).catch(() => []) : [],
+    emlak && v.il ? yatirimEndeksi(v.il).catch(() => null) : null
   ]).finally(() => adim(3));
   let konum = null; try { if (emlak) konum = await konumVerisi(v); } catch (_) {}
   adim(0);
@@ -121,11 +122,11 @@ async function raporEkVeri(v, h, adim = () => {}) {
     (emlak && konum ? cevreVerisi(konum, v).catch(() => null) : Promise.resolve(null)).finally(() => adim(1)),
     (emlak && konum ? depremVerisi(konum).catch(() => null) : Promise.resolve(null)).finally(() => adim(2))
   ]);
-  const [secim, gost] = await resmi;
+  const [secim, gost, yatEnd] = await resmi;
   const beyan = Object.fromEntries(['cephe', 'kat', 'manzara', 'otopark', 'site', 'tadilat', 'iskan', 'aidat', 'faiz', 'vade', 'pesinat', 'imarTipi', 'arsaAlani', 'kaks', 'taks', 'hmax', 'rayic', 'rayicYil'].map((k) => [k, v[k] || '']));
   const saha = []; for (const u of v._sahaFoto || []) { try { saha.push(await fotoYukle(u)); } catch (_) {} } delete v._sahaFoto;
   return {
-    konum, secim, cevre, deprem, gostergeler: gost, beyan, saha, trend: fiyatTrendi(v), piyasa: piyasaDavranisi(v),
+    konum, secim, cevre, deprem, gostergeler: gost, yatirim: yatEnd, beyan, saha, trend: fiyatTrendi(v), piyasa: piyasaDavranisi(v),
     tablo: bolgeTablosu(v),
     dagilim: h.emsal.map((x) => Math.round(x.birim)),
     danisman: { ad: b.ad, tel: b.tel, eposta: b.eposta, firma: b.firma || '', unvan: b.unvan || '', hakkinda: b.hakkinda || '', slogan: b.slogan || '' },
