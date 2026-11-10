@@ -45,5 +45,6 @@
 **Deploy koşulu:** ~~fiyatlar~~ ✔ (girdildi) + Play ürünleri (aktif 5) + migration ✔ (canlıda) → `supabase functions deploy play-odeme` → istemci doping alım ekranına Play yolu eklenir (bir sonraki APK).
 
 ## 4. Bugünkü dürüst durum
-- Edge `play-odeme` CANLIDA ama `GOOGLE_PLAY_SA_JSON` olmadığı için her istekte dürüst 503 ("henüz ayarlanmadı") veriyor — ödeme kabul etmiyor. ✔ kural: yarım entegrasyonu çalışıyormuş gibi gösterme.
-- Uygulama tarafı ödeme kapısı: Play ürünü kataloğu gelmeden satın alma düğmeleri "kullanılamıyor" durumunda kalıyor (`satis.js ODEME_YONTEMI`).
+- Edge `play-odeme` **CANLIYA DEPLOY EDİLDİ (10.11, doping dallı son kod)**; `GOOGLE_PLAY_SA_JSON` olmadığı için her istekte dürüst 503 ("henüz ayarlanmadı") veriyor — ödeme kabul etmiyor. ✔ kural: yarım entegrasyonu çalışıyormuş gibi gösterme.
+- İstemci doping Play yolu v3.6 kodunda (2641b1d): Play kataloğunda ürün görünene kadar sheet **talep** yoluna zarif düşüyor (headless duman ✔).
+- **Play Console + hizmet hesabı KULLANICI işi** (Google hesabı + mali yetki): 5 aktif ürünü oluştur, SA JSON indir → `supabase secrets set GOOGLE_PLAY_SA_JSON='...'` (tek satır, sohbete yazma) → uçtan uca kapalı test.
