@@ -1,0 +1,12 @@
+update public.ilanlar set alanlar = alanlar || '{"enlem":39.956533,"boylam":32.818587}'::jsonb where durum='yayinda' and ana='vasita' and il='Ankara' and ilce='Yenimahalle' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":36.886573,"boylam":30.703024}'::jsonb where durum='yayinda' and ana='vasita' and il='Antalya' and ilce='Muratpaşa' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":40.994794,"boylam":29.107422}'::jsonb where durum='yayinda' and ana='vasita' and il='İstanbul' and ilce='Ataşehir' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":38.465889,"boylam":27.219452}'::jsonb where durum='yayinda' and ana='vasita' and il='İzmir' and ilce='Bornova' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":38.368107,"boylam":27.17927}'::jsonb where durum='yayinda' and ana='vasita' and il='İzmir' and ilce='Buca' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":38.455401,"boylam":27.119623}'::jsonb where durum='yayinda' and ana='vasita' and il='İzmir' and ilce='Karşıyaka' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":38.342036,"boylam":26.797107}'::jsonb where durum='yayinda' and ana='vasita' and il='İzmir' and ilce='Urla' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":38.721901,"boylam":35.487321}'::jsonb where durum='yayinda' and ana='vasita' and il='Kayseri' and ilce='Melikgazi' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":37.872734,"boylam":32.492438}'::jsonb where durum='yayinda' and ana='vasita' and il='Konya' and ilce='Selçuklu' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":40.238967,"boylam":28.869753}'::jsonb where durum='yayinda' and ana='vasita' and il='Bursa' and ilce='Nilüfer' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":38.678998,"boylam":27.308789}'::jsonb where durum='yayinda' and ana='vasita' and il='Manisa' and ilce='Yunusemre' and not (alanlar ? 'enlem');
+update public.ilanlar set alanlar = alanlar || '{"enlem":36.622115,"boylam":29.115338}'::jsonb where durum='yayinda' and ana='vasita' and il='Muğla' and ilce='Fethiye' and not (alanlar ? 'enlem');

@@ -207,6 +207,8 @@ const IKON = {
   ok: '<path d="M9 5l7 7-7 7"/>',
   numara: '<path d="M5 9h14M5 15h14M10 3L8 21M16 3l-2 18"/>'
 };
+// Eksik kalan 4 ad, tanımlı simgelere takma adla bağlanır (boş kare kutu yerine glif): kiralık=anahtar, sezonluk=tekne, proje=vinc, vasıta=araba
+Object.assign(IKON, { kiralik: IKON.anahtar, deniz: IKON.tekne, proje: IKON.vinc, vasita: IKON.araba });
 
 // ---- Akıllı arama: "3+1 satılık Çankaya 5 milyon altı" -> yapılandırılmış filtre ----
 function sorguCoz(q) {

@@ -55,7 +55,7 @@ function harpCiz() {
   }));
   document.getElementById('hz+').onclick = () => { HARP.z = Math.min(18, HARP.z + 1); harpCiz(); };
   document.getElementById('hz-').onclick = () => { HARP.z = Math.max(4, HARP.z - 1); harpCiz(); };
-  const bil = document.getElementById('harpBilgi'); if (bil) bil.innerHTML = `${harpBilgi()} · <b>${liste.length}</b> ilan${HARP.r ? ' · yarıçap ' + (HARP.r >= 1000 ? HARP.r / 1000 + ' km' : HARP.r + ' m') : ''} · ${toplam === kok ? 'koordinatlı tüm ilanlar' : toplam + '/' + kok + ' ilanın koordinatı var'}`;
+  const bil = document.getElementById('harpBilgi'); if (bil) bil.innerHTML = `${harpBilgi()} · <b>${toplam}</b> ilan${toplam > liste.length ? ` <span style="opacity:.75">(ilk ${liste.length} listelendi)</span>` : ''}${HARP.r ? ' · yarıçap ' + (HARP.r >= 1000 ? HARP.r / 1000 + ' km' : HARP.r + ' m') : ''} · ${toplam === kok ? 'koordinatlı tüm ilanlar' : toplam + '/' + kok + ' ilanın koordinatı var'}`;
   harpListe(liste);
 }
 
