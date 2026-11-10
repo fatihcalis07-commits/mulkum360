@@ -10,18 +10,21 @@ const PLAY = { hazir: false, basladi: false, isleniyor: new Set() };
 const playUrun = (id) => (PLAY.hazir && id ? CdvPurchase.store.get(id, CdvPurchase.Platform.GOOGLE_PLAY) : null);
 const ODEME_YONTEMI = (p) => (playUrun(p && p.play_urun)?.getOffer() ? 'play' : 'yok'); // havale/talep satışı kapalı (yalnız Google Play)
 
+const PLAY_ILAN = {}; // doping alımları: hangi ürün siparişinin hangi ilan için olduğunu sheet order() öncesi yazar
 async function playDogrula(tx) {
   const np = tx.nativePurchase || {}, token = np.purchaseToken || tx.purchaseId;
   const urun = (tx.products && tx.products[0] && tx.products[0].id) || (np.productIds || [])[0];
   if (!token || !urun || PLAY.isleniyor.has(token) || !S.oturum) return; // giriş yoksa sonra yeniden denenir
+  const isDop = /^doping_/.test(String(urun));
+  if (isDop && !PLAY_ILAN[urun]) { kayit && kayit('play_dop_ilansiz', String(urun)); toast('Görünürlük satın alımın çözümlenemedi; destek seninle iletişime geçecek.'); return; } // tüketme, Play yeniden deneyecek
   PLAY.isleniyor.add(token);
   try {
-    const { data, error } = await sb.functions.invoke('play-odeme', { body: { urun, token, siparis: np.orderId || null } });
+    const govde = { urun, token, siparis: np.orderId || null }; if (isDop) govde.ilan = PLAY_ILAN[urun];
+    const { data, error } = await sb.functions.invoke('play-odeme', { body: govde });
     if (error) { let j = {}; try { j = await error.context.json(); } catch (_) {} if (!j.bekliyor) toast(j.hata || 'Ödeme doğrulanamadı.'); return; }
-    const b = ben(); if (b && data.kredi != null) b.kredi = data.kredi;
-    await tx.finish(); // tüketilebilir: tüket, aynı paket tekrar alınabilsin
-    if (data.yeni) toast(`${data.eklenen} kredi hesabına yüklendi`);
-    if (location.hash.startsWith('#/kredi')) EKRAN.kredi();
+    await tx.finish(); // tüketilebilir: tüket, aynı ürün tekrar alınabilsin
+    if (isDop) { await dopingYukle().catch(() => {}); toast(data.yeni === false ? 'Bu satın alma zaten işlenmişti.' : `${data.gun || ''} gün görünürlük desteğin başladı 🎉`); if (location.hash.startsWith('#/ilan')) ciz(); }
+    else { const b = ben(); if (b && data.kredi != null) b.kredi = data.kredi; if (data.yeni) toast(`${data.eklenen} kredi hesabına yüklendi`); if (location.hash.startsWith('#/kredi')) EKRAN.kredi(); }
   } catch (x) { kayit && kayit('play_dogrula_hata', String(x && x.message)); }
   finally { PLAY.isleniyor.delete(token); }
 }
@@ -30,8 +33,9 @@ async function playBaslat() {
   if (PLAY.basladi || !window.CdvPurchase || !window.Capacitor?.isNativePlatform?.()) return;
   PLAY.basladi = true;
   const { store, ProductType, Platform } = CdvPurchase;
-  let paketler = []; try { paketler = await krediPaketleri(); } catch (_) {}
-  const idler = paketler.map((p) => p.play_urun).filter(Boolean);
+  let idler = []; try { idler = (await krediPaketleri()).map((p) => p.play_urun).filter(Boolean); } catch (_) {}
+  try { const { data } = await sb.from('doping_paketleri').select('play_urun').eq('aktif', true); idler = [...idler, ...(data || []).map((d) => d.play_urun).filter(Boolean)]; } catch (_) {}
+  idler = [...new Set(idler)];
   if (!idler.length) { PLAY.basladi = false; return; }
   store.register(idler.map((id) => ({ id, type: ProductType.CONSUMABLE, platform: Platform.GOOGLE_PLAY })));
   store.when().approved((tx) => playDogrula(tx)).productUpdated(() => { PLAY.hazir = true; });

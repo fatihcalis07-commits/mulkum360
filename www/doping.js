@@ -62,19 +62,28 @@ async function dopingBitir(id) { await islem(sb.from('ilan_doping').update({ dur
 async function dopingTaleplerGetir() { const { data } = await sb.from('doping_satislari').select('*').eq('durum', 'bekliyor').order('olusturma'); return data || []; }
 async function dopingTalepRed(id) { await islem(sb.from('doping_satislari').update({ durum: 'reddedildi', onay_zamani: new Date().toISOString() }).eq('id', id)); }
 
-// Sahibinin alım ekranı: paket seç → talep kuyruğuna düşer (Play ürünleri kurulana kadar onay akışı; kredi kalıbı)
+// Sahibinin alım ekranı: Play ürünü hazırsa doğrudan Google Play satışı (sunucu dopingleme), değilse talep kuyruğu (yönetici onayı)
 function dopingAlimSheet(i) {
   dopingPaketlerGetir().then((pk) => {
     const ak = dopingBilgi(i), t = () => S.DOPING.turler;
+    const playVar = (p) => !!playUrun(p.play_urun)?.getOffer();
     sheetAc(`<h2 style="font-size:19px;font-weight:800">İlanı öne çıkar</h2>
       ${ak ? `<p class="soluk" style="margin:0 0 8px">Bu ilan şu anda görünürlük desteğinde · bitiş ${new Date(ak.bitis).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.</p>` : ''}
       ${pk.length ? pk.map((p) => {
         const ind = +p.indirim_orani > 0 && (!p.gecerlilik || new Date(p.gecerlilik) >= new Date(new Date().toDateString())), fiyat = ind ? +p.fiyat * (1 - +p.indirim_orani) : +p.fiyat;
         return `<div class="kart satir" style="align-items:center"><div class="ara"><b>${kac((t()[p.tur] || {}).ad || p.tur)} · ${p.gun} gün</b><div class="k soluk">${kac((t()[p.tur] || {}).aciklama || '')}</div></div>
-          <button class="btn kucuk" data-paket="${p.id}">${ind ? `<s style="opacity:.55;font-weight:400">${tl(+p.fiyat)}</s> ` : ''}${tl(fiyat)}</button></div>`;
+          <button class="btn kucuk" data-paket="${p.id}" data-play="${playVar(p) ? 1 : ''}">${ind ? `<s style="opacity:.55;font-weight:400">${tl(+p.fiyat)}</s> ` : ''}${playVar(p) ? 'Google Play · ' : ''}${tl(fiyat)}</button></div>`;
       }).join('') : '<p class="soluk">Şu anda satışta olan paket yok. Yakında yeniden dolacak.</p>'}
-      <p class="k soluk" style="line-height:1.5">Talebin onaylanınca ilanın rozeti ("Sponsorlu"/"Acil") görünür olur ve aramada türünün önceliğiyle öne çıkar. Ödeme şu an yönetici onayıyla tamamlanır; Google Play ödemesi ürünler tanımlanınca açılacak.</p>`,
+      <p class="k soluk" style="line-height:1.5">${pk.some(playVar) ? 'Ödeme Google Play ile alınır; onaylanır onaylanmaz rozetin ("Sponsorlu"/"Acil") ve arama önceliğin başlar. Satış ve iade koşulları: <a href="#/metin/satis">burada</a>.' : 'Talebin onaylanınca ilanın rozeti ("Sponsorlu"/"Acil") görünür olur ve aramada türünün önceliğiyle öne çıkar. Ödeme şu an yönetici onayıyla tamamlanır; bu cihazda Google Play ödemesi henüz hazır değil.'}</p>`,
       (s) => s.querySelectorAll('[data-paket]').forEach((b) => (b.onclick = async () => {
+        const p = pk.find((x) => x.id === b.dataset.paket);
+        if (b.dataset.play && playVar(p)) { // Play siparişi: onay gelince satis.js playDogrula sunucuya bildirir
+          PLAY_ILAN[p.play_urun] = i.id;
+          const hata = await playUrun(p.play_urun).getOffer().order();
+          if (hata && hata.code !== CdvPurchase.ErrorCode.PAYMENT_CANCELLED) { toast(hata.message || 'Ödeme başlatılamadı.'); delete PLAY_ILAN[p.play_urun]; }
+          else sheetKapat();
+          return;
+        }
         if (await dene(() => dopingTalep(i.id, b.dataset.paket), 'Talebin alındı — onaylanınca yayına girer.')) sheetKapat();
       })));
   });
