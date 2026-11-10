@@ -9,3 +9,5 @@ android/**/build/
 android/local.properties
 pazarlama/instagram/gorseller/
 www-mirror/
+
+android/keystore.properties
