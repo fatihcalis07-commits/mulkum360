@@ -71,7 +71,7 @@ for (const s of eksik) {
     k = onb.get(ak); if (k) break;
   }
   if (!k) { cozulemedi++; continue; }
-  sql.push(`update public.ilanlar set alanlar = jsonb_set(jsonb_set(jsonb_set(coalesce(alanlar,'{}'::jsonb),'{enlem}','${k.lat.toFixed(6)}'),'{boylam}','${k.lon.toFixed(6)}'),'{konumDuzey}',${JSON.stringify(JSON.stringify(k.duzey))}) where id='${s.id}' and (alanlar->>'enlem' is null or alanlar->>'enlem'='');`);
+  sql.push(`update public.ilanlar set alanlar = jsonb_set(jsonb_set(jsonb_set(coalesce(alanlar,'{}'::jsonb),'{enlem}','${k.lat.toFixed(6)}'),'{boylam}','${k.lon.toFixed(6)}'),'{konumDuzey}','${JSON.stringify(k.duzey)}') where id='${s.id}' and (alanlar->>'enlem' is null or alanlar->>'enlem'='');`);
   cozulen++;
 }
 fs.writeFileSync(CIKTI, sql.join('\n') + '\n', 'utf8'); // doğrudan UTF-8 — yönlendirme kodlaması sorunu olmaz
