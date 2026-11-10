@@ -12,11 +12,22 @@
 | `kredi_40` | Emlakçı | 40 | 749,99 ₺ | Play Console'da oluşturulacak |
 | `kredi_100` | Ofis | 100 | 1.499,99 ₺ | Play Console'da oluşturulacak |
 
-### Doping paketleri (13) — Play id'ları verili, **fiyatlar belirsiz ve pasif** `[KULLANICI]`
-`doping_guncel_1` · `doping_guncel_7` · `doping_guncel_30` · `doping_vitrin_arama_7` · `doping_vitrin_arama_30` · `doping_vitrin_anasayfa_7` · `doping_vitrin_anasayfa_30` · `doping_ust_sira_1` · `doping_ust_sira_7` · `doping_vitrin_kategori_7` · `doping_vitrin_kategori_30` · `doping_acil_1` · `doping_acil_7`
+### Doping paketleri (13) — FİYATLAR GİRİLDİ (10.11, kullanıcı onayıyla)
+| Play ürün kimliği | Gün | Fiyat (KDV dahil) | Durum |
+|---|---|---|---|
+| `doping_guncel_7` | 7 | 99,99 ₺ | **AKTİF** |
+| `doping_guncel_30` | 30 | 299,99 ₺ | **AKTİF** |
+| `doping_vitrin_anasayfa_7` | 7 | 349,99 ₺ | **AKTİF** |
+| `doping_vitrin_anasayfa_30` | 30 | 949,99 ₺ | **AKTİF** |
+| `doping_acil_7` | 7 | 74,99 ₺ | **AKTİF** |
+| `doping_guncel_1` | 1 | 29,99 ₺ | pasif (ikinci kademe) |
+| `doping_ust_sira_1` / `doping_ust_sira_7` | 1 / 7 | 49,99 / 249,99 ₺ | pasif |
+| `doping_vitrin_kategori_7` / `doping_vitrin_kategori_30` | 7 / 30 | 149,99 / 399,99 ₺ | pasif |
+| `doping_vitrin_arama_7` / `doping_vitrin_arama_30` | 7 / 30 | 199,99 / 549,99 ₺ | pasif |
+| `doping_acil_1` | 1 | 19,99 ₺ | pasif |
 
-- Hepsi `aktif=false`, `fiyat=0` — **fiyatlar belirlenmeden Play'e konulmaz, satış açılmaz.**
-- Fiyatlandırma sonrası: `doping_paketleri.fiyat/aktif` güncelleme + Play Console ürünleri + aşağıdaki §3 doping sunucu adımı.
+- RPC davranış testleri canlıda: pasif ürün → `urun yok veya satista degil` ✔ · aktif ürün + sahte ilan → `ilan bulunamadi veya sana ait degil` ✔ (eşikleme sırası doğru, satır yazılmıyor).
+- **Sıradaki:** Play Console'da yalnız AKTİF 5 ürün oluşturulacak → hizmet hesabı JSON → `supabase secrets set GOOGLE_PLAY_SA_JSON=...` → `functions deploy play-odeme` → istemci doping-Play yolu (v3.6).
 
 ## 2. Kurulum sırası (kredi akışı bugün çalışabilir hâle gelir)
 
@@ -31,7 +42,7 @@
 
 `supabase/functions/play-odeme` doping dalı hazır (bu repoda, **deploy edilmedi**): kredi paketinde bulunamazsa `doping_paketleri` (yalnız `aktif=true`) aranır; satın alma Google'da doğrulanınca kullanıcının kendi ilanı doğrulanıp doping başlatılır; `doping_satislari` kaydı `onaylandi`/`yontem=play` düşer. Tekrar tüketimi `doping_satislari.play_token` benzersiz indeksiyle engellenir → migration `supabase/migrations/20261110130000_doping_play.sql` **canlıya uygulandı + tescil edildi** (10.11, kullanıcı onayıyla).
 
-**Deploy koşulu:** fiyatlar + Play ürünleri + migration onayı tamam → `supabase functions deploy play-odeme` → istemci doping alım ekranına Play yolu eklenir (bir sonraki APK).
+**Deploy koşulu:** ~~fiyatlar~~ ✔ (girdildi) + Play ürünleri (aktif 5) + migration ✔ (canlıda) → `supabase functions deploy play-odeme` → istemci doping alım ekranına Play yolu eklenir (bir sonraki APK).
 
 ## 4. Bugünkü dürüst durum
 - Edge `play-odeme` CANLIDA ama `GOOGLE_PLAY_SA_JSON` olmadığı için her istekte dürüst 503 ("henüz ayarlanmadı") veriyor — ödeme kabul etmiyor. ✔ kural: yarım entegrasyonu çalışıyormuş gibi gösterme.
