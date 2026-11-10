@@ -355,6 +355,14 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - **Pusula-AR (FAZ 5 ②)**: fizibilite KURALI — "getUserMedia+DeviceOrientation Capacitor APK'da test edilmeden kamera modu YOK". Cihaz/ekran kaydı elimizde yok; `@capacitor/geolocation` + kamera izni manifest'te yok. **Bilinçli ertelendi (bozuk AR sunulmaz)**: v3.5 APK + telefonu olan bir spike oturumu gerekir; kamerasız tam ekran pusula bandı yedeği o spike'la birlikte ele alınacak.
 - **v3.5 notları (birikmiş)**: `@capacitor/geolocation@8.2.4` kuruldu + manifest `ACCESS_FINE/COARSE_LOCATION` eklendi + `cap sync` ✔ (751a705) — **kalan: v3.5 derlemesi** (`eids.js`/`harita.js` bundle'lı; `npm i && npx cap sync && gradlew assembleRelease`); v3.4 kullanıcı testi beklemede.
 
+## GİTHUB PUSH + GÜVENLİK REVİZYONU (10.11 akşam, kullanıcı "benim yapacaklarımı da yap")
+- **Kimlik**: gh CLI taşınabilir (D:\araclar\gh), cihaz akışıyla `fatihcalis07-commits` oturumu (kullanıcı tarayıcıda onayladı). Token keyring'de, ekrana hiç basılmadı.
+- **GÜVENLİK KRİTİK**: Depoya ilk push öncesi taramada `android/keystore.properties` (gerçek storePassword/keyPassword) bir commit'te izlenmiş olduğu bulundu. → Dosya takipten çıkarıldı, `keystore.example.properties` kondu, **filter-branch ile TÜM geçmişten blob silindi** (37 commit yeniden yazıldı → uç `6ae1a29`). Dosya diskte duruyor, build'ler etkilenmedi.
+- **Doğrulama**: tüm yeniden-yazılmış geçmiş `scratchpad/gizli-tara.js` ile tarandı (12 gizli-anahtar kalıbı) → **0 eşleşme**. Uzak depodaki 429 dosyada keystore/.jks/.gizli/service_account → **yok**.
+- **Depo**: `github.com/fatihcalis07-commits/mulkum360` (ZATEN mevcuttu; boş 2 dosyalık PUBLIC Pages deposu). `--allow-unrelated-histories` ile birleştirildi → kökteki `index.html` + `gizlilik.html` (Mahmure Aydın gizlilik aydınlatma, 6698 uyumlu) korundu, **silinmedi/silme**. Push: `b08f54d..6ae1a29 main`, yerel=uzak.
+- **Yedek**: eski (keystore içeren) bundle SİLİNDİ; temiz geçmişten `D:\yedek\vitrin-app-guvenli-20261110.bundle` (verify okay).
+- **Not**: repo PUBLIC. İçinde gizli yok (istemci-only anahtarlar, RLS korumalı). İstenirse ileride özel yapılabilir ama Pages gizlilik sayfası bunu gerekebilir — kullanıcı kararı.
+
 ## TAM ARAYÜZ DENETİMİ (10.11 akşam, kullanıcı talebi: "tüm sayfalar/düğmeler, A düşen var mı")
 - **Kapsam**: 30 rota headless crawl (chrome-ctrl/test-denetim.js) + ikon statik taraması (108 tanımlı IKON anahtarına karşı tüm `ic('..')` + kisayol/menuSatir argümanları + `ikon:` değerleri) + kod okuması.
 - **Sağlam (A)**: 30/30 rotada 0 konsol hatası · 0 ölü bağlantı · 0 yatay taşma · 15 oturum-duyarlı rota zarif "Giriş" perdesi · geçersiz id'ler (uye/x, sohbet/x, rapor/x) boş-durum/zorunlu giriş · alt menü Ara/Favoriler/+ (toplui renkli)/Keşfet/Hesabım yerinde.
