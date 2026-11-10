@@ -29,7 +29,7 @@
 
 ## 3. Doping satışı sunucu adımı (kod hazır, DEPLOY BEKLİYOR)
 
-`supabase/functions/play-odeme` doping dalı hazır (bu repoda, **deploy edilmedi**): kredi paketinde bulunamazsa `doping_paketleri` (yalnız `aktif=true`) aranır; satın alma Google'da doğrulanınca kullanıcının kendi ilanı doğrulanıp doping başlatılır; `doping_satislari` kaydı `onaylandi`/`yontem=play` düşer. Tekrar tüketimi `doping_satislari.play_token` benzersiz indeksiyle engellenir → **migration ONAY BEKLİYOR**: `supabase/migrations/20261110130000_doping_play.sql` (uygulanmadı).
+`supabase/functions/play-odeme` doping dalı hazır (bu repoda, **deploy edilmedi**): kredi paketinde bulunamazsa `doping_paketleri` (yalnız `aktif=true`) aranır; satın alma Google'da doğrulanınca kullanıcının kendi ilanı doğrulanıp doping başlatılır; `doping_satislari` kaydı `onaylandi`/`yontem=play` düşer. Tekrar tüketimi `doping_satislari.play_token` benzersiz indeksiyle engellenir → migration `supabase/migrations/20261110130000_doping_play.sql` **canlıya uygulandı + tescil edildi** (10.11, kullanıcı onayıyla).
 
 **Deploy koşulu:** fiyatlar + Play ürünleri + migration onayı tamam → `supabase functions deploy play-odeme` → istemci doping alım ekranına Play yolu eklenir (bir sonraki APK).
 
