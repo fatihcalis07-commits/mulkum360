@@ -85,7 +85,8 @@ async function konumPanel(i) {
     <div class="harita-kutu"><iframe title="İlanın konumu" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${k.lat.toFixed(5)}%2C${k.lon.toFixed(5)}"></iframe></div>
     <div class="k soluk" style="font-size:12px;margin:6px 0 10px">${aciklama} Harita © OpenStreetMap katkıda bulunanlar.</div>
     <div class="izgara2"><a class="btn sade" href="https://www.google.com/maps/search/?api=1&query=${k.lat},${k.lon}" target="_blank" rel="noopener">${ic('konum', 16)}Haritada aç</a>
-    <a class="btn sade" href="https://www.google.com/maps/dir/?api=1&destination=${k.lat},${k.lon}" target="_blank" rel="noopener">${ic('pusula', 16)}Yol tarifi</a></div>`;
+    <a class="btn sade" href="https://www.google.com/maps/dir/?api=1&destination=${k.lat},${k.lon}" target="_blank" rel="noopener">${ic('pusula', 16)}Yol tarifi</a>
+    <a class="btn sade" href="#/harita?merkez=${k.lat.toFixed(5)},${k.lon.toFixed(5)}&ana=emlak">${ic('konum', 16)}Çevresinde ara</a></div>`;
 }
 
 // ---------- Çevre ----------

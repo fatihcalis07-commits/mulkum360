@@ -183,13 +183,30 @@ async function ilanKaydet(t, ilerleme) {
     // Fiyat indirilince önceki fiyat saklanır ("Fiyat düştü" etiketi); artınca etiket kalkar
     if (eski && t.fiyat < eski.fiyat) satir.alanlar = { ...satir.alanlar, oncekiFiyat: Math.max(eski.fiyat, +eski.alanlar?.oncekiFiyat || 0) };
     else if (eski && t.fiyat > eski.fiyat && satir.alanlar?.oncekiFiyat) { const { oncekiFiyat, ...r } = satir.alanlar; satir.alanlar = r; }
+    // Adres değişmediyse çözülmüş koordinatlar korunur; değişirse eski konum geçersizdir, silinir ve yeniden çözülür
+    if (eski?.alanlar?.enlem && satir.alanlar) {
+      const adresAyni = satir.il === eski.il && satir.ilce === eski.ilce && ['mahalle', 'sokak', 'ada', 'parsel'].every((k) => String(satir.alanlar[k] || '') === String(eski.alanlar[k] || ''));
+      if (adresAyni) { const { enlem, boylam, konumDuzey, ...eskiAl } = eski.alanlar; satir.alanlar = { ...eskiAl, ...satir.alanlar, enlem, boylam, konumDuzey }; }
+    }
     const r = await islem(sb.from('ilanlar').update(satir).eq('id', t.id).select().single());
     const silinen = (eski?.fotolar || []).filter((u) => !fotolar.includes(u)).map(depoYolu).filter(Boolean);
     if (silinen.length) sb.storage.from('ilan-fotolari').remove(silinen);
-    Object.assign(eski, ilanEsle(r)); return eski;
+    Object.assign(eski, ilanEsle(r)); konumFakla(eski); return eski;
   }
   const r = ilanEsle(await islem(sb.from('ilanlar').insert(satir).select().single()));
-  S.ilanlar.unshift(r); return r;
+  S.ilanlar.unshift(r); konumFakla(r); return r;
+}
+// Emlak ilanın koordinatını arkadan çöz (TKGM parsel → Photon sokak/mahalle/ilçe — ilanın kendi verisi; scrape YOK).
+// Alanlar YALNIZ sunucuya yazılır; kullanıcı konumuyla ilgisi yoktur.
+function konumFakla(r) {
+  if (r.ana !== 'emlak' || +r.alanlar?.enlem > 0) return;
+  try {
+    ilanKonumu(r).then((k) => {
+      if (!k || !k.lat) return; const i = ilan(r.id); if (!i) return;
+      const al = { ...i.alanlar, enlem: Math.round(k.lat * 1e6) / 1e6, boylam: Math.round(k.lon * 1e6) / 1e6, konumDuzey: k.duzey || '' };
+      islem(sb.from('ilanlar').update({ alanlar: al }).eq('id', r.id)).then(() => { const g = ilan(r.id); if (g) g.alanlar = al; }, () => {});
+    }).catch(() => {});
+  } catch (_) {}
 }
 async function ilanDurum(i, durum, satisFiyati) {
   const g = { durum }; if (durum === 'satildi' && satisFiyati > 0) g.satis_fiyati = satisFiyati;
