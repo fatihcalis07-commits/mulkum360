@@ -61,8 +61,8 @@ EKRAN.kredi = async () => {
     <div class="k soluk" style="line-height:1.5">Fiyatlara KDV dahildir. Video veya görsel oluşturulamazsa kullanılan kredi otomatik iade edilir. Ödeme Google Play ile alınır; <a href="#/metin/satis">Satış ve iade koşulları</a>.</div>
     <div class="bolum-bas"><h2>Hareketler</h2></div><div class="liste" id="hareket"><div class="bos">Yükleniyor…</div></div></div>`;
   navCiz('hesap');
-  let paketler = [], talep = null;
-  try { [paketler, talep] = await Promise.all([krediPaketleri(), bekleyenTalep()]); } catch (x) { const el = $('#paketler'); if (el) el.innerHTML = `<div class="bos">${kac(hataMetni(x))}</div>`; }
+  let paketler = [], talep = null, yukHata = '';
+  try { [paketler, talep] = await Promise.all([krediPaketleri(), bekleyenTalep()]); } catch (x) { yukHata = hataMetni(x); }
   const pk = $('#paketler'); if (!pk) return;
   const enPahali = Math.max(...paketler.map((p) => p.fiyat / p.kredi));
   pk.innerHTML = paketler.filter((p) => p.aktif).map((p) => {
@@ -72,7 +72,8 @@ EKRAN.kredi = async () => {
       <div style="text-align:right"><div style="font-size:19px;font-weight:800">${kac(playUrun(p.play_urun)?.pricing?.price || tlKurus(p.fiyat))}</div><div class="k soluk">kredi başı ${tlKurus(birim)}</div>${indirim > 0 ? `<div class="k" style="color:var(--guven);font-weight:700">%${indirim} avantajlı</div>` : ''}</div></div>
       <div class="k soluk">${p.kredi} rapor ya da Deko görseli, veya ${Math.floor(p.kredi / 3)} video</div>
       <button class="btn tam" data-al="${p.id}" >${ODEME_YONTEMI(p) === 'play' ? 'Google Play ile satın al' : 'Satın al'}</button></div>`;
-  }).join('') || '<div class="bos">Şu an satışta paket yok</div>';
+  }).join('') || (yukHata ? `<div class="bos">${kac(yukHata)}<br><button class="btn sade" id="pkTekrar">Tekrar dene</button></div>` : '<div class="bos">Şu an satışta paket yok</div>');
+  const pt = $('#pkTekrar'); if (pt) pt.onclick = () => EKRAN.kredi();
   const tk = $('#talepK');
   if (talep && tk) {
     tk.innerHTML = `<div class="bilgi-k">${ic('kredi', 18)}<div><b>Ödeme bekleyen talebin var:</b> ${talep.kredi} kredi · ${tlKurus(talep.tutar)}<br>Ödeme bilgisi için ekibimiz seninle iletişime geçecek. Ödeme alınınca kredin hesabına yüklenir.<br><button class="btn sade" id="talepIptal" style="margin-top:6px;padding-left:0">Talebi iptal et</button></div></div>`;

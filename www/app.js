@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '9.3 · 12.11.2026 23:30';
+const SURUM = '9.4 · 13.11.2026 00:15';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1501,6 +1501,10 @@ EKRAN.sohbet = (id) => {
   if (!s || (s.alici !== b.id && s.satici !== b.id)) { git('#/mesajlar'); return; }
   const i = ilan(s.ilanId), o = kullanici(s.alici === b.id ? s.satici : s.alici), saticiyim = s.satici === b.id;
   okunduYaz(s);
+  const eskiGiris = app.dataset.sohbet === id ? $('#mf [name=m]') : null, yarim = eskiGiris ? eskiGiris.value : '', odakli = !!eskiGiris && document.activeElement === eskiGiris;
+  app.dataset.sohbet = id;
+  let sonGun = '';
+  const gunAyrac = (t) => { const g = new Date(t).toDateString(); if (g === sonGun) return ''; sonGun = g; const fark = Math.round((new Date(new Date().toDateString()) - new Date(g)) / 86400000); return '<div class="gun-ayrac"><span>' + (fark === 0 ? 'Bugün' : fark === 1 ? 'Dün' : new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: fark > 300 ? 'numeric' : undefined })) + '</span></div>'; };
   document.body.classList.add('navsiz'); nav.innerHTML = '';
   const saat = (t) => new Date(t).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   app.innerHTML = ustBar(kac(gorunenAd(o))) + `
@@ -1509,13 +1513,13 @@ EKRAN.sohbet = (id) => {
     <div class="balonlar" id="balonlar" style="padding-bottom:150px">
       ${s.mesajlar.length ? '' : `<div class="soluk k" style="text-align:center;padding:20px">İlk mesajını yaz. Hazır sorulardan birini de seçebilirsin.</div>`}
       ${s.mesajlar.map((m) => {
-        const benim = m.kimden === b.id;
-        if (m.tur === 'sistem') return `<div class="k soluk" style="text-align:center;padding:4px">${kac(m.metin)}</div>`;
-        if (m.tur === 'teklif') return `<div class="teklif-k ${benim ? '' : 'o'}"><div class="k soluk" style="font-weight:700">${benim ? 'TEKLİFİN' : 'GELEN TEKLİF'}</div><div style="font-size:22px;font-weight:800">${tl(m.tutar)}</div>
+        const benim = m.kimden === b.id, gun = gunAyrac(m.zaman);
+        if (m.tur === 'sistem') return gun + `<div class="k soluk" style="text-align:center;padding:4px">${kac(m.metin)}</div>`;
+        if (m.tur === 'teklif') return gun + `<div class="teklif-k ${benim ? '' : 'o'}"><div class="k soluk" style="font-weight:700">${benim ? 'TEKLİFİN' : 'GELEN TEKLİF'}</div><div style="font-size:22px;font-weight:800">${tl(m.tutar)}</div>
           <div class="k" style="font-weight:600;color:${m.durum === 'kabul' ? 'var(--guven)' : m.durum === 'red' ? 'var(--hata)' : 'var(--soluk)'}">${m.durum === 'kabul' ? 'Kabul edildi' : m.durum === 'red' ? 'Reddedildi' : Date.now() - m.zaman > 172800000 ? 'Süresi doldu' : 'Yanıt bekleniyor'}</div>
           ${!benim && saticiyim && m.durum === 'bekliyor' && Date.now() - m.zaman <= 172800000 ? `<div class="izgara2"><button class="btn guven kucuk" data-kabul="${m.id}">Kabul et</button><button class="btn sade kucuk" data-red="${m.id}">Reddet</button></div>` : ''}
           <span class="k soluk">${saat(m.zaman)}</span></div>`;
-        return `<div class="balon ${benim ? 'ben' : 'o'}">${kac(m.metin)}<span class="zaman">${saat(m.zaman)}</span></div>`;
+        return gun + `<div class="balon ${benim ? 'ben' : 'o'}">${kac(m.metin)}<span class="zaman">${saat(m.zaman)}</span></div>`;
       }).join('')}
     </div>
     <form class="mesaj-yaz" id="mf"><div class="alt-bar-ic" style="flex-direction:column;gap:8px">
@@ -1524,17 +1528,19 @@ EKRAN.sohbet = (id) => {
       <div class="satir"><label class="arama-kutu" style="height:48px"><input name="m" aria-label="Mesaj yaz" placeholder="Mesaj yaz" autocomplete="off" maxlength="1000"></label>
       <button class="ikon-btn" style="background:var(--vurgu);border:0;color:#fff;width:48px;height:48px" aria-label="Gönder">${ic('gonder', 20, '#fff')}</button></div></div></form>`;
   scrollTo(0, document.body.scrollHeight);
+  const giris = $('#mf [name=m]'); if (yarim) giris.value = yarim; if (odakli) giris.focus({ preventScroll: true });
   let gidiyor = false;
-  const gonder = async (metin) => {
+  const gonder = async (metin, formdan) => {
     metin = metin.trim(); if (!metin || gidiyor) return;
     gidiyor = true;
     if (await dene(() => mesajGonder(s, { tur: 'metin', metin }))) {
+      const g = $('#mf [name=m]'); if (formdan && g && g.value.trim() === metin) g.value = '';
       if (/\b(iban|tr\d{2}\s?\d{4}|kapora|whatsapp)\b/i.test(metin)) toast('Güvenliğin için ödeme ve iletişimi uygulama içinde tut.');
       ciz();
     }
     gidiyor = false;
   };
-  $('#mf').onsubmit = (e) => { e.preventDefault(); gonder(e.target.m.value); };
+  $('#mf').onsubmit = (e) => { e.preventDefault(); gonder(e.target.m.value, true); };
   app.querySelectorAll('[data-hazir]').forEach((x) => (x.onclick = () => gonder(x.dataset.hazir)));
   const tb = $('#teklifBtn'); if (tb) tb.onclick = () => teklifSheet(s);
   app.querySelectorAll('[data-kabul],[data-red]').forEach((x) => (x.onclick = async () => {
@@ -2100,7 +2106,7 @@ EKRAN.degerle = () => {
       <div class="izgara3"><label class="alan">Yıl<input name="yil" inputmode="numeric" value="${kac(d.yil || '')}"></label><label class="alan">Km<input name="km" inputmode="numeric" value="${kac(d.km || '')}"></label>${sec('hasar', 'Hasar', ALANLAR.vasita[8][3])}</div>`}
       <div class="hata-yazi" id="dh"></div><button class="btn tam">${ic('grafik', 18, '#fff')}Değeri hesapla</button></form>
     <div id="sonuc"></div>
-    <div class="k soluk" style="line-height:1.5">Hesap, Mülküm360’taki benzer ilanların fiyatlarıyla yapılır (en az 3 emsal gerekir). Bilgilendirme amaçlıdır; SPK lisanslı değerleme raporu yerine geçmez.</div>
+    <div class="k soluk" style="line-height:1.5">Emlakta hesap, mahalle ve ilçe piyasa verisi ile aynı ilçedeki benzer Mülküm360 ilanlarından yapılır; vasıtada TSB kasko değeri ve benzer ilanlar kullanılır. Bilgilendirme amaçlıdır; SPK lisanslı değerleme raporu yerine geçmez.</div>
   </div>`;
   const elListe = d.elEmsal ? [...d.elEmsal] : [];
   const elCiz = () => { const k = $('#elEmsalK'); if (!k) return;
@@ -2147,7 +2153,7 @@ EKRAN.degerle = () => {
       }
       v._kasko = kaskoKutu(true);
     } else degerlemeKaydet(v, h, null);
-    if (!h.yeterli) { el.innerHTML = `<div class="uyari-k">${ic('uyari', 18)}<div><b>Yeterli emsal yok.</b> ${v.ana === 'emlak' ? `Türkiye genelinde bile bu tür ve işlemde ${h.sayi} ilan var; güvenilir bir aralık için en az 3 gerekiyor. Bu kategori yeni; ilanlar arttıkça değerleme açılacak.` : `Bu marka ve modelde (yıl ±2) ${h.sayi} ilan var; en az 3 gerekiyor. Model adını kısaltmayı dene (örn. yalnız “Clio”).`}</div></div>`; return; }
+    if (!h.yeterli) { el.innerHTML = `<div class="uyari-k">${ic('uyari', 18)}<div><b>Yeterli emsal yok.</b> ${v.ana === 'emlak' ? `Bu ilçede bu tür ve işlemde ${h.sayi} benzer ilan var ve bölge için piyasa verisi henüz yok; güvenilir bir aralık için en az 3 emsal gerekiyor. “Kendi emsallerin” bölümünden bildiğin ilanları ekleyebilirsin.` : `Bu marka ve modelde (yıl ±2) ${h.sayi} ilan var; en az 3 gerekiyor. Model adını kısaltmayı dene (örn. yalnız “Clio”).`}</div></div>`; return; }
     el.innerHTML = `<div class="deger-k"><div class="ust-yazi">TAHMİNİ ${v.ana === 'emlak' && v.islem === 'Kiralık' ? 'AYLIK KİRA' : 'PİYASA DEĞERİ'}</div><div class="buyuk">${tl(h.alt)} – ${tl(h.ust)}</div>
       <div style="font-size:13px;opacity:.85">Ortası <b>${tl(h.orta)}</b>${v.ana === 'emlak' ? ' · m²: <b>' + tl(h.birimOrta) + '</b>' : ''}</div>
       ${h.katEtkisi ? `<div style="font-size:12px;opacity:.8">Kat etkisi (${kac(v.kat)}): <b>${h.katEtkisi}</b>, emsaller de kata göre eşitlendi</div>` : ''}${h.refKaynak ? `<div style="font-size:12px;opacity:.8">Dayanak: ${h.emsalAgirlik ? `%${h.emsalAgirlik} Mülküm360 gerçek ilanları, %${100 - h.emsalAgirlik} ` : ''}${kac(h.refKaynak)}</div>` : ''}<div style="font-size:12px;opacity:.7">Güven: ${h.guven} · ${h.sayi} emsal ilan${h.kapsam ? ' · ' + kac(h.kapsam) : ''}</div></div>
@@ -2210,9 +2216,11 @@ EKRAN.degerle = () => {
   $('#df').onsubmit = async (e) => {
     e.preventDefault(); await piyasaRefYukle(); const v = { ...Object.fromEntries(new FormData(e.target)), ana: d.ana, haric: d.haric, baslik: d.baslik, elEmsal: elListe }, h = $('#dh'); h.textContent = '';
     ['m2net', 'yil', 'km'].forEach((k) => v[k] && (v[k] = v[k].replace(/\D/g, '')));
+    const elle = e.isTrusted;
     if (v.ana === 'emlak' && (!v.il || !v.islem || !(+v.m2net > 0))) return hataGoster(h, 'İl, işlem ve net m² gerekli.');
     if (v.ana === 'vasita' && (!v.marka || !v.model || !v.yil)) return hataGoster(h, 'Marka, model ve yıl gerekli.');
-    hesapGoster(v);
+    await hesapGoster(v);
+    if (elle) $('#sonuc').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   if (kaynak || sonDegerleme) $('#df').requestSubmit();
   navCiz('degerle');
@@ -2220,7 +2228,7 @@ EKRAN.degerle = () => {
 
 // Rapor hazırlanırken tam ekran ilerleme: adımlar ve geçen süre; iş bitene kadar kapatılamaz
 function raporIlerleme(emlak) {
-  const adlar = emlak ? ['Konum bulunuyor', 'Çevre ve toplu taşıma (OpenStreetMap)', 'Deprem kaydı (USGS)', 'Nüfus, seçim ve TCMB göstergeleri', 'Rapor kaydediliyor'] : ['Hazırlanıyor', '', '', 'Resmî veriler', 'Rapor kaydediliyor'];
+  const adlar = emlak ? ['Konum bulunuyor', 'Çevre ve toplu taşıma (OpenStreetMap)', 'Deprem kaydı ve fay hatları', 'Nüfus, seçim ve TCMB göstergeleri', 'Rapor kaydediliyor'] : ['Hazırlanıyor', '', '', 'Resmî veriler', 'Rapor kaydediliyor'];
   const el = document.createElement('div');
   el.className = 'r-ilerleme';
   el.innerHTML = `<div class="r-ilerleme-kart"><b>Raporun hazırlanıyor</b><small>Açık veri servisleri yoğunsa 1 dakikayı bulabilir. Bu ekranda kal.</small>
