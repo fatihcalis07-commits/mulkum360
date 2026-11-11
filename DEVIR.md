@@ -571,3 +571,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - piyasa_m2 dolduruldu (102 kayıt, veri/piyasa_m2_2026_11.sql): İstanbul 39 ilçe (Endeksa Mart 2026), İstanbul 18 mahalle (Sözcü 30.07.2026 en değerli mahalleler; semt→resmî mahalle: Moda=Caferağa, Nişantaşı=Teşvikiye, Florya=Şenlikköy, Acarkent=Acarlar, Göktürk=Göktürk Merkez; Ataköy ve Dragos alınmadı), Antalya 19 ilçe (Endeksa Ağustos 2026) + Şirinyalı, Ankara 4 ilçe (Endeksa Eylül 2026), İzmir 21 ilçe (Yeni Asır Mart 2026; Çeşme/Foça/Gaziemir kaynakta çelişkili, alınmadı). Basında yayımlanmış rakamlar elle girildi, otomatik çekme yok.
 - Yerel kayıtlar da KFE ile bugüne güncellenir (en çok x1,5).
 - Sonraki: Bursa, Muğla (Bodrum, Fethiye), Mersin, Kocaeli ilçeleri; kiralık m².
+
+## 8.2 (12.11.2026)
+- Emsal il dışına çıkmaz (Türkiye geneli genişleme kaldırıldı). Referans yolunda sonuç emsal listesi yalnız hesaba giren ilanlar; yoksa raporda "yeterli gerçek ilan yok, başka şehir emsal alınmaz, değer şu kaynağa dayanır" notu. emsalDurumu en az 3 gerçek emsal ister.

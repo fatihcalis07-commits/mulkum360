@@ -246,7 +246,8 @@ EKRAN.rapor = (id) => {
 
   // 4 · Emsaller
   sayfalar.push(`${rBaslik('Değere Esas Emsaller')}
-    <table class="r-tablo"><tr><th>#</th><th>İlan</th><th>Konum</th><th>${emlak ? 'Alan / oda' : 'Yıl / km'}</th><th>Fiyat</th>${emlak ? '<th>TL/m²</th>' : ''}</tr>
+    ${!em.length ? `<div class="r-not" style="font-size:12px">${kac(f.ilce ? f.ilce + ', ' + f.il : f.il || '')} için Mülküm360'ta yeterli gerçek ilan yok; başka şehirlerin ilanları emsal alınmaz. Değer, ${kac(h.refKaynak || 'bölgenin piyasa m² verisi')} esas alınarak hesaplandı.</div>` : ''}
+    <table class="r-tablo" ${em.length ? '' : 'style="display:none"'}><tr><th>#</th><th>İlan</th><th>Konum</th><th>${emlak ? 'Alan / oda' : 'Yıl / km'}</th><th>Fiyat</th>${emlak ? '<th>TL/m²</th>' : ''}</tr>
     ${em.map((i, n) => `<tr><td>${n + 1}</td><td>${kac(String(i.baslik).slice(0, 34))}</td><td>${kac([i.ilce, i.il].filter(Boolean).join(', '))}</td><td>${emlak ? kac((i.alanlar.m2net || '—') + ' m² · ' + (i.alanlar.oda || '—')) : kac((i.alanlar.yil || '—') + ' · ' + sayiBicim(i.alanlar.km || 0) + ' km')}</td><td>${tl(i.fiyat)}</td>${emlak ? `<td>${i.alanlar.m2net ? tl(i.fiyat / i.alanlar.m2net) : '—'}</td>` : ''}</tr>`).join('')}</table>
     ${h.sayi > em.length ? `<div class="r-not">Hesapta ${h.sayi} emsal kullanıldı; ilk ${em.length} tanesi listelendi.</div>` : ''}
     ${h.tablo ? `${rBaslik(emlak ? (kira ? 'Kiralık' : 'Satılık') + ' Gayrimenkul Bilgileri' : 'Bölge Araç Piyasası')}

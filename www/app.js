@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '8.1 · 12.11.2026 19:00';
+const SURUM = '8.2 · 12.11.2026 19:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -316,8 +316,7 @@ function emsaller(o) {
     if (sokakta.length >= 3) { l = sokakta; kapsam = `${o.sokak}, ${o.mahalle} Mah., ${o.ilce} (aynı sokak)`; }
     else if (mahallece.length >= 3) { l = mahallece; kapsam = `${o.mahalle} Mah., ${o.ilce}`; }
     else if (ilcede.length >= 3) { l = ilcede; kapsam = `${o.ilce}, ${o.il}`; }
-    else if (ilde.length >= 3) { l = ilde; kapsam = `${o.il} geneli`; }
-    else { l = tur; kapsam = 'Türkiye geneli'; }
+    else { l = ilde; kapsam = `${o.il} geneli`; } // başka şehirden emsal alınmaz; il içinde yeterli ilan yoksa değer piyasa verisine dayanır
     const odali = l.filter((i) => o.oda && i.alanlar?.oda === o.oda);
     if (odali.length >= 3) { l = odali; kapsam += ` · ${o.oda}`; }
     // Kullanıcının kendi bulduğu emsaller (başka sitede gördüğü ilan vb.) havuza eklenir
@@ -396,7 +395,8 @@ function hesapla(o) {
       const eb = n ? medyan(gercek.map((x) => katli ? x.birim / katEtki((x.i.alanlar || {}).kat) : x.birim)) : 0;
       const birim = (w * eb + (1 - w) * ref.birim) * kat, m2 = +o.m2net;
       const orta = birim * m2;
-      return { yeterli: true, sayi: e.length, emsal: e, orta, alt: orta * 0.9, ust: orta * 1.1, birimOrta: birim, guven: n ? 'Orta' : 'Orta (resmî veri)', kapsam: n ? `${e.kapsam} + il piyasa verisi` : `${o.il} il geneli piyasa verisi`, genis: false, ilSayi: e.ilSayi, katEtkisi: katli ? katYuzde(o.kat) : null, refKaynak: ref.kaynak, refBirim: ref.birim, emsalAgirlik: Math.round(w * 100) };
+      const kullanilan = n ? gercek : []; kullanilan.kapsam = e.kapsam;
+      return { yeterli: true, sayi: kullanilan.length, emsal: kullanilan, orta, alt: orta * 0.9, ust: orta * 1.1, birimOrta: birim, guven: n ? 'Orta' : 'Orta (resmî veri)', kapsam: n ? `${e.kapsam} + il piyasa verisi` : `${o.il} il geneli piyasa verisi`, genis: false, ilSayi: e.ilSayi, katEtkisi: katli ? katYuzde(o.kat) : null, refKaynak: ref.kaynak, refBirim: ref.birim, emsalAgirlik: Math.round(w * 100) };
     }
   }
   if (e.length < 3) return { yeterli: false, sayi: e.length, emsal: e, kapsam: e.kapsam, ilSayi: e.ilSayi };
@@ -421,7 +421,7 @@ function emsalDurumu(i) {
     : { ana: 'vasita', marka: f.marka, model: f.model, yil: f.yil, km: f.km, haric: i.id };
   if (i.ana === 'emlak' && !(+f.m2net > 0)) return null;
   const h = hesapla(o);
-  if (!h.yeterli || h.genis) return null; // ilan sayfasında yalnız bölgesel karşılaştırma
+  if (!h.yeterli || h.genis || (h.emsal || []).length < 3) return null; // ilan sayfasında yalnız gerçek bölgesel emsalle karşılaştırma
   const birim = i.ana === 'emlak' ? i.fiyat / +f.m2net : i.fiyat;
   const b = h.emsal.map((x) => x.birim), en = Math.min(...b), ek = Math.max(...b);
   const konum = ek === en ? 0.5 : Math.max(0, Math.min(1, (birim - en) / (ek - en)));
