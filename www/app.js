@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '9.8 · 13.11.2026 03:15';
+const SURUM = '9.9 · 13.11.2026 03:45';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2025,7 +2025,7 @@ function kartvizit(b, benim, favAlan) {
   const alt = [b.unvan, b.firma].filter(Boolean).join(' · ') || (b.ofis ? 'Emlak ofisi' : 'Bireysel üye');
   return `<header class="kartvizit">
     <div class="kv-ust"><label class="kv-foto" aria-label="Profil fotoğrafı değiştir">${avatarHtml(b, 56, 'kv-avatar')}<span class="kv-kamera">${ic('foto', 12)}</span><input type="file" accept="image/*" hidden id="kvFoto"></label>
-      <div class="ara" style="min-width:0"><div class="kv-ad">${kac(b.ad)}</div><div class="kv-unvan">${kac(alt)}${b.dogrulanmis ? ' · <b>Doğrulanmış</b>' : ''}</div></div>
+      <div class="ara" style="min-width:0"><div class="kv-ad">${kac(b.ad)}</div><div class="kv-unvan">${kac(alt)}</div>${b.ofis || b.dogrulanmis ? `<div class="kv-rozet" data-duzen>${ic('kalkan', 11)}${b.dogrulanmis ? 'Doğrulanmış ' : ''}${b.sektor === 'galeri' ? 'Oto Galeri' : b.ofis ? 'Emlak Ofisi' : 'Üye'}</div>` : ''}</div>
       <div class="kv-dugme"><a href="#/uye/${b.id}" aria-label="Profilimi gör">${ic('goz', 18)}</a><button id="kvPaylas" aria-label="Paylaş">${ic('paylas', 18)}</button><a href="#/profil" aria-label="Profili düzenle">${ic('profil', 18)}</a></div></div>
     <div class="kv-sayi"><div><b>${aktif}</b><span>Aktif</span></div><div><b>${satilan}</b><span>Satılan</span></div><div><b>${sayiBicim(benim.reduce((t, i) => t + (i.goruntulenme || 0), 0))}</b><span>Görüntülenme</span></div><div><b>${favAlan}</b><span>Favori</span></div></div>
   </header>`;

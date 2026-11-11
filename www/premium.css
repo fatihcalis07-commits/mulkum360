@@ -190,3 +190,26 @@ details.katla>summary{font-weight:650}
 .foto-izgara .f{border-radius:14px}
 .endeks-kutular>div{border-radius:16px}
 .gun-ayrac span{letter-spacing:.02em}
+
+/* ---------- Hesabım başlığı (kartvizit) ---------- */
+html header.kartvizit{background:radial-gradient(90% 120% at 100% 0%,rgba(40,130,225,.85) 0%,rgba(16,100,188,0) 58%),radial-gradient(70% 90% at 0% 100%,rgba(255,232,0,.10) 0%,rgba(255,232,0,0) 60%),linear-gradient(160deg,#0E1A2D 0%,#152A49 55%,#1A3A68 100%)!important;border-radius:0 0 28px 28px;padding:calc(16px + var(--ust)) 18px 0;gap:16px;box-shadow:0 18px 40px -20px rgba(9,16,28,.75),inset 0 -1px 0 rgba(255,232,0,.38)!important}
+header.kartvizit:after{width:auto;height:auto;inset:0;right:0;top:0;border-radius:0;background:linear-gradient(115deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.07) 50%,rgba(255,255,255,0) 62%);pointer-events:none}
+header.kartvizit .kv-ust{gap:14px;align-items:center}
+header.kartvizit .kv-avatar{width:64px;height:64px;border-radius:50%;font-size:22px;box-shadow:0 0 0 2.5px #12233D,0 0 0 4.5px #FFE800,0 12px 24px -8px rgba(0,0,0,.6)}
+header.kartvizit .kv-kamera{right:-2px;bottom:-2px;width:24px;height:24px;color:#14202F;box-shadow:0 0 0 2px #12233D,0 4px 10px rgba(0,0,0,.35)}
+header.kartvizit .kv-ad{font-size:20px;font-weight:800;letter-spacing:-.022em;line-height:1.15}
+header.kartvizit .kv-unvan{font-size:13px;opacity:.74;margin-top:3px;letter-spacing:0}
+header.kartvizit .kv-rozet{margin-top:7px;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;background:rgba(255,232,0,.14);color:#FFE95C;box-shadow:inset 0 0 0 1px rgba(255,232,0,.32)}
+header.kartvizit .kv-rozet svg{stroke:#FFE95C}
+header.kartvizit .kv-dugme{gap:8px}
+header.kartvizit .kv-dugme a,header.kartvizit .kv-dugme button{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.10);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);transition:transform .14s var(--p-yay),background .15s}
+header.kartvizit .kv-dugme a:active,header.kartvizit .kv-dugme button:active{transform:scale(.92);background:rgba(255,255,255,.2)}
+header.kartvizit .kv-sayi{background:none;border-radius:0;padding:14px 0 16px;gap:0;border-top:1px solid rgba(255,255,255,.12)}
+header.kartvizit .kv-sayi div{gap:4px;border-left:1px solid rgba(255,255,255,.12)}
+header.kartvizit .kv-sayi div:first-child{border-left:0}
+header.kartvizit .kv-sayi b{font-size:21px;font-weight:800;letter-spacing:-.03em;line-height:1;font-feature-settings:"tnum","cv11"}
+header.kartvizit .kv-sayi span{font-size:10px;font-weight:650;letter-spacing:.09em;text-transform:uppercase;opacity:.62}
+@media (max-width:360px){header.kartvizit .kv-dugme a,header.kartvizit .kv-dugme button{width:36px;height:36px}header.kartvizit .kv-sayi span{font-size:9px;letter-spacing:.05em}}
+header.kartvizit .kv-sayi{grid-template-columns:1fr 1fr 1.42fr 1fr}
+header.kartvizit .kv-sayi span{letter-spacing:.07em}
+header.kartvizit .kv-unvan{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
