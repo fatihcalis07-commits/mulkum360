@@ -355,6 +355,12 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - **Pusula-AR (FAZ 5 ②)**: fizibilite KURALI — "getUserMedia+DeviceOrientation Capacitor APK'da test edilmeden kamera modu YOK". Cihaz/ekran kaydı elimizde yok; `@capacitor/geolocation` + kamera izni manifest'te yok. **Bilinçli ertelendi (bozuk AR sunulmaz)**: v3.5 APK + telefonu olan bir spike oturumu gerekir; kamerasız tam ekran pusula bandı yedeği o spike'la birlikte ele alınacak.
 - **v3.5 notları (birikmiş)**: `@capacitor/geolocation@8.2.4` kuruldu + manifest `ACCESS_FINE/COARSE_LOCATION` eklendi + `cap sync` ✔ (751a705) — **kalan: v3.5 derlemesi** (`eids.js`/`harita.js` bundle'lı; `npm i && npx cap sync && gradlew assembleRelease`); v3.4 kullanıcı testi beklemede.
 
+## ALAN ADI BAĞLANDI (11.11, kullanıcı Cloudflare'e taşıdı, kayıtları ben girdim)
+- Kullanıcı mulkum360.com NS'lerini **Cloudflare**'e taşıdı (bristol/chance.ns) + **sınırlı API token** verdi (yalnız o zona DNS-yazma; token metni hiçbir yere yazılmadı, disk kopyası silindi, kullanıcıdan panelde silmesi istendi).
+- Cloudflare API ile: park A×2 + eski www CNAME silindi → **A @ ×4 = 185.199.108-111.153 (proxy KAPALI/gri)** + **CNAME www → fatihcalis07-commits.github.io (gri)** yazıldı. TXT _dmarc ve _domainconnect korundu.
+- Repo: CNAME dosyası geri eklendi (`36919c6`), Pages rebuild. Doğrulandı: http 200 gerçek içerik · apex 301→www · github.io 301→domain · `--insecure` https 200 = **sunucu tam hazır, GitHub özel alan TLS sertifikası otomatik üretiliyor** (be­klemede; 20 dk'lık zamanlı doğrulama kurulu). https_enforced API PATCH'i token yetkisi yok (404) — GitHub zaten varsayılan HTTPS veriyor, gerekirse kullanıcı web'den açar.
+- **Play gizlilik linki (sertifika sonrası): `https://www.mulkum360.com/gizlilik.html`**. Geçerli Geçici link o ana kadar: `https://fatihcalis07-commits.github.io/mulkum360/gizlilik.html` (301'li — Play 301'i takip eder ama sertifika sonrası temiz olanı ver).
+
 ## v3.7 — EMLAKÇI ARAÇLARI (11.11 sabah, kullanıcı: "web sekmesi koy, emlakçılar için kolaylık")
 - Kullanıcı seçti: **Emlakçı hızlı araçlar**. `EKRAN.hesap` üstüne `WEB_ARACLAR` sabiti + `webAc()` (Capacitor Browser → yoksa window.open → yoksa location) + `aracBolumu()` eklendi; misafir VE üye görür. Araçlar: TAKBİS parsel sorgu, e-Devlet, TKGM, DASK, GİB (hepsi resmî gov domaini). Genişletmek: WEB_ARACLAR dizisine satır ekle.
 - Headless doğrulandı: 5 satır, 0 boş ikon, tıklama TAKBİS URL'sini açıyor, SPA yerinde. Commit `e4afdce`, push'lu. **v3.7 APK** masada (versionCode 37, imza kodu 0).
