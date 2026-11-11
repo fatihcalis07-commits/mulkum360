@@ -71,9 +71,14 @@ function overpassYaris(govde) {
 }
 async function konumVerisi(f) {
   if (!f.il) return null;
-  const sorgu = [f.adres, f.ilce, f.il, 'Türkiye'].filter(Boolean).join(', ');
+  // Öncelik: ilanın kayıtlı koordinatı → rapor penceresindeki adres → formdaki sokak + mahalle → ilçe merkezi
+  const ia = (f.haric && typeof ilan === 'function' && ilan(f.haric)?.alanlar) || {};
+  const sokak = f.sokak || ia.sokak, mahalle = f.mahalle || ia.mahalle;
+  const adres = f.adres || [sokak, mahalle && mahalle + ' Mahallesi'].filter(Boolean).join(', ');
+  const sorgu = [adres, f.ilce, f.il, 'Türkiye'].filter(Boolean).join(', ');
   let yer = null;
-  try { // Photon (komoot, OSM tabanlı, ücretsiz)
+  if (+ia.enlem > 0 && +ia.boylam > 0) yer = { lat: +ia.enlem, lon: +ia.boylam, ad: [sokak, mahalle && mahalle + ' Mah.', f.ilce, f.il].filter(Boolean).join(', '), ilan: true };
+  if (!yer) try { // Photon (komoot, OSM tabanlı, ücretsiz)
     const p = await (await sureliFetch('https://photon.komoot.io/api/?limit=1&q=' + encodeURIComponent(sorgu))).json();
     const ft = p.features?.[0];
     if (ft && ft.properties?.countrycode === 'TR') yer = { lat: ft.geometry.coordinates[1], lon: ft.geometry.coordinates[0], ad: [ft.properties.name, ft.properties.district, ft.properties.county, ft.properties.city || ft.properties.state].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(', ') };
@@ -83,7 +88,7 @@ async function konumVerisi(f) {
     if (g?.[0]) yer = { lat: +g[0].lat, lon: +g[0].lon, ad: g[0].display_name };
   } catch (_) {}
   if (!yer) return null;
-  const lat = yer.lat, lon = yer.lon, sonuc = { lat, lon, ad: yer.ad, hassas: !!f.adres, poi: {} };
+  const lat = yer.lat, lon = yer.lon, sonuc = { lat, lon, ad: yer.ad, hassas: !!(yer.ilan || f.adres || sokak), duzey: yer.ilan ? 'ilan konumu' : f.adres ? 'adres' : sokak ? 'sokak' : mahalle ? 'mahalle' : 'ilçe', poi: {} };
   try {
     const par = POI.flatMap(([, , ...ss]) => ss.map((s) => `nwr(around:1500,${lat},${lon})${s};`)).join('');
     const govde = 'data=' + encodeURIComponent(`[out:json][timeout:25];(${par});out center tags;`);
@@ -110,7 +115,7 @@ function haritaHtml(k) {
   return `<div class="r-harita" style="width:${W}px;height:${H}px">${karolar}
     <svg width="${W}" height="${H}" style="position:absolute;inset:0">${halka.map(([m, c]) => `<circle cx="${W / 2}" cy="${H / 2}" r="${m / mPx}" fill="${c}" fill-opacity=".08" stroke="${c}" stroke-width="3"/>`).join('')}<circle cx="${W / 2}" cy="${H / 2}" r="7" fill="${R_MAVI}" stroke="#fff" stroke-width="3"/></svg>
     <div class="r-harita-not">© OpenStreetMap katkıda bulunanlar</div></div>
-    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c}">${m} m</span>`).join('')}${k.hassas ? '' : '<em>Adres girilmediği için ilçe merkezi gösterilmiştir</em>'}</div>`;
+    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c}">${m} m</span>`).join('')}${k.hassas ? '' : k.duzey === 'mahalle' ? '<em>Sokak girilmediği için mahalle merkezi gösterilmiştir</em>' : '<em>Adres girilmediği için ilçe merkezi gösterilmiştir</em>'}</div>`;
 }
 
 // raporAl içinde çağrılır: rapora konacak ek veriyi hazırlar
@@ -286,7 +291,7 @@ EKRAN.rapor = (id) => {
     sayfalar.push(`${rBaslik('Konum')}${haritaHtml(h.konum)}<div class="r-not">${kac(h.konum.ad)} · ${h.konum.lat.toFixed(5)}, ${h.konum.lon.toFixed(5)}</div>
       ${rBaslik('Önemli Konumlar')}
       ${Object.keys(p).length ? `<table class="r-tablo bolge"><tr><th></th><th>500 m</th><th>1000 m</th><th>1500 m</th><th>En yakın</th></tr>${Object.values(p).map((x) => `<tr><th>${x.ad}</th><td>${x.r500}</td><td>${x.r1000}</td><td>${x.r1500}</td><td>${x.enYakin != null ? x.enYakin + ' m' : '—'}</td></tr>`).join('')}</table>
-      <div class="r-not">Kaynak: OpenStreetMap (açık veri), ${tarih}. Sayılar haritaya işlenmiş noktalardır; OSM’de eksik kayıt olabilir.${h.konum.hassas ? '' : ' Adres girilmediği için ilçe merkezine göre sayılmıştır.'}</div>`
+      <div class="r-not">Kaynak: OpenStreetMap (açık veri), ${tarih}. Sayılar haritaya işlenmiş noktalardır; OSM’de eksik kayıt olabilir.${h.konum.hassas ? '' : h.konum.duzey === 'mahalle' ? ' Sokak girilmediği için mahalle merkezine göre sayılmıştır.' : ' Adres girilmediği için ilçe merkezine göre sayılmıştır.'}</div>`
       : `<div class="r-not">Önemli konum verisi alınamadı${h.konum.poiHata ? ' (OpenStreetMap servisine ulaşılamadı)' : ''}.</div>`}`);
   }
   // 6 · Bölge: fiyat analizleri + demografi + sosyal (+ yaş grupları grafiği)

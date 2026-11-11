@@ -590,3 +590,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 8.7 (12.11.2026)
 - Kişi başı GSYH 2025: TR resmî 714.682 TL / 18.103 $ (TÜİK yıllık GSYH 2025, güncel). İller TUIK.GSYH.KISI.TL/USD.TAHMIN = il 2024 × TR 2025/2024 (veri/tuik_gsyh_2025_tahmin.sql). Rapor tahmin daha yeniyse onu "2025 tahmini" etiketi ve açıklamayla gösterir. TÜİK il bazında 2025i Aralık 2026da yayımlayınca ayıklayıcı (scratchpad gsyh) yeniden çalıştırılmalı.
+
+## 8.8 (12.11.2026)
+- Rapor konumu: konumVerisi önce ilanın alanlar.enlem/boylam koordinatını kullanır (hassas, duzey "ilan konumu"); yoksa rapor penceresindeki adres, yoksa formdaki/ilandaki sokak + mahalle ile adres arar; yalnız mahalle bulunursa not "mahalle merkezi". Önceden rapor penceresinde adres yazılmadıkça ilçe merkezi kullanılıyordu.
