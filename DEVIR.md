@@ -531,3 +531,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 7.2 (12.11.2026)
 - Bildirim simgesi: res/drawable/ic_stat_bildirim.xml (logodaki ev + merkez nokta + yay, beyaz tek renk vektör), renk #E89B1A (values/bildirim.xml). Yerel bildirimler capacitor.config LocalNotifications.smallIcon/iconColor; FCM AndroidManifest default_notification_icon/color/channel ve push-gonder android.notification.icon/color.
+
+- 12.11.2026: FCM_SA secret eklendi (hizmet hesabı firebase-adminsdk-fbsvc, anahtar 3f056c000f…). Bu anahtarın ekran görüntüsü sohbete düştü; yenisiyle değiştirilmesi önerildi. push_jetonlari şu an boş; ilk jeton 7.2 kurulup giriş yapılınca gelir.
+
+- 12.11.2026: İlk anlık bildirim telefona gönderildi (gonderilen:1). FCM_SA secret tek tırnaklı env dosyasıyla yüklenmeli (çift tırnak kaçışları bozuyor). push-gonder hataları JSON olarak döndürür.

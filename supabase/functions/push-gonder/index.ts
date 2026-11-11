@@ -14,7 +14,8 @@ async function erisimJetonu(sa: { client_email: string; private_key: string }) {
   return (await r.json()).access_token as string;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req) => { try { return await isle(req); } catch (e) { return Response.json({ hata: String(e).slice(0, 300) }, { status: 500 }); } });
+async function isle(req: Request) {
   const ham = Deno.env.get('FCM_SA');
   if (!ham) return Response.json({ atlandi: 'FCM_SA yok' });
   let id = ''; try { id = String((await req.json()).id || ''); } catch { /* */ }
@@ -24,7 +25,12 @@ Deno.serve(async (req) => {
   if (!b) return Response.json({ hata: 'yok' }, { status: 404 });
   const { data: jl } = await sb.from('push_jetonlari').select('token').eq('kullanici', b.alici);
   if (!jl?.length) return Response.json({ gonderilen: 0 });
-  const sa = JSON.parse(ham), jeton = await erisimJetonu(sa);
+  // Gizli ayar yüklenirken anahtardaki kaçış dizileri gerçek satır sonuna dönebiliyor; tek satırlık JSON'da bunlar yalnız anahtarın içindedir
+  let sa;
+  try { sa = JSON.parse(ham); } catch { sa = JSON.parse(ham.replace(/\r?\n/g, '\\n')); }
+  let jeton = '';
+  try { jeton = await erisimJetonu(sa); } catch (e) { return Response.json({ hata: 'jeton: ' + String(e).slice(0, 200) }, { status: 500 }); }
+  if (!jeton) return Response.json({ hata: 'erişim jetonu alınamadı' }, { status: 500 });
   let n = 0;
   for (const { token } of jl) {
     const r = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
@@ -34,4 +40,4 @@ Deno.serve(async (req) => {
     if (r.ok) n++; else if (r.status === 404 || r.status === 400) await sb.from('push_jetonlari').delete().eq('token', token); // geçersiz jeton
   }
   return Response.json({ gonderilen: n });
-});
+}
