@@ -92,13 +92,35 @@ async function cevreVerisiCanli(k, f) {
 }
 
 // Geçmiş depremler: USGS kataloğu (FDSN), 1976'dan bugüne, 100 km içinde M≥5
+// Depremler: EMSC (Avrupa-Akdeniz Sismoloji Merkezi, hızlı, Türkiye kapsamı iyi) ana kaynak, USGS yedek.
+// Geçmiş: 1976'dan bugüne 100 km içinde M≥5. Son: son 12 ayda 50 km içinde M≥3.
+async function depremSorgu(k, yariKm, minM, bas, sira, adet) {
+  const ev = (r) => (r.features || []).map((e) => { const [lon, lat, der] = e.geometry.coordinates; const p = e.properties; return { m: +p.mag, t: new Date(p.time), km: Math.round(enYakinMesafe(k.lat, k.lon, { lat, lon }) / 1000), der: Math.round(Math.abs(der)), yer: p.flynn_region || p.place || '' }; });
+  try {
+    const r = await (await sureliFetch(`https://www.seismicportal.eu/fdsnws/event/1/query?lat=${k.lat}&lon=${k.lon}&maxradius=${(yariKm / 111.2).toFixed(3)}&minmag=${minM}&start=${bas}&format=json&orderby=${sira}&limit=${adet}`, null, 15000)).json();
+    return { l: ev(r), kaynak: 'EMSC' };
+  } catch (_) {
+    const r = await (await sureliFetch(`https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=${k.lat}&longitude=${k.lon}&maxradiuskm=${yariKm}&minmagnitude=${minM}&starttime=${bas}&orderby=${sira === 'time' ? 'time' : 'magnitude'}&limit=${adet}`, null, 25000)).json();
+    return { l: ev(r), kaynak: 'USGS' };
+  }
+}
 async function depremVerisi(k) {
-  const r = await (await sureliFetch(`https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=${k.lat}&longitude=${k.lon}&maxradiuskm=100&minmagnitude=5&starttime=1976-01-01&orderby=magnitude`, null, 15000)).json();
-  const l = (r.features || []).map((e) => {
-    const [lon, lat, der] = e.geometry.coordinates;
-    return { m: e.properties.mag, t: new Date(e.properties.time), km: Math.round(enYakinMesafe(k.lat, k.lon, { lat, lon }) / 1000), der: Math.round(der) };
-  });
-  return { sayi: l.length, m6: l.filter((x) => x.m >= 6).length, en: l.slice(0, 6), yakin50: l.filter((x) => x.km <= 50).length };
+  const yilOnce = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+  const [g, s] = await Promise.all([depremSorgu(k, 100, 5, '1976-01-01', 'magnitude', 200), depremSorgu(k, 50, 3, yilOnce, 'time', 8).catch(() => ({ l: [], kaynak: '' }))]);
+  const l = g.l;
+  return { sayi: l.length, m6: l.filter((x) => x.m >= 6).length, en: l.slice(0, 6), yakin50: l.filter((x) => x.km <= 50).length, son: s.l, sonSayi: s.l.length, kaynak: [...new Set([g.kaynak, s.kaynak].filter(Boolean))].join(', ') };
+}
+// Aktif faylar (www/faylar.json, GEM Global Active Faults, Türkiye kesimi). Noktadan fay çizgisine en kısa mesafe.
+let FAY_ONBELLEK = null;
+async function fayVerisi(k) {
+  FAY_ONBELLEK = FAY_ONBELLEK || (await (await fetch('faylar.json')).json());
+  const kx = Math.cos((k.lat * Math.PI) / 180) * 111.32, ky = 110.57;
+  const mesafe = (d) => { let en = Infinity; for (let i = 0; i + 3 < d.length; i += 2) {
+    const ax = (d[i] - k.lon) * kx, ay = (d[i + 1] - k.lat) * ky, bx = (d[i + 2] - k.lon) * kx, by = (d[i + 3] - k.lat) * ky;
+    const dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy || 1)));
+    en = Math.min(en, Math.hypot(ax + u * dx, ay + u * dy)); } return en; };
+  const l = FAY_ONBELLEK.faylar.map(([tip, kayma, d]) => ({ tip, kayma, km: mesafe(d) })).filter((x) => isFinite(x.km)).sort((a, b) => a.km - b.km);
+  return { en: l.slice(0, 4).map((x) => ({ ...x, km: Math.round(x.km * 10) / 10 })), k10: l.filter((x) => x.km <= 10).length, k25: l.filter((x) => x.km <= 25).length, k50: l.filter((x) => x.km <= 50).length, kaynak: FAY_ONBELLEK.kaynak };
 }
 // Yapım yılına göre yürürlükteki deprem yönetmeliği (bina yaşından yaklaşık yıl)
 function yonetmelikDonemi(binaYasi) {
@@ -181,7 +203,20 @@ function raporSayfalari2(f, h) {
       ${yd ? `<table class="r-tablo bolge"><tr><th>Tahmini yapım yılı</th><td>${yd.yil} (bina yaşı ${kac(String(f.binaYasi))})</td></tr><tr><th>Dönemin yönetmeliği</th><td><b>${yd.ad}</b></td></tr><tr><th>Değerlendirme</th><td><b>${yd.seviye}</b> · ${yd.not}</td></tr></table>` : '<div class="r-not">Bina yaşı girilmediği için yönetmelik dönemi belirlenemedi.</div>'}
       ${dp ? `<div class="r-satir3"><div class="r-kutu"><b>${dp.sayi}</b><small>M≥5 deprem, 100 km içinde (1976–bugün)</small></div><div class="r-kutu"><b>${dp.yakin50}</b><small>Bunların 50 km içindekiler</small></div><div class="r-kutu"><b>${dp.m6}</b><small>M≥6 deprem</small></div></div>
       ${dp.en.length ? `<table class="r-tablo bolge"><tr><th>Büyüklük</th><th>Tarih</th><th>Uzaklık</th><th>Derinlik</th></tr>${dp.en.map((x) => `<tr><th>M ${String(x.m.toFixed(1)).replace('.', ',')}</th><td>${tarih(x.t)}</td><td>${x.km} km</td><td>${x.der} km</td></tr>`).join('')}</table>` : '<div class="r-not">Bu dönemde 100 km içinde M≥5 deprem kaydı yok. Bu, gelecekte deprem olmayacağı anlamına gelmez.</div>'}` : '<div class="r-not">Deprem kataloğuna şu an ulaşılamadı.</div>'}
-      <div class="r-not">Kaynak: USGS deprem kataloğu (FDSN), yönetmelik tarihleri. Bu sayfa binanın kendi dayanıklılığını göstermez; beton kalitesi, zemin ve güçlendirme durumu için deprem performans analizi / zemin etüdü yaptırın. Konuma özel deprem tehlikesi: AFAD Türkiye Deprem Tehlike Haritası (tdth.afad.gov.tr).</div>`);
+      <div class="r-not">Kaynak: ${kac(dp?.kaynak || 'EMSC / USGS')} deprem kataloğu (FDSN), yönetmelik tarihleri. Bu sayfa binanın kendi dayanıklılığını göstermez; beton kalitesi, zemin ve güçlendirme durumu için deprem performans analizi / zemin etüdü yaptırın. Konuma özel deprem tehlikesi: AFAD Türkiye Deprem Tehlike Haritası (tdth.afad.gov.tr).</div>`);
+  }
+  // Aktif faylar ve son 12 ayın depremleri
+  const fy = h.fay;
+  if (emlak && (fy || dp?.son)) {
+    const tarihK = (d) => d.toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' });
+    const yorum = !fy || !fy.en.length ? '' : fy.en[0].km < 2 ? 'Konum aktif bir fay hattına çok yakın (2 km içinde). Zemin etüdü ve yapı performans analizi özellikle önemlidir.' : fy.en[0].km < 10 ? 'En yakın aktif fay 10 km içinde; bölge deprem açısından aktiftir.' : fy.en[0].km < 25 ? 'En yakın aktif fay 10–25 km arasında.' : 'Yakın çevrede (25 km) haritalanmış aktif fay yok; bu, deprem riski olmadığı anlamına gelmez.';
+    sayfalar.push(`${rBaslik('Aktif Fay Hatları')}
+      ${fy ? `<div class="r-satir3"><div class="r-kutu"><b>${fy.en[0] ? String(fy.en[0].km).replace('.', ',') + ' km' : '—'}</b><small>En yakın aktif fay</small></div><div class="r-kutu"><b>${fy.k10} / ${fy.k25}</b><small>10 km / 25 km içindeki fay parçası</small></div><div class="r-kutu"><b>${fy.k50}</b><small>50 km içindeki fay parçası</small></div></div>
+      <table class="r-tablo bolge"><tr><th>Uzaklık</th><th>Fay türü</th><th>Kayma hızı</th></tr>${fy.en.map((x) => `<tr><th>${String(x.km).replace('.', ',')} km</th><td>${kac(x.tip)}</td><td>${x.kayma != null ? String(x.kayma).replace('.', ',') + ' mm/yıl' : '—'}</td></tr>`).join('')}</table>
+      <div class="r-not">${yorum} Kaynak: ${kac(fy.kaynak)}. Fay konumları ölçekli haritadan sayısallaştırılmıştır, birkaç yüz metre sapabilir; resmî diri fay bilgisi için MTA Yerbilimleri Harita Görüntüleyici (yerbilimleri.mta.gov.tr) ve parsel bazında imar/zemin raporuna bakın.</div>` : '<div class="r-not">Fay verisi alınamadı.</div>'}
+      ${rBaslik('Son 12 Ayın Depremleri (50 km, M≥3)')}
+      ${dp?.son?.length ? `<table class="r-tablo bolge"><tr><th>Büyüklük</th><th>Tarih</th><th>Uzaklık</th><th>Derinlik</th></tr>${dp.son.slice(0, 8).map((x) => `<tr><th>M ${String(x.m.toFixed(1)).replace('.', ',')}</th><td>${tarihK(x.t)}</td><td>${x.km} km</td><td>${x.der} km</td></tr>`).join('')}</table>` : `<div class="r-not">${dp ? 'Son 12 ayda 50 km içinde M≥3 deprem kaydı yok.' : 'Deprem kataloğuna ulaşılamadı; rapor yeniden oluşturulunca eklenir.'}</div>`}
+      <div class="r-not">Kaynak: ${kac(dp?.kaynak || 'EMSC / USGS')} deprem kataloğu. Anlık deprem bilgisi için AFAD (deprem.afad.gov.tr) ve Kandilli Rasathanesi.</div>`);
   }
   // B · Piyasa: trend + davranış + resmî göstergeler
   const t = h.trend, pd = h.piyasa, g = h.gostergeler || [];

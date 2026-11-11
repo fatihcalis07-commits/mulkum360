@@ -553,3 +553,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Rapor A4 taşması: bölge sayfası (raporEkBolumler parca=bolge) yalnız fiyat+ilçe; yeni "Demografik ve Sosyal Yapı" sayfası (parca=demo + cinsiyet + medeni), sonraki sayfa yaş + eğitim. Tüm sayfalar ölçüldü, en dolu 874/1123 px.
 - Rozet çakışması: kurum rozeti .rozet.kurum (sayaç .rozet position:absolute alıyordu, fotoğraf köşesine kayıyordu). .kart-alt sarılır.
 - m² öne çıktı: ilan sayfasında .m2-hap (m² fiyatı + net/brüt m²), rapor vade kartlarında m² başına fiyat.
+
+## 7.8 (12.11.2026)
+- Deprem: depremSorgu() EMSC (seismicportal.eu FDSN, CORS açık, ~0,3 sn) ana kaynak, USGS yedek (25 sn). depremVerisi: 1976dan 100 km M≥5 + son 12 ay 50 km M≥3 (son[]), kaynak adı rapora yazılır. Önceki boşluk: USGS 15 sn zaman aşımı.
+- Fay hatları: www/faylar.json (GEM Global Active Faults, Türkiye kesimi, 449 parça, 91 KB, CC BY-SA 4.0; tür + kayma hızı + koordinat), fayVerisi() noktadan çizgiye en kısa mesafe; raporda "Aktif Fay Hatları" sayfası (en yakın 4 fay, 10/25/50 km sayıları, yorum) + "Son 12 Ayın Depremleri". Sayfalar ölçüldü, sığıyor.
