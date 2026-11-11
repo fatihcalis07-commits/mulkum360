@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '9.6 · 13.11.2026 01:45';
+const SURUM = '9.7 · 13.11.2026 02:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -778,7 +778,7 @@ EKRAN.ilan = (id) => {
   const satildi = i.durum === 'satildi';
   document.body.classList.add('navsiz'); nav.innerHTML = '';
   app.innerHTML = `<div class="galeri">
-      ${fotolar.length ? `<div class="seritler" id="serit">${fotolar.map((u, n) => `<img src="${u}" alt="Fotoğraf ${n + 1}">`).join('')}</div>` : `<div style="height:100%;display:flex;align-items:center;justify-content:center">${fotoKutu(i, 72)}</div>`}
+      ${fotolar.length ? `<div class="seritler" id="serit">${fotolar.map((u, n) => `<img src="${u}" alt="Fotoğraf ${n + 1}"${n ? ' loading="lazy"' : ''} decoding="async">`).join('')}</div>` : `<div style="height:100%;display:flex;align-items:center;justify-content:center">${fotoKutu(i, 72)}</div>`}
       <div class="ust-dugme" style="left:12px"><button class="ikon-btn" aria-label="Geri" data-geri>${ic('geri')}</button></div>
       <div class="ust-dugme" style="right:12px"><button class="ikon-btn" aria-label="Paylaş" id="paylas">${ic('paylas')}</button>
         ${sahip ? '' : `<button class="ikon-btn" aria-label="Favori" id="fav">${ic('kalp', 20, favMi(id) ? 'var(--vurgu)' : 'currentColor')}</button>`}</div>
@@ -863,7 +863,9 @@ EKRAN.ilan = (id) => {
   const serit = $('#serit');
   if (serit) serit.querySelectorAll('img').forEach((im, n) => (im.onclick = () => fotoGoster(fotolar, n)));
   if (serit && $('#sayac')) serit.onscroll = () => ($('#sayac').textContent = Math.round(serit.scrollLeft / serit.clientWidth) + 1 + ' / ' + fotolar.length);
-  $('#paylas').onclick = () => paylas(`${i.baslik} — ${tl(i.fiyat)} (${[i.ilce, i.il].filter(Boolean).join(', ')}) · Mülküm360 ilan no ${i.no || i.id.slice(-6).toUpperCase()}`);
+  $('#paylas').onclick = () => paylas(`${i.baslik} — ${tl(i.fiyat)}${f.islem === 'Kiralık' ? ' / ay' : ''} (${[i.ilce, i.il].filter(Boolean).join(', ')})
+Mülküm360 ilan no: ${i.no || i.id.slice(-6).toUpperCase()} (uygulamada arama kutusuna bu numarayı yaz)
+Uygulama: https://fatihcalis07-commits.github.io/mulkum360/`);
   const fv = $('#fav'); if (fv) fv.onclick = async () => { await favDegis(id); fv.innerHTML = ic('kalp', 20, favMi(id) ? 'var(--vurgu)' : 'currentColor'); };
   const mj = $('#mesaj'); if (mj) mj.onclick = async () => { if (girisGerek('Mesaj göndermek için giriş yap')) return; const s = await dene(() => sohbetGetir(i)); if (s) git('#/sohbet/' + s.id); };
   const tk = $('#teklif'); if (tk) tk.onclick = async () => { if (girisGerek('Teklif vermek için giriş yap')) return; const s = await dene(() => sohbetGetir(i)); if (s) teklifSheet(s); };
@@ -1914,16 +1916,17 @@ EKRAN.hesap = () => {
     <div class="ic">
       ${cuzdanKarti(b)}
       <div class="bolum-bas"><h2>İlanlarım</h2>${benim.length ? `<a href="#/ver">+ Yeni ilan</a>` : ''}</div>
-      <div class="ciplar"><button class="cip ${sekme === 'yayinda' ? 'secili' : ''}" data-s="yayinda">Yayında · ${benim.filter((i) => i.durum === 'yayinda').length}</button>${eidsAcik() && benim.some((i) => i.durum === 'onayda') ? `<button class="cip ${sekme === 'onayda' ? 'secili' : ''}" data-s="onayda">Doğrulanıyor · ${benim.filter((i) => i.durum === 'onayda').length}</button>` : ''}<button class="cip ${sekme === 'satildi' ? 'secili' : ''}" data-s="satildi">Satıldı / kiralandı · ${benim.filter((i) => i.durum === 'satildi').length}</button></div>
+      <div class="ciplar"><button class="cip ${sekme === 'yayinda' ? 'secili' : ''}" data-s="yayinda">Yayında · ${benim.filter((i) => i.durum === 'yayinda').length}</button>${eidsAcik() && benim.some((i) => i.durum === 'onayda') ? `<button class="cip ${sekme === 'onayda' ? 'secili' : ''}" data-s="onayda">Doğrulanıyor · ${benim.filter((i) => i.durum === 'onayda').length}</button>` : ''}<button class="cip ${sekme === 'satildi' ? 'secili' : ''}" data-s="satildi">Satıldı / kiralandı · ${benim.filter((i) => i.durum === 'satildi').length}</button>${benim.some((i) => i.durum === 'kaldirildi') ? `<button class="cip ${sekme === 'kaldirildi' ? 'secili' : ''}" data-s="kaldirildi">Yayından kaldırıldı · ${benim.filter((i) => i.durum === 'kaldirildi').length}</button>` : ''}</div>
+      ${sekme === 'kaldirildi' && liste.length ? `<div class="uyari-k">${ic('uyari', 18)}<div>Bu ilanlar şikayet ya da kural ihlali nedeniyle yönetim tarafından yayından kaldırıldı. Düzenleyip destekle iletişime geçebilirsin.</div></div>` : ''}
       ${liste.length ? liste.map((i) => {
         const e = emsalDurumu(i);
         const ip = e && e.konum > 0.7 && Date.now() - i.olusturma > 7 * 86400000 ? `<div class="uyari-k" style="margin-top:6px">${ic('grafik', 16)}<div>Fiyatın benzer ilanların üstünde. ${tl(e.orta)} civarı daha çok ilgi görebilir.<br><a href="#/degerle?ilan=${i.id}" style="font-weight:700">Değer raporu al · 1 kredi ›</a></div></div>` : '';
         return `<div style="display:flex;flex-direction:column;gap:6px">${ilanSatir(i, `<div class="perf"><span>${ic('goz', 12)} ${i.goruntulenme || 0}</span><span>${ic('kalp', 12)} ${(S.favSayilari || {})[i.id] || 0}</span><span>${ic('mesaj', 12)} ${S.sohbetler.filter((s) => s.ilanId === i.id && s.mesajlar.length).length}</span><span>${Math.max(1, Math.round((Date.now() - i.olusturma) / 86400000))}. gün</span></div>`)}${ip}
           <button class="btn sade tam ilan-yonet" data-yonet="${i.id}">${ic('ayar', 16)}İlanı yönet${(i.fotolar || []).length ? '' : ' · fotoğraf yok'}</button>
-          <div hidden><a href="#/ver/${i.id}" data-duzenle="${i.id}">Düzenle</a>${i.durum === 'onayda' && eidsAcik() ? `<button class="btn sade kucuk" data-eids="${i.id}">EİDS doğrulaması</button>` : `<button class="btn sade kucuk" data-durum="${i.id}">${i.durum === 'yayinda' ? 'Satıldı' : 'Yayına al'}</button>`}<button class="btn sade kucuk" data-ilansil="${i.id}" style="color:var(--hata)">Sil</button>
+          <div hidden><a href="#/ver/${i.id}" data-duzenle="${i.id}">Düzenle</a>${i.durum === 'onayda' && eidsAcik() ? `<button class="btn sade kucuk" data-eids="${i.id}">EİDS doğrulaması</button>` : i.durum === 'kaldirildi' ? '' : `<button class="btn sade kucuk" data-durum="${i.id}">${i.durum === 'yayinda' ? 'Satıldı' : 'Yayına al'}</button>`}<button class="btn sade kucuk" data-ilansil="${i.id}" style="color:var(--hata)">Sil</button>
           ${(i.fotolar || []).length < FOTO_SINIR ? `<label class="btn ${(i.fotolar || []).length ? 'sade' : 'cizgili'} kucuk tam">${ic('foto', 16)}${(i.fotolar || []).length ? 'Fotoğraf ekle (' + i.fotolar.length + '/' + FOTO_SINIR + ')' : 'Fotoğraf ekle — bu ilanda fotoğraf yok'}<input type="file" accept="image/*" multiple hidden data-fotoekle="${i.id}"></label>` : ''}</div></div>`;
-      }).join('') : bosDurum('ev', sekme === 'yayinda' ? 'Yayında ilanın yok' : 'Henüz satış yok', sekme === 'yayinda' ? 'İlk ilanını bir dakikada ver.' : 'Satılan ya da kiralanan ilanların burada listelenir.', sekme === 'yayinda' ? '<a class="btn" href="#/ver">İlan ver</a>' : '')}
-      ${b.ofis ? '' : `<a class="kart satir" href="#/profil" style="text-decoration:none;color:inherit">${ic('kalkan', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Emlak ofisi misin?</b><div class="k soluk">Hesabını ofise çevir; panel, toplu yükleme ve ofis rozeti açılsın</div></div><span class="ok">›</span></a>`}
+      }).join('') : bosDurum('ev', sekme === 'yayinda' ? 'Yayında ilanın yok' : sekme === 'satildi' ? 'Henüz satış yok' : 'Bu bölümde ilan yok', sekme === 'yayinda' ? 'İlk ilanını bir dakikada ver.' : sekme === 'satildi' ? 'Satılan ya da kiralanan ilanların burada listelenir.' : '', sekme === 'yayinda' ? '<a class="btn" href="#/ver">İlan ver</a>' : '')}
+      ${b.ofis ? '' : `<a class="kart satir" href="#/profil" style="text-decoration:none;color:inherit">${ic('kalkan', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Emlak ofisi ya da galeri misin?</b><div class="k soluk">Hesabını kurumsala çevir; panel, toplu yükleme ve kurumsal rozet açılsın</div></div><span class="ok">›</span></a>`}
       ${b.ofis ? katla('Kurumsal hesap', 'ofis', `<div class="liste">
         ${menuSatir('#/panel', 'ofis', 'Ofis paneli')}
         <button class="oge" id="davet">${ic('paylas', 20)}Davet et, ikiniz de 3 kredi kazanın<span class="ok">›</span></button>
@@ -2059,10 +2062,10 @@ EKRAN.profil = () => {
       <label class="satir k"><input type="checkbox" name="soyadGizle" ${b.soyadGizle ? 'checked' : ''} style="width:22px;height:22px">Soyadım yalnız baş harfiyle görünsün (örn. ${kac(gorunenAd({ ...b, soyadGizle: true, id: '' }))})</label>
       <label class="satir k"><input type="checkbox" name="ileti" ${b.ileti ? 'checked' : ''} style="width:22px;height:22px">Kampanya ve bildirim izni</label>
       <h3 style="margin:8px 0 0">Rapor danışman bilgileri <span class="k soluk" style="font-weight:500">(isteğe bağlı)</span></h3>
-      <div class="k soluk">Değer raporlarında “danışman” sayfası olarak görünür; emlak danışmanları için.</div>
-      <div class="izgara2"><label class="alan">Firma<input name="firma" maxlength="80" value="${kac(b.firma || '')}"></label><label class="alan">Unvan<input name="unvan" maxlength="80" value="${kac(b.unvan || '')}" placeholder="örn. Gayrimenkul Danışmanı"></label></div>
-      <label class="alan">Taşınmaz Ticareti Yetki Belgesi no <span style="font-weight:500">(emlak ofisleri için)</span><input name="yetkiNo" maxlength="20" value="${kac(b.yetkiNo || '')}"></label>
-      ${b.dogrulanmis ? `<div><span class="rozet dogru">${ic('kalkan', 12)}Doğrulanmış ofis</span></div>` : b.yetkiNo ? '<button type="button" class="btn sade tam" id="ofisIste">Emlak ofisi doğrulaması iste</button>' : ''}
+      <div class="k soluk">${b.sektor === 'galeri' ? 'Profilinde ve ilanlarında görünür; galeri bilgilerin.' : 'Değer raporlarında “danışman” sayfası olarak görünür; emlak danışmanları için.'}</div>
+      <div class="izgara2"><label class="alan">Firma<input name="firma" maxlength="80" value="${kac(b.firma || '')}"></label><label class="alan">Unvan<input name="unvan" maxlength="80" value="${kac(b.unvan || '')}" placeholder="${b.sektor === 'galeri' ? 'örn. Satış Danışmanı' : 'örn. Gayrimenkul Danışmanı'}"></label></div>
+      <label class="alan">${b.sektor === 'galeri' ? 'İkinci El Motorlu Kara Taşıtı Ticareti Yetki Belgesi no <span style="font-weight:500">(galeriler için)</span>' : 'Taşınmaz Ticareti Yetki Belgesi no <span style="font-weight:500">(emlak ofisleri için)</span>'}<input name="yetkiNo" maxlength="20" value="${kac(b.yetkiNo || '')}"></label>
+      ${b.dogrulanmis ? `<div><span class="rozet dogru">${ic('kalkan', 12)}Doğrulanmış ${b.sektor === 'galeri' ? 'galeri' : 'ofis'}</span></div>` : b.yetkiNo ? `<button type="button" class="btn sade tam" id="ofisIste">${b.sektor === 'galeri' ? 'Galeri' : 'Emlak ofisi'} doğrulaması iste</button>` : ''}
       <label class="alan">Slogan<input name="slogan" maxlength="120" value="${kac(b.slogan || '')}"></label>
       <label class="alan">Hakkımda<textarea name="hakkinda" maxlength="1500">${kac(b.hakkinda || '')}</textarea></label>
       <div class="hata-yazi" id="ph"></div><button class="btn">Kaydet</button></div></form>
@@ -2077,7 +2080,9 @@ EKRAN.profil = () => {
     const tel = v.tel.replace(/\D/g, '');
     if (v.ad.trim().split(/\s+/).length < 2) return hataGoster(h, 'Adını ve soyadını yaz.');
     if (!/^(90)?0?5\d{9}$/.test(tel)) return hataGoster(h, 'Geçerli bir cep telefonu yaz.');
-    await dene(() => profilKaydet(b, { ad: v.ad.trim().replace(/\s+/g, ' '), tel: '0' + tel.slice(-10), ileti: !!v.ileti, firma: v.firma.trim(), unvan: v.unvan.trim(), hakkinda: v.hakkinda.trim(), slogan: v.slogan.trim(), soyadGizle: !!v.soyadGizle, telGoster: !!v.telGoster, yetkiNo: v.yetkiNo.trim(), ofis: v.ht !== 'bireysel', sektor: v.ht === 'galeri' ? 'galeri' : 'emlak' }), 'Bilgilerin kaydedildi');
+    const eskiTur = b.ofis ? (b.sektor || 'emlak') : 'bireysel', kb = e.target.querySelector('button.btn:not(.sade)'); kb.disabled = true;
+    const tamam = await dene(() => profilKaydet(b, { ad: v.ad.trim().replace(/\s+/g, ' '), tel: '0' + tel.slice(-10), ileti: !!v.ileti, firma: v.firma.trim(), unvan: v.unvan.trim(), hakkinda: v.hakkinda.trim(), slogan: v.slogan.trim(), soyadGizle: !!v.soyadGizle, telGoster: !!v.telGoster, yetkiNo: v.yetkiNo.trim(), ofis: v.ht !== 'bireysel', sektor: v.ht === 'galeri' ? 'galeri' : 'emlak' }), 'Bilgilerin kaydedildi');
+    kb.disabled = false; if (tamam && eskiTur !== v.ht) ciz();
   };
   $('#sf').onsubmit = async (e) => {
     e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)), h = $('#sh'); h.textContent = '';
