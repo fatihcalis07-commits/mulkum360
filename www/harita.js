@@ -11,7 +11,7 @@ const haritaAday = () => {
   let l = ham.map((i) => ({ i, m: Math.round(mesafe(HARP.lat, HARP.lon, +i.alanlar.enlem, +i.alanlar.boylam)) }));
   if (HARP.r) l = l.filter((x) => x.m <= HARP.r);
   l.sort((a, b) => HARP.sirala === 'mesafe' ? a.m - b.m : HARP.sirala === 'ucuz' ? a.i.fiyat - b.i.fiyat : b.i.olusturma - a.i.olusturma);
-  return { liste: l.slice(0, 120), toplam: ham.length, kok: yayinda().filter((i) => i.ana === HARP.ana).length };
+  return { liste: l.slice(0, 120), tum: l, toplam: ham.length, kok: yayinda().filter((i) => i.ana === HARP.ana).length };
 };
 
 function harpBilgi() {
@@ -28,10 +28,10 @@ function harpCiz() {
   let karolar = '';
   for (let tx = tx0; tx <= tx1; tx++) { const wx = tx % n; for (let ty = ty0; ty <= ty1; ty++) karolar += `<img src="https://tile.openstreetmap.org/${z}/${wx}/${ty}.png" crossorigin="anonymous" alt="" loading="lazy" style="position:absolute;left:${tx * 256 - x0}px;top:${ty * 256 - y0}px;width:256px;height:256px">`; }
   const mPx = (156543.03392 * Math.cos((HARP.lat * Math.PI) / 180)) / n;
-  const { liste, toplam, kok } = haritaAday();
+  const { liste, tum, toplam, kok } = haritaAday();
   // 58px ızgarada kümele: tek→fiyat etiketi, çok→sayı balonu
   const kufeler = new Map();
-  for (const { i, m } of liste) {
+  for (const { i, m } of tum) { // iğneler tüm ilanlardan; alttaki liste ilk 120 ile sınırlı
     const q = dunyaPx(+i.alanlar.enlem, +i.alanlar.boylam, z), sx = q.x - p.x + W / 2, sy = q.y - p.y + H / 2;
     if (sx < -30 || sy < -30 || sx > W + 30 || sy > H + 30) continue;
     const k = Math.floor(sx / 58) + ':' + Math.floor(sy / 44);
@@ -46,7 +46,7 @@ function harpCiz() {
   const halka = HARP.r ? `<svg width="${W}" height="${H}" style="position:absolute;inset:0;pointer-events:none"><circle cx="${W / 2}" cy="${H / 2}" r="${HARP.r / mPx}" fill="var(--vurgu-ikon,#C8553D)" fill-opacity=".06" stroke="var(--vurgu-ikon,#C8553D)" stroke-width="2.5" stroke-dasharray="7 5"/></svg>` : '';
   const benNokta = HARP.kaynak === 'sen' ? `<svg width="${W}" height="${H}" style="position:absolute;inset:0;pointer-events:none"><circle cx="${W / 2}" cy="${H / 2}" r="${Math.min(60, (HARP.hassasiyet || 30) / mPx)}" fill="#2563EB" fill-opacity=".15"/><circle cx="${W / 2}" cy="${H / 2}" r="7" fill="#2563EB" stroke="#fff" stroke-width="3"/></svg>` : '';
   kap.innerHTML = `<div class="harp-kaydir" style="position:absolute;inset:0;will-change:transform">${karolar}</div>${halka}${benNokta}<div class="harp-kaydir" style="position:absolute;inset:0">${iğneler}</div>
-    <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px"><button class="btn sade kucuk" id="hz+" style="width:38px;height:38px;padding:0;font-weight:900">+</button><button class="btn sade kucuk" id="hz-" style="width:38px;height:38px;padding:0;font-weight:900">−</button></div>
+    <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px"><button class="btn sade kucuk" id="hz+" style="width:44px;height:44px;padding:0;font-weight:900">+</button><button class="btn sade kucuk" id="hz-" style="width:44px;height:44px;padding:0;font-weight:900">−</button></div>
     <div class="r-harita-not" style="font-size:10px">© OpenStreetMap</div>`;
   kap.querySelectorAll('[data-hp]').forEach((b) => (b.onclick = () => harpKart(b.dataset.hp)));
   kap.querySelectorAll('[data-hk]').forEach((b) => (b.onclick = () => {

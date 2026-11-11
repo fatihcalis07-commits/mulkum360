@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '9.4 · 13.11.2026 00:15';
+const SURUM = '9.5 · 13.11.2026 01:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -976,6 +976,7 @@ let PANEL = null;
 const telLink = (t) => String(t || '').replace(/\D/g, '').replace(/^0/, '90');
 function musteriEslesen(m) {
   const v = m.veri || {};
+  if (v.alan === 'vasita') return yayinda().filter((i) => i.ana === 'vasita' && (!v.marka || i.alanlar?.marka === v.marka) && (!v.il || i.il === v.il) && (!v.ilce || i.ilce === v.ilce) && (!+v.butce || i.fiyat <= +v.butce * 1.05));
   return yayinda().filter((i) => i.ana === 'emlak' && (!v.islem || i.alanlar?.islem === v.islem) && (!v.il || i.il === v.il) && (!v.ilce || i.ilce === v.ilce) && (!v.oda || i.alanlar?.oda === v.oda) && (!+v.butce || i.fiyat <= +v.butce * 1.05));
 }
 EKRAN.panel = async (sekme) => {
@@ -998,9 +999,9 @@ EKRAN.panel = async (sekme) => {
     govde = `<div class="ciplar"><a class="cip ${dur === 'yayinda' ? 'secili' : ''}" href="#/panel/portfoy">Yayında · ${aktif.length}</a><a class="cip ${dur === 'satildi' ? 'secili' : ''}" href="#/panel/portfoy?d=satildi">Satıldı / kiralandı · ${benim.length - aktif.length}</a><a class="cip" href="#/ver">${ic('arti', 14)}Yeni ilan</a></div>
       ${l.length ? l.map((i) => `<div style="display:flex;flex-direction:column;gap:6px">${ilanSatir(i, `<div class="perf"><span>${ic('goz', 12)} ${i.goruntulenme || 0}</span><span>${ic('kalp', 12)} ${(S.favSayilari || {})[i.id] || 0}</span><span>${ic('mesaj', 12)} ${S.sohbetler.filter((s) => s.ilanId === i.id && s.mesajlar.length).length}</span><span>${Math.max(1, Math.round((Date.now() - i.olusturma) / 86400000))}. gün</span></div>`)}</div>`).join('') : bosDurum('ev', dur === 'yayinda' ? 'Portföyün boş' : 'Kapanan ilan yok', dur === 'yayinda' ? 'İlan ver ya da toplu yükle; portföyün burada listelenir.' : 'Satılan ve kiralanan ilanların burada görünür.', dur === 'yayinda' ? '<a class="btn" href="#/ver">İlan ver</a><a class="btn cizgili" href="#/toplu">Toplu yükle</a>' : '')}`;
   } else if (sekme === 'gorev') govde = ajandaHtml(gorevler);
-  else if (sekme === 'musteri') { const malS = sorgu().m === 'mal', ms = musteriler.filter((m) => (m.veri.rol === 'Mal sahibi') === malS); govde = `<div class="ciplar"><a class="cip ${malS ? '' : 'secili'}" href="#/panel/musteri">Arayanlar · ${musteriler.filter((m) => m.veri.rol !== 'Mal sahibi').length}</a><a class="cip ${malS ? 'secili' : ''}" href="#/panel/musteri?m=mal">Mal sahipleri (portföy) · ${musteriler.filter((m) => m.veri.rol === 'Mal sahibi').length}</a></div>
-    <button class="btn tam" data-yeni="musteri">${ic('arti', 18)}${malS ? 'Mal sahibi ekle' : 'Alıcı / kiracı ekle'}</button>
-    ${ms.length ? `<div class="liste">${ms.map((m) => { const v = m.veri, mal = v.rol === 'Mal sahibi', e = mal ? 0 : musteriEslesen(m).length, il = v.ilan && ilan(v.ilan); return `<div class="oge panel-oge" style="align-items:flex-start"><div class="ara" data-duzen="${m.id}"><b>${kac(v.ad)}</b><div class="k soluk">${kac([v.mulk, v.islem, v.oda, [v.ilce, v.il].filter(Boolean).join(' / '), +v.butce ? '≤ ' + tl(+v.butce) : ''].filter(Boolean).join(' · '))}</div>${mal ? (il ? `<a class="k" href="#/ilan/${il.id}" style="font-weight:700">İlanı: ${kac(il.baslik.slice(0, 30))} →</a>` : `<a class="k" href="#/ver" style="font-weight:700">Portföye ilan olarak ekle →</a>`) : e ? `<a class="k" href="#/ara?${sorguYap({ ana: 'emlak', islem: v.islem, il: v.il, ilce: v.ilce, oda: v.oda, max: v.butce })}" style="font-weight:700">${e} uygun ilan →</a>` : '<div class="k soluk">Şu an uygun ilan yok</div>'}</div>
+  else if (sekme === 'musteri') { const malS = sorgu().m === 'mal', ms = musteriler.filter((m) => (m.veri.rol === 'Mal sahibi') === malS); govde = `<div class="ciplar"><a class="cip ${malS ? '' : 'secili'}" href="#/panel/musteri">Arayanlar · ${musteriler.filter((m) => m.veri.rol !== 'Mal sahibi').length}</a><a class="cip ${malS ? 'secili' : ''}" href="#/panel/musteri?m=mal">${b.sektor === 'galeri' ? 'Araç sahipleri (stok)' : 'Mal sahipleri (portföy)'} · ${musteriler.filter((m) => m.veri.rol === 'Mal sahibi').length}</a></div>
+    <button class="btn tam" data-yeni="musteri">${ic('arti', 18)}${malS ? (b.sektor === 'galeri' ? 'Araç sahibi ekle' : 'Mal sahibi ekle') : b.sektor === 'galeri' ? 'Alıcı ekle' : 'Alıcı / kiracı ekle'}</button>
+    ${ms.length ? `<div class="liste">${ms.map((m) => { const v = m.veri, mal = v.rol === 'Mal sahibi', e = mal ? 0 : musteriEslesen(m).length, il = v.ilan && ilan(v.ilan); return `<div class="oge panel-oge" style="align-items:flex-start"><div class="ara" data-duzen="${m.id}"><b>${kac(v.ad)}</b><div class="k soluk">${kac([v.mulk, v.marka, v.islem, v.oda, [v.ilce, v.il].filter(Boolean).join(' / '), +v.butce ? '≤ ' + tl(+v.butce) : ''].filter(Boolean).join(' · '))}</div>${mal ? (il ? `<a class="k" href="#/ilan/${il.id}" style="font-weight:700">İlanı: ${kac(il.baslik.slice(0, 30))} →</a>` : `<a class="k" href="#/ver" style="font-weight:700">Portföye ilan olarak ekle →</a>`) : e ? `<a class="k" href="#/ara?${sorguYap(v.alan === 'vasita' ? { ana: 'vasita', marka: v.marka, il: v.il, ilce: v.ilce, max: v.butce } : { ana: 'emlak', islem: v.islem, il: v.il, ilce: v.ilce, oda: v.oda, max: v.butce })}" style="font-weight:700">${e} uygun ilan →</a>` : '<div class="k soluk">Şu an uygun ilan yok</div>'}</div>
       ${v.tel ? `<div class="satir" style="gap:6px"><a class="ikon-btn" href="tel:${kac(v.tel)}" aria-label="Ara">${ic('telefon', 18)}</a><a class="ikon-btn" href="https://wa.me/${telLink(v.tel)}" aria-label="WhatsApp">${ic('mesaj', 18)}</a></div>` : ''}</div>`; }).join('')}</div>` : (malS ? bosDurum('ev', 'Mal sahibi yok', 'Satmak ya da kiralamak için sana mülk veren müşterilerini kaydet; mülk bilgisi ve ilanı burada bir arada durur.', typeof ornekVarMi === 'function' && !ornekVarMi() ? '<button class="btn cizgili" data-ornek-yukle>Örnek verilerle dene</button>' : '') : bosDurum('kisi', 'Arayan müşteri yok', 'Alıcı ve kiracıların ne aradığını kaydet; uygun ilan gelince burada sayısını görürsün.', typeof ornekVarMi === 'function' && !ornekVarMi() ? '<button class="btn cizgili" data-ornek-yukle>Örnek verilerle dene</button>' : ''))}
     <div class="k soluk">Müşteri bilgileri yalnız sana görünür. Kişisel verileri müşterinin onayıyla kaydet (KVKK).</div>`; }
   else govde = `<button class="btn tam" data-yeni="not">${ic('arti', 18)}Not ekle</button>
@@ -1026,7 +1027,8 @@ function panelForm(k) {
   const v = k.veri || {}, tarihYerel = k.tarih ? new Date(new Date(k.tarih).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
   const secim = (ad, ops) => `<div class="secim">${ops.map((o) => `<button type="button" class="${v[ad] === o ? 'secili' : ''}" data-ps="${ad}" data-d="${kac(o)}">${kac(o)}</button>`).join('')}</div><input type="hidden" name="${ad}" value="${kac(v[ad] || '')}">`;
   const benim = S.ilanlar.filter((i) => i.sahip === S.oturum && i.durum === 'yayinda');
-  const form = k.tur === 'gorev' ? `<label class="alan">Ne yapılacak?<input name="baslik" required maxlength="120" value="${kac(v.baslik || '')}" list="gorevOn" autocomplete="off"><datalist id="gorevOn">${['Yer gösterme', 'Müşteri araması', 'Mal sahibiyle görüşme', 'Tapu randevusu', 'Ekspertiz', 'Fotoğraf çekimi', 'Sözleşme imzası', 'Kira tahsilatı'].map((o) => `<option value="${o}">`).join('')}</datalist></label>
+  const arac = k.tur === 'musteri' && (v.alan ? v.alan === 'vasita' : ben()?.sektor === 'galeri');
+  const form = k.tur === 'gorev' ? `<label class="alan">Ne yapılacak?<input name="baslik" required maxlength="120" value="${kac(v.baslik || '')}" list="gorevOn" autocomplete="off"><datalist id="gorevOn">${(ben()?.sektor === 'galeri' ? ['Araç gösterme', 'Test sürüşü', 'Müşteri araması', 'Ekspertiz randevusu', 'Noter satışı', 'Fotoğraf çekimi', 'Araç teslimi', 'Muayene / sigorta'] : ['Yer gösterme', 'Müşteri araması', 'Mal sahibiyle görüşme', 'Tapu randevusu', 'Ekspertiz', 'Fotoğraf çekimi', 'Sözleşme imzası', 'Kira tahsilatı']).map((o) => `<option value="${o}">`).join('')}</datalist></label>
       <label class="alan">Tarih ve saat<input type="datetime-local" name="tarih" value="${tarihYerel}"></label>
       <div class="ciplar">${[['Bugün 18:00', 0, 18], ['Yarın 10:00', 1, 10], ['Yarın 14:00', 1, 14], ['Haftaya', 7, 10]].map(([a, g, s]) => `<button type="button" class="cip" data-hizli="${g},${s}">${a}</button>`).join('')}</div>
       <label class="alan">Müşteri <span style="font-weight:500">(isteğe bağlı)</span><input name="musteri" maxlength="80" value="${kac(v.musteri || '')}" list="musOn" autocomplete="off"><datalist id="musOn">${PANEL.filter((x) => x.tur === 'musteri').map((m) => `<option value="${kac(m.veri.ad)}">`).join('')}</datalist></label>
@@ -1037,8 +1039,9 @@ function panelForm(k) {
       <label class="alan">Ad soyad<input name="ad" required maxlength="80" value="${kac(v.ad || '')}"></label>
       <label class="alan">Telefon<input name="tel" type="tel" maxlength="20" value="${kac(v.tel || '')}"></label>
       <div class="alan">İşlem${secim('islem', ['Satılık', 'Kiralık'])}</div>
-      <div class="alan">Mülk türü${secim('mulk', ['Daire', 'Villa', 'Arsa', 'İşyeri'])}</div>
-      <div class="alan">Oda${secim('oda', ['1+1', '2+1', '3+1', '4+1', '5+1'])}</div>
+      ${arac ? `<input type="hidden" name="alan" value="vasita"><div class="alan">Araç türü${secim('mulk', ['Otomobil', 'SUV / Pick-up', 'Ticari', 'Motosiklet'])}</div>
+      <label class="alan">Marka<select name="marka"><option value="">Farketmez</option>${(MARKALAR.includes(v.marka) || !v.marka ? MARKALAR : [v.marka, ...MARKALAR]).map((x) => `<option ${v.marka === x ? 'selected' : ''}>${kac(x)}</option>`).join('')}</select></label>` : `<div class="alan">Mülk türü${secim('mulk', ['Daire', 'Villa', 'Arsa', 'İşyeri'])}</div>
+      <div class="alan">Oda${secim('oda', ['1+1', '2+1', '3+1', '4+1', '5+1'])}</div>`}
       <div class="izgara2"><label class="alan">İl<select name="il"><option value="">—</option>${ILLER.map((x) => `<option ${v.il === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label><label class="alan">İlçe<select name="ilce"><option value="">—</option>${v.ilce ? `<option selected>${kac(v.ilce)}</option>` : ''}</select></label></div>
       <label class="alan">Bütçe ya da beklenen fiyat (TL)<input name="butce" inputmode="numeric" value="${+v.butce ? sayiBicim(+v.butce) : ''}" list="butceOn" autocomplete="off"><datalist id="butceOn">${['15.000', '25.000', '2.000.000', '3.000.000', '5.000.000', '7.500.000', '10.000.000'].map((o) => `<option value="${o}">`).join('')}</datalist></label>
       ${benim.length ? `<label class="alan">Portföydeki ilanı <span style="font-weight:500">(mal sahibiyse)</span><select name="ilan"><option value="">—</option>${benim.map((i) => `<option value="${i.id}" ${v.ilan === i.id ? 'selected' : ''}>${kac(i.baslik)}</option>`).join('')}</select></label>` : ''}
@@ -1050,7 +1053,7 @@ function panelForm(k) {
     s.querySelectorAll('[data-hizli]').forEach((b) => (b.onclick = () => { const [g, sa] = b.dataset.hizli.split(',').map(Number), d = new Date(); d.setDate(d.getDate() + g); d.setHours(sa, 0, 0, 0); s.querySelector('[name=tarih]').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }));
     if (s.querySelector('[name=ilce]')) konumSecBagla(s.querySelector('[name=il]'), s.querySelector('[name=ilce]'), null);
     const bt = s.querySelector('[name=butce]'); if (bt) bt.oninput = () => { const n = bt.value.replace(/\D/g, ''); bt.value = n ? sayiBicim(+n) : ''; };
-    const sl = s.querySelector('#pSil'); if (sl) sl.onclick = async () => { if (await dene(() => panelSil(k.id), 'Silindi')) { const s0 = PANEL.sahip; PANEL = PANEL.filter((x) => x.id !== k.id); PANEL.sahip = s0; sheetKapat(); ciz(); } };
+    const sl = s.querySelector('#pSil'); if (sl) sl.onclick = async () => { if (!sl.dataset.emin) { sl.dataset.emin = '1'; sl.textContent = 'Emin misin? Sil'; setTimeout(() => { if (sl.isConnected) { delete sl.dataset.emin; sl.textContent = 'Sil'; } }, 4000); return; } if (await dene(() => panelSil(k.id), 'Silindi')) { const s0 = PANEL.sahip; PANEL = PANEL.filter((x) => x.id !== k.id); PANEL.sahip = s0; sheetKapat(); ciz(); } };
     s.querySelector('#pf2').onsubmit = async (e) => {
       e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
       const tarih = f.tarih ? new Date(f.tarih).toISOString() : null; delete f.tarih;
@@ -2448,6 +2451,9 @@ async function pdfOlustur(el, ad) {
 
 // ---------- MülkümAI sohbet ----------
 let aiGecmis = [];
+// Yanıt beklenirken ekran yeniden çizilse de tek istek sürer; yanıttaki **kalın** ve madde işaretleri düzgün görünür
+let aiGidiyor = false, aiYarim = '';
+const aiBicim = (t) => kac(t).replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/^\s*[*-]\s+/gm, '• ').replace(/^#{1,4}\s+(.+)$/gm, '<b>$1</b>');
 EKRAN.ai = () => {
   if (girisGerek('MülkümAI için giriş yap')) return;
   document.body.classList.add('navsiz'); nav.innerHTML = '';
@@ -2461,24 +2467,25 @@ EKRAN.ai = () => {
   const avatar = `<span class="ai-avatar">${ic('yildiz', 14)}</span>`;
   app.innerHTML = ustBar(`<span class="satir" style="gap:8px">${avatar}MülkümAI</span>`, aiGecmis.length ? `<button class="ikon-btn" aria-label="Yeni sohbet" id="temizle">${ic('yenile', 18)}</button>` : '') + `
     <div class="balonlar" id="balonlar" style="padding-bottom:160px">
-      ${aiGecmis.length ? aiGecmis.map((m) => m.rol === 'ai' ? `<div class="ai-mesaj">${avatar}<div class="balon o">${kac(m.metin)}</div></div>` : `<div class="balon ben">${kac(m.metin)}</div>`).join('') : `
+      ${aiGecmis.length ? aiGecmis.map((m) => m.rol === 'ai' ? `<div class="ai-mesaj">${avatar}<div class="balon o" style="white-space:pre-wrap">${aiBicim(m.metin)}</div></div>` : `<div class="balon ben">${kac(m.metin)}</div>`).join('') : `
         <div class="ai-giris"><span class="ai-buyuk">${ic('yildiz', 30)}</span><h2>Merhaba${ben() ? ' ' + kac(ben().ad.split(' ')[0]) : ''}, nasıl yardımcı olabilirim?</h2><p>Emlak ve vasıta sorularını yanıtlarım, ilan yazarım, ilanları değerlendiririm.</p></div>
         <div class="ai-eylemler">${eylemler.map(([ik, b, a, h]) => `<a href="${h}" class="ai-eylem"><span>${ic(ik, 20)}</span><b>${b}</b><small>${a}</small></a>`).join('')}</div>
         <div class="bolum-bas"><h2 style="font-size:15px">Sık sorulanlar</h2></div>
         <div class="liste">${oneriler.map((o) => `<button class="oge" data-oneri="${kac(o)}">${ic('mesaj', 18)}<span class="ara">${kac(o)}</span><span class="ok">›</span></button>`).join('')}</div>`}
-      <div id="yaziyor" class="ai-mesaj" hidden>${avatar}<div class="balon o yaziyor"><i></i><i></i><i></i></div></div>
+      <div id="yaziyor" class="ai-mesaj" ${aiGidiyor ? '' : 'hidden'}>${avatar}<div class="balon o yaziyor"><i></i><i></i><i></i></div></div>
     </div>
     <form class="mesaj-yaz" id="af"><div class="alt-bar-ic" style="flex-direction:column;gap:6px"><div class="satir"><label class="arama-kutu" style="height:50px"><input name="m" aria-label="MülkümAI'ya sor" placeholder="Bir şey sor…" autocomplete="off" maxlength="1000"></label>
       <button class="ikon-btn" style="background:var(--vurgu);border:0;width:50px;height:50px" aria-label="Gönder">${ic('gonder', 20, '#fff')}</button></div>
       <div class="k soluk" style="text-align:center">Yapay zekâ yanıtıdır; fiyat uydurmaz, hukuki ya da mali tavsiye değildir. Kişisel bilgi yazma.</div></div></form>`;
   scrollTo(0, document.body.scrollHeight);
-  let gidiyor = false;
+  if (aiYarim) { $('#af').m.value = aiYarim; aiYarim = ''; }
   const sor = async (soru) => {
-    soru = soru.trim(); if (!soru || gidiyor) return;
-    gidiyor = true; aiGecmis.push({ rol: 'ben', metin: soru }); ciz(); $('#yaziyor').hidden = false; scrollTo(0, document.body.scrollHeight);
+    soru = soru.trim(); if (!soru) return;
+    if (aiGidiyor) return toast('Önceki yanıt bekleniyor…');
+    aiGidiyor = true; aiGecmis.push({ rol: 'ben', metin: soru }); ciz(); scrollTo(0, document.body.scrollHeight);
     try { aiGecmis.push({ rol: 'ai', metin: await aiSor('sohbet', { soru, gecmis: aiGecmis.slice(0, -1) }) }); }
-    catch (x) { aiGecmis.pop(); toast(x.message); }
-    gidiyor = false; if (location.hash.startsWith('#/ai')) ciz();
+    catch (x) { aiGecmis.pop(); aiYarim = soru; toast(hataMetni(x)); }
+    aiGidiyor = false; if (location.hash.startsWith('#/ai')) ciz();
   };
   $('#af').onsubmit = (e) => { e.preventDefault(); sor(e.target.m.value); };
   app.querySelectorAll('[data-oneri]').forEach((x) => (x.onclick = () => sor(x.dataset.oneri)));

@@ -1,6 +1,7 @@
 // Ofisim > Ajanda (yapay zekâ destekli): cümleden kayıt, haftalık takvim, hatırlatma, günlük plan, örnek veriler.
 // Kayıtlar panel tablosunda tur='gorev' olarak durur (veri: baslik, musteri, not, hatirlat dk, ilan, ornek).
 const AJANDA_KONU = ['Yer gösterme', 'Mal sahibiyle görüşme', 'Tapu randevusu', 'Ekspertiz', 'Fotoğraf çekimi', 'Müşteri araması', 'Sözleşme imzası', 'Kira tahsilatı'];
+const AJANDA_KONU_GALERI = ['Araç gösterme', 'Test sürüşü', 'Ekspertiz randevusu', 'Noter satışı', 'Fotoğraf çekimi', 'Müşteri araması', 'Araç teslimi', 'Muayene / sigorta'];
 const AJANDA_HATIRLAT = [[15, '15 dk önce'], [30, '30 dk önce'], [60, '1 saat önce'], [1440, '1 gün önce']];
 let AJANDA_GUN = null; // seçili gün (YYYY-MM-DD) ya da null = tümü
 
@@ -19,8 +20,8 @@ function ajandaHtml(gorevler) {
       <div class="aj-saat ${gec ? 'gec' : ''}">${g.tarih ? new Date(g.tarih).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
       <div class="ara" data-duzen="${g.id}"><b>${kac(g.veri.baslik)}</b><div class="k soluk">${[g.veri.musteri, i && i.baslik.slice(0, 26), g.veri.hatirlat ? '🔔 ' + (AJANDA_HATIRLAT.find(([m]) => m === +g.veri.hatirlat) || [0, g.veri.hatirlat + ' dk'])[1] : ''].filter(Boolean).map(kac).join(' · ')}</div>${g.veri.not ? `<div class="k">${kac(g.veri.not)}</div>` : ''}</div></div>`; };
   return `<div class="aj-ai"><div class="aj-ai-bas">${ic('yildiz', 18)}<b>MülkümAI ile ekle</b></div>
-      <div class="satir" style="gap:8px"><input id="ajMetin" placeholder="örn. Yarın 14:00 Ayşe Hanım'a Kadıköy 3+1 yer gösterme" enterkeyhint="send"><button class="btn kucuk" id="ajEkle" aria-label="Ekle">${ic('gonder', 18, '#fff')}</button></div>
-      <div class="ciplar">${AJANDA_KONU.map((k) => `<button class="cip" data-konu="${k}">${k}</button>`).join('')}</div></div>
+      <div class="satir" style="gap:8px"><input id="ajMetin" placeholder="${ben()?.sektor === 'galeri' ? 'örn. Yarın 14:00 Ahmet Bey ile Corolla test sürüşü' : 'örn. Yarın 14:00 Ayşe Hanım&#39;a Kadıköy 3+1 yer gösterme'}" enterkeyhint="send"><button class="btn kucuk" id="ajEkle" aria-label="Ekle">${ic('gonder', 18, '#fff')}</button></div>
+      <div class="ciplar">${(ben()?.sektor === 'galeri' ? AJANDA_KONU_GALERI : AJANDA_KONU).map((k) => `<button class="cip" data-konu="${k}">${k}</button>`).join('')}</div></div>
     <div class="aj-hafta">${gunler.map((d) => { const k = gunAnahtar(d), n = say(d); return `<button class="aj-gun ${AJANDA_GUN === k ? 'secili' : ''}" data-gun="${k}"><small>${d.toLocaleDateString('tr-TR', { weekday: 'short' })}</small><b>${d.getDate()}</b><i>${n ? '•'.repeat(Math.min(n, 3)) : ''}</i></button>`; }).join('')}</div>
     <div class="satir" style="gap:8px"><button class="btn sade" id="ajPlan" style="flex:1">${ic('yildiz', 16)}Günümü planla (AI)</button><button class="btn tam" data-yeni="gorev" style="flex:1;width:auto">${ic('arti', 18)}Ajandaya ekle</button></div>
     <div id="ajPlanK"></div>
