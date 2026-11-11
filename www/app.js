@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '7.2 · 12.11.2026 11:30';
+const SURUM = '7.3 · 12.11.2026 12:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -56,7 +56,10 @@ async function bildirimIzni(sor = true) {
   if (!BLD) return false;
   try { let p = await BLD.checkPermissions(); if (p.display !== 'granted' && sor) p = await BLD.requestPermissions(); return p.display === 'granted'; } catch (_) { return false; }
 }
+// Bildirim başlığı: her kelimenin ilk harfi büyük (bağlaçlar dahil), kelimenin geri kalanı korunur
+const baslikBuyut = (t) => String(t || '').split(' ').map((w) => w.replace(/^([^\p{L}\p{N}]*)(\p{L})/u, (m, o, h) => o + h.toLocaleUpperCase('tr-TR'))).join(' ');
 async function bildir(anahtar, baslik, metin, hash, zaman) {
+  baslik = baslikBuyut(baslik);
   if (!BLD || !bldAcik() || !(await bildirimIzni(false))) return;
   try { await BLD.schedule({ notifications: [{ id: bldId(anahtar), title: baslik, body: metin, extra: { hash }, ...(zaman ? { schedule: { at: zaman, allowWhileIdle: true } } : {}) }] }); } catch (_) {}
 }

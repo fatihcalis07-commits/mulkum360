@@ -535,3 +535,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - 12.11.2026: FCM_SA secret eklendi (hizmet hesabı firebase-adminsdk-fbsvc, anahtar 3f056c000f…). Bu anahtarın ekran görüntüsü sohbete düştü; yenisiyle değiştirilmesi önerildi. push_jetonlari şu an boş; ilk jeton 7.2 kurulup giriş yapılınca gelir.
 
 - 12.11.2026: İlk anlık bildirim telefona gönderildi (gonderilen:1). FCM_SA secret tek tırnaklı env dosyasıyla yüklenmeli (çift tırnak kaçışları bozuyor). push-gonder hataları JSON olarak döndürür.
+
+## 7.3 (12.11.2026)
+- Bildirim başlıkları her kelime büyük harfle: DB baslik_buyut() + bildirimler BEFORE INSERT/UPDATE tetikleyicisi (tüm kaynaklar, mevcut kayıtlar da düzeltildi; tırnakla başlayan kelime dahil, i→İ). İstemci yerel bildirimler (mesaj, kayıtlı arama, ajanda) bildir() içinde baslikBuyut().
