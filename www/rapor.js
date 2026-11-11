@@ -131,10 +131,12 @@ async function raporEkVeri(v, h, adim = () => {}) {
     if (!govde) return null;
     try { const { data } = await sb.functions.invoke('parsel', { body: govde }); return data && !data.hata ? { ...data, kaynak: govde.ada ? 'ada/parsel' : 'konum' } : null; } catch (_) { return null; }
   })() : Promise.resolve(null);
-  const gelirP = emlak && v.il ? sb.from('endeks_veri').select('kod,bolge,donem,deger').in('kod', ['TUIK.GSYH.KISI.TL', 'TUIK.GSYH.KISI.USD']).in('bolge', [v.il, 'TR']).order('donem', { ascending: false }).limit(20).then(({ data }) => {
-    const al = (kod, b) => (data || []).find((x) => x.kod === kod && x.bolge === b);
-    const il = al('TUIK.GSYH.KISI.TL', v.il); if (!il) return null;
-    return { il: v.il, yil: il.donem.slice(0, 4), tl: +il.deger, usd: +(al('TUIK.GSYH.KISI.USD', v.il)?.deger || 0), trTl: +(al('TUIK.GSYH.KISI.TL', 'TR')?.deger || 0) };
+  const gelirP = emlak && v.il ? sb.from('endeks_veri').select('kod,bolge,donem,deger').in('kod', ['TUIK.GSYH.KISI.TL', 'TUIK.GSYH.KISI.USD', 'TUIK.GSYH.KISI.TL.TAHMIN', 'TUIK.GSYH.KISI.USD.TAHMIN']).in('bolge', [v.il, 'TR']).order('donem', { ascending: false }).limit(40).then(({ data }) => {
+    const al = (kod, b) => (data || []).find((x) => x.kod === kod && x.bolge === b); // en yeni dönem önce
+    const resmi = al('TUIK.GSYH.KISI.TL', v.il), tah = al('TUIK.GSYH.KISI.TL.TAHMIN', v.il);
+    const il = tah && (!resmi || tah.donem > resmi.donem) ? tah : resmi; if (!il) return null;
+    const tahmin = il === tah, yil = il.donem.slice(0, 4), trAy = (data || []).find((x) => x.kod === 'TUIK.GSYH.KISI.TL' && x.bolge === 'TR' && x.donem === il.donem);
+    return { il: v.il, yil, tahmin, tl: +il.deger, usd: +(al(tahmin ? 'TUIK.GSYH.KISI.USD.TAHMIN' : 'TUIK.GSYH.KISI.USD', v.il)?.deger || 0), trTl: +(trAy?.deger || al('TUIK.GSYH.KISI.TL', 'TR')?.deger || 0), resmiYil: resmi?.donem.slice(0, 4) };
   }, () => null) : Promise.resolve(null);
   const [cevre, deprem, fay, parselB, arazi, gelir] = await Promise.all([
     (emlak && konum ? cevreVerisi(konum, v).catch(() => null) : Promise.resolve(null)).finally(() => adim(1)),
@@ -294,7 +296,7 @@ EKRAN.rapor = (id) => {
     sayfalar.push(raporEkBolumler(f, h, 'bolge'));
     // Demografik ve sosyal yapı: tablolar + cinsiyet + medeni durum; sonraki sayfa yaş + eğitim (A4 taşmasın)
     const kaynakNot = dm ? `<div class="r-not">Kaynak: ${kac(dm.demografi_kaynak || dm.kaynak || 'TÜİK')}. İl geneli verisidir; mahalle ve ilçe yapısı farklı olabilir.</div>` : '';
-    const gl = h.gelir, gelirHtml = gl ? `<div class="r-satir3"><div class="r-kutu"><b>${tl(gl.tl)}</b><small>Kişi başı gelir (GSYH), ${kac(gl.il)} ${gl.yil}</small></div><div class="r-kutu"><b>${sayiBicim(Math.round(gl.usd))} $</b><small>Dolar karşılığı</small></div><div class="r-kutu"><b>${gl.trTl ? '%' + Math.round((gl.tl / gl.trTl) * 100) : '—'}</b><small>Türkiye ortalamasına göre</small></div></div><div class="r-not">TÜİK il bazında kişi başı gayrisafi yurt içi hasıla. TÜİK il düzeyinde tüketim harcaması yayımlamadığı için bölgenin alım gücüne en yakın resmî gösterge olarak verilmiştir.</div>` : '';
+    const gl = h.gelir, gelirHtml = gl ? `<div class="r-satir3"><div class="r-kutu"><b>${tl(gl.tl)}</b><small>Kişi başı gelir (GSYH), ${kac(gl.il)} ${gl.yil}${gl.tahmin ? ' tahmini' : ''}</small></div><div class="r-kutu"><b>${sayiBicim(Math.round(gl.usd))} $</b><small>Dolar karşılığı</small></div><div class="r-kutu"><b>${gl.trTl ? '%' + Math.round((gl.tl / gl.trTl) * 100) : '—'}</b><small>Türkiye ortalamasına göre</small></div></div><div class="r-not">${gl.tahmin ? `${gl.yil} il değeri tahminidir: TÜİK'in ${gl.resmiYil} il verisi, Türkiye'nin resmî ${gl.yil} kişi başı GSYH artışıyla güncellendi (TÜİK ${gl.yil} il verisini yayımlayınca resmî rakam kullanılır). ` : ''}TÜİK il bazında kişi başı gayrisafi yurt içi hasıla. TÜİK il düzeyinde tüketim harcaması yayımlamadığı için bölgenin alım gücüne en yakın resmî gösterge olarak verilmiştir.</div>` : '';
     if (dm) sayfalar.push(`${rBaslik('Demografik ve Sosyal Yapı')}${gelirHtml}${raporEkBolumler(f, h, 'demo')}${demografiGrafikleri(dm, rBaslik, ['cinsiyet', 'medeni'])}`);
     const dg = typeof demografiGrafikleri === 'function' ? demografiGrafikleri(dm, rBaslik, ['egitim']) : '';
     if (yas.length || dg) sayfalar.push(`${yas.length ? `${rBaslik('Yaş Grupları')}<div class="r-kutu">${cubukSvg(yas.map(([ad, x]) => ({ ad, deger: +x })))}</div>` : ''}${dg}${dm ? `<div class="r-not">Kaynak: ${kac(dm.demografi_kaynak || dm.kaynak || 'TÜİK')}. İl geneli verisidir; mahalle ve ilçe yapısı farklı olabilir.</div>` : ''}`);

@@ -587,3 +587,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 ## 8.6 (12.11.2026)
 - Rapor yeni sayfalar: "Konut Özellikleri" + "Bina Özellikleri" (h.ozellik = ilan alanları + form), "Ada / Parsel Bilgileri (TKGM)" (parsel edge: ada/parsel/mahalle ya da konum.hassas ise noktadan; ada, parsel, pafta, yüzölçümü, nitelik, mevkii, zemin), "Arazi Kullanımı (1 km çevre)" (araziKullanimi(): Overpass landuse/leisure/natural, daire içi alan payları; yalnız telefonda Overpass çalışır), demografik sayfada "Kişi başı gelir (GSYH)" (TÜİK DF_UH_BH_KISI_BASI 2024, endeks_veri TUIK.GSYH.KISI.TL/USD, veri/tuik_gsyh_kisi.sql). TÜİK il bazında tüketim harcaması yayımlamıyor (HBA yalnız 12 bölge, API yok).
 - İlan formuna Havuz ve Güvenlik alanları.
+
+## 8.7 (12.11.2026)
+- Kişi başı GSYH 2025: TR resmî 714.682 TL / 18.103 $ (TÜİK yıllık GSYH 2025, güncel). İller TUIK.GSYH.KISI.TL/USD.TAHMIN = il 2024 × TR 2025/2024 (veri/tuik_gsyh_2025_tahmin.sql). Rapor tahmin daha yeniyse onu "2025 tahmini" etiketi ve açıklamayla gösterir. TÜİK il bazında 2025i Aralık 2026da yayımlayınca ayıklayıcı (scratchpad gsyh) yeniden çalıştırılmalı.
