@@ -56,13 +56,13 @@ begin
     from public.ilanlar where durum = 'yayinda' and not coalesce(ornek, false) and ana = 'emlak' and alt = 'konut'
       and coalesce(alanlar->>'m2net', '') ~ '^[0-9]+(\.[0-9]+)?$' and (alanlar->>'m2net')::numeric between 20 and 1000 and fiyat > 0
   ), o as (
-    select case when islem = 'Kiralık' then 'M360.KONUT.KIRA.M2' else 'M360.KONUT.M2' end as kod, il, percentile_cont(0.5) within group (order by m2) as d, count(*) as c
+    select case when islem = 'Kiralık' then 'M360.KONUT.KIRA.M2' else 'M360.KONUT.M2' end as kod, il, avg(m2) as d, count(*) as c
     from k where islem in ('Satılık', 'Kiralık') group by 1, 2 having count(*) >= 3
     union all
-    select case when islem = 'Kiralık' then 'M360.KONUT.KIRA.M2' else 'M360.KONUT.M2' end, 'TR', percentile_cont(0.5) within group (order by m2), count(*)
+    select case when islem = 'Kiralık' then 'M360.KONUT.KIRA.M2' else 'M360.KONUT.M2' end, 'TR', avg(m2), count(*)
     from k where islem in ('Satılık', 'Kiralık') group by 1 having count(*) >= 3
     union all
-    select 'M360.OTOMOBIL.FIYAT', 'TR', percentile_cont(0.5) within group (order by fiyat), count(*)
+    select 'M360.OTOMOBIL.FIYAT', 'TR', avg(fiyat), count(*)
     from public.ilanlar where durum = 'yayinda' and not coalesce(ornek, false) and ana = 'vasita' and alt in ('otomobil', 'suv', 'elektrikli') and fiyat > 0 having count(*) >= 3
   )
   insert into public.endeks_veri (kod, bolge, donem, deger) select kod, il, ay, round(d::numeric, 2) from o where d is not null

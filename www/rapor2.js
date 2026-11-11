@@ -221,7 +221,7 @@ function raporSayfalari2(f, h) {
   // B · Piyasa: trend + davranış + resmî göstergeler
   const t = h.trend, pd = h.piyasa, g = h.gostergeler || [];
   sayfalar.push(`${rBaslik(`Aylık m² Fiyat Trendi · ${kac(t?.kapsam || '')}`)}
-    ${t && t.seri.length >= 2 ? `<div class="r-kutu">${trendSvg(t)}</div><div class="r-not">Mülküm360’ta o ay yayına giren ilanların m² fiyat ortancası (en az 2 ilanlı aylar). Platform verisi biriktikçe grafik uzar.</div>` : `<div class="r-not">Trend için en az iki ayda yeterli ilan gerekir; Mülküm360 verisi biriktikçe bu bölüm dolacak.</div>`}
+    ${t && t.seri.length >= 2 ? `<div class="r-kutu">${trendSvg(t)}</div><div class="r-not">Mülküm360’ta o ay yayına giren ilanların m² fiyat ortalaması (en az 2 ilanlı aylar). Platform verisi biriktikçe grafik uzar.</div>` : `<div class="r-not">Trend için en az iki ayda yeterli ilan gerekir; Mülküm360 verisi biriktikçe bu bölüm dolacak.</div>`}
     ${pd ? `${rBaslik('Piyasa Davranışı')}<div class="r-satir3">
       <div class="r-kutu"><b>${pd.gun != null ? Math.round(pd.gun) + ' gün' : '—'}</b><small>Ortalama satılma süresi (${pd.satilan} satış)</small></div>
       <div class="r-kutu"><b>${pd.indirim != null ? '%' + String(pd.indirim.toFixed(1)).replace('.', ',') : '—'}</b><small>Ortalama pazarlık payı${pd.indirimN ? ` (${pd.indirimN} gerçekleşen fiyat)` : ''}</small></div>

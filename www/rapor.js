@@ -155,7 +155,7 @@ function dagilimSvg(h, ana) {
     ${izgara.map((v) => `<line x1="${x(v)}" y1="20" x2="${x(v)}" y2="${H - 34}" stroke="${R_CIZGI}"/><text x="${x(v)}" y="${H - 16}" font-size="11" fill="${R_SOLUK}" text-anchor="middle">${etiket(birim(v))}</text>`).join('')}
     <rect x="${x(b25)}" y="56" width="${x(b75) - x(b25)}" height="46" rx="8" fill="${R_KREM}" stroke="${R_ALTIN}"/>
     <line x1="${x(bOrt)}" y1="48" x2="${x(bOrt)}" y2="110" stroke="${R_ALTIN_K}" stroke-width="3"/>
-    <text x="${x(bOrt)}" y="40" font-size="12" font-weight="700" fill="${R_ALTIN_K}" text-anchor="middle">Ortanca ${etiket(bOrt)}</text>
+    <text x="${x(bOrt)}" y="40" font-size="12" font-weight="700" fill="${R_ALTIN_K}" text-anchor="middle">Ortalama ${etiket(bOrt)}</text>
     ${d.map((v, n) => `<circle cx="${x(v)}" cy="${79 + ((n % 3) - 1) * 9}" r="6" fill="${R_MAVI}" fill-opacity=".85"/>`).join('')}
     <text x="${p}" y="14" font-size="11" fill="${R_SOLUK}">${ana === 'emlak' ? 'TL / m²' : 'TL'} · her nokta bir emsal ilan · altın kutu: benzerlerin orta yarısı</text>
   </svg>`;
@@ -240,7 +240,7 @@ EKRAN.rapor = (id) => {
       : satir2('Marka', f.marka) + satir2('Model', f.model) + satir2('Model yılı', f.yil) + satir2('Kilometre', f.km && sayiBicim(f.km) + ' km') + satir2('Boya / değişen', f.hasar)}</table>
     <div class="r-serit">${emlak ? 'TAŞINMAZIN' : 'ARACIN'} DEĞER / FİYAT ANALİZİ</div>
     <div class="r-uclu">${VADE.map(([ad, sure, k, acik], n) => `<div class="r-vade ${['y', 'a', 'k'][n]}"><div class="r-vade-fiyat">${tl(h[k])}</div><div class="r-vade-ad">${n === 0 ? 'Hızlı satış fiyatı' : n === 1 ? (kira ? 'Tahmini piyasa kirası' : 'Tahmini piyasa değeri') : 'Üst fiyat'}</div><div class="r-vade-sure">Hedef süre: ${ad} (${sure})</div>${n === 1 && emlak && f.m2net ? `<div class="r-vade-alt">Birim: ${tl(h.alt / f.m2net)} – ${tl(h.ust / f.m2net)} / m²</div>` : ''}</div>`).join('')}</div>
-    <div class="r-not">Hedef süreler kullanıcı tanımıdır; ${kira ? 'kiralama' : 'satış'} süresi garanti edilmez. Değerler ${h.sayi} emsal ilanın dağılımından (alt çeyrek, ortanca, üst çeyrek) hesaplanmıştır. Güven düzeyi: <b>${h.guven}</b>${h.kapsam ? ' · Emsal kapsamı: <b>' + kac(h.kapsam) + '</b>' : ''}.${h.genis ? ' Bölgede yeterli ilan olmadığından Türkiye geneli emsaller kullanıldı; bölge farkı büyük olabilir.' : ''}</div>
+    <div class="r-not">Hedef süreler kullanıcı tanımıdır; ${kira ? 'kiralama' : 'satış'} süresi garanti edilmez. Değerler ${h.sayi} emsal ilanın dağılımından (alt çeyrek, ortalama, üst çeyrek) hesaplanmıştır. Güven düzeyi: <b>${h.guven}</b>${h.kapsam ? ' · Emsal kapsamı: <b>' + kac(h.kapsam) + '</b>' : ''}.${h.genis ? ' Bölgede yeterli ilan olmadığından Türkiye geneli emsaller kullanıldı; bölge farkı büyük olabilir.' : ''}</div>
     ${rBaslik('Emsal Fiyat Dağılımı')}<div class="r-kutu">${dagilimSvg(h, f.ana) || '<div class="r-not">Grafik için en az 3 emsal gerekir.</div>'}</div>
     <div class="r-ai"><div class="r-ai-bas">MÜLKÜMAI DEĞERLENDİRMESİ</div>${yorum.map((y) => `<div>• ${kac(y)}</div>`).join('')}</div>`);
 
@@ -290,7 +290,7 @@ EKRAN.rapor = (id) => {
   sayfalar.push(...raporSayfalari2(f, h));
   // 6 · Yöntem ve yasal
   sayfalar.push(`${rBaslik('Yöntem')}
-    <div class="r-metin">Değer, Mülküm360’ta yayınlanan ve ${emlak ? 'aynı tür, işlem ve ilde (yeterli sayıda varsa aynı ilçe ve oda sayısında) bulunan' : 'aynı marka ve modelde, model yılı ±2 olan'} ilanların ${emlak ? 'metrekare fiyatlarının' : 'fiyatlarının'} ortancasıyla hesaplanır. Hızlı satış fiyatı benzerlerin alt çeyreği, üst fiyat üst çeyreğidir.${!emlak ? ' Kilometre farkı için ±%15 ile sınırlı düzeltme uygulanır.' : ''} İlan fiyatları gerçekleşen satış fiyatlarından farklı olabilir. Demografik ve sosyal veriler yalnız resmî kaynaktan (TÜİK) girilmiş bölgeler için gösterilir.</div>
+    <div class="r-metin">Değer, Mülküm360’ta yayınlanan ve ${emlak ? 'aynı tür, işlem ve ilde (yeterli sayıda varsa aynı ilçe ve oda sayısında) bulunan' : 'aynı marka ve modelde, model yılı ±2 olan'} ilanların ${emlak ? 'metrekare fiyatlarının' : 'fiyatlarının'} ortalamasıyla hesaplanır. Hızlı satış fiyatı benzerlerin alt çeyreği, üst fiyat üst çeyreğidir.${!emlak ? ' Kilometre farkı için ±%15 ile sınırlı düzeltme uygulanır.' : ''} İlan fiyatları gerçekleşen satış fiyatlarından farklı olabilir. Demografik ve sosyal veriler yalnız resmî kaynaktan (TÜİK) girilmiş bölgeler için gösterilir.</div>
     ${rBaslik('Yasal Uyarı')}
     <div class="r-metin">Bu rapor bilgilendirme amaçlı bir değer tahminidir. Rapordaki bilgiler ve tahminler varsayımsaldır, taahhüt içermez ve yatırım tavsiyesi değildir. SPK lisanslı değerleme uzmanı raporu ya da ekspertiz raporu yerine geçmez; kredi, mahkeme ve resmî işlemlerde kullanılamaz. Bu bilgi ve tahminlerin bir yatırıma ya da ticarete konu edilmesi halinde Mülküm360 sorumluluk üstlenmez.</div>
     <div class="r-imza"><div><b>Hazırlayan</b><br>${kac(d.ad)}${d.firma ? '<br>' + kac(d.firma) : ''}</div><div><b>Rapor No</b><br>${r.no}<br>${tarih}</div><div>${qrSvg(r.no + ' · ' + tarih)}</div></div>

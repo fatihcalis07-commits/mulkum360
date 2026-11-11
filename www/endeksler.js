@@ -65,7 +65,7 @@ async function emlakEndeksHtml(st) {
       ${fiyat.length ? `<div class="endeks-kutular">${kutu(sayiY(sonF[1]) + ' TL', 'm² satış fiyatı', donemAdi(sonF[0]))}${sonK ? kutu(sayiY(sonK[1]) + ' TL', 'm² aylık kira', donemAdi(sonK[0])) : ''}${getiri ? kutu('%' + getiri.toLocaleString('tr-TR', { maximumFractionDigits: 1 }), 'Brüt kira getirisi', Math.round(100 / getiri) + ' yılda amorti') : ''}</div>
       ${cizgiGrafik([{ ad: 'm² fiyatı (TL)', l: fiyat, renk: '#1064BC' }])}
       ${kira.length ? cizgiGrafik([{ ad: 'm² kira (TL/ay)', l: kira, renk: '#EA580C' }], { yukseklik: 130 }) : ''}
-      <div class="k soluk">${yuzdeY(degisim(fiyat))} fiyat artışı (${donemAdi(fiyat[0][0])} → ${donemAdi(sonF[0])}). TCMB değerleme raporlarına dayanır.${(il['M360.KONUT.M2'] || []).length ? ` Mülküm360 ilanlarında satılık konut m² ortancası: ${sayiY(il['M360.KONUT.M2'].at(-1)[1])} TL.` : ''}</div>`
+      <div class="k soluk">${yuzdeY(degisim(fiyat))} fiyat artışı (${donemAdi(fiyat[0][0])} → ${donemAdi(sonF[0])}). TCMB değerleme raporlarına dayanır.${(il['M360.KONUT.M2'] || []).length ? ` Mülküm360 ilanlarında satılık konut m² ortalaması: ${sayiY(il['M360.KONUT.M2'].at(-1)[1])} TL.` : ''}</div>`
       : await bolgeYedekHtml(st.il, tr)}</div>
     ${(() => { const k = ['BIRIMFIYAT', 'BETAM.SATILIK.M2', 'ENDEKSA.M2'].some((x) => (il[x] || []).length) ? il : trR, yer = k === il ? st.il : 'Türkiye';
       const sr = [{ ad: 'TCMB değerleme', l: k.BIRIMFIYAT || [], renk: '#1064BC' }, { ad: 'sahibindex ilan', l: k['BETAM.SATILIK.M2'] || [], renk: '#EA580C' }, { ad: 'Emlakjet & Endeksa', l: k['ENDEKSA.M2'] || [], renk: '#16A34A' }].filter((s) => s.l.length);
@@ -90,7 +90,7 @@ async function otomobilEndeksHtml() {
   return `<div class="kart"><h3>Mülküm360 otomobil endeksi</h3>
       <div class="endeks-kutular">${kutu(yuzdeY(degisim(arac)), 'Nominal (TL)', '2016’dan bu yana')}${kutu(yuzdeY(degisim(reel)), 'Reel', 'Enflasyondan arındırılmış')}${kutu(yuzdeY(degisim(dolar)), 'Dolar bazında', 'USD karşılığı')}</div>
       ${cizgiGrafik([{ ad: 'Reel', l: reel, renk: '#16A34A' }, { ad: 'Dolar bazında', l: dolar, renk: '#7C3AED' }])}
-      <div class="k soluk">Sıfır motorlu taşıt fiyatları (TÜİK TÜFE 07111), 2016 Ocak = 100.${m360 ? ` Mülküm360 otomobil ilanlarında fiyat ortancası: ${sayiY(m360[1])} TL.` : ''}</div></div>
+      <div class="k soluk">Sıfır motorlu taşıt fiyatları (TÜİK TÜFE 07111), 2016 Ocak = 100.${m360 ? ` Mülküm360 otomobil ilanlarında fiyat ortalaması: ${sayiY(m360[1])} TL.` : ''}</div></div>
     <div class="kart"><h3>Araç sahibi olma maliyeti</h3>
       <div class="liste endeks-tablo">${kalem.map(([k, ad]) => `<div class="oge"><span class="ara">${ad}</span><b>${yuzdeY(degisim(s[k]))}</b></div>`).join('')}</div>
       ${cizgiGrafik(kalem.map(([k, ad, renk]) => ({ ad, l: tabanla(s[k]), renk })))}

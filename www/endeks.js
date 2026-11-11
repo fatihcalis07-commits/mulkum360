@@ -17,7 +17,7 @@ const KFE_ONBELLEK = {};
 // Mahalle m² fiyatı: uygulamadaki aynı mahalle → ilçe → il satılık konut ilanları (satılanlarda gerçekleşen fiyat).
 // En az 3 ilan olan ilk düzey kullanılır; test ilanları da sayılır (yayına çıkınca silinecekler).
 function mahalleM2(i) {
-  const f = i.alanlar || {}, ortanca = (l) => { const s = [...l].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
+  const f = i.alanlar || {}, ortanca = (l) => medyan(l), ortancaEski = (l) => { const s = [...l].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null; };
   const uygun = S.ilanlar.filter((x) => x.ana === 'emlak' && x.alt === i.alt && x.il === i.il && /Satılık/.test((x.alanlar || {}).islem || '') && +(x.alanlar || {}).m2net > 0 && ['yayinda', 'satildi'].includes(x.durum));
   const m2 = (x) => (+x.satis_fiyati > 0 ? +x.satis_fiyati : +x.fiyat) / +x.alanlar.m2net;
   const duzey = [
@@ -65,7 +65,7 @@ async function endeksKartiYukle(i) {
     const bolgeAd = bolge === 'TR' ? 'Türkiye' : KFE_BOLGE[bolge].length === 1 ? KFE_BOLGE[bolge][0] : `${i.il} bölgesi`;
     kap.innerHTML = `<h3>${kac(ad)} konut endeksi</h3>
       <div class="k soluk" style="margin:-4px 0 10px">${[i.ilce, i.il].filter(Boolean).map(kac).join(', ')} · fiyat değişimi TCMB endeksi, ${son.t.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</div>
-      ${mh ? `<div class="satir" style="gap:12px;background:var(--vurgu-acik);border-radius:14px;padding:12px 14px;margin-bottom:10px"><div class="ara"><div class="k" style="font-weight:600">${kac(mh.ad)} ortalama m²</div><div class="k soluk" style="font-size:12px">${mh.n} ilanın ortancası${mh.tur !== 'mahalle' ? ` · mahallede yeterli ilan yok, ${mh.tur} geneli` : ''}</div></div><b style="font-size:20px">${tl(mh.deger)}</b></div>` : ''}
+      ${mh ? `<div class="satir" style="gap:12px;background:var(--vurgu-acik);border-radius:14px;padding:12px 14px;margin-bottom:10px"><div class="ara"><div class="k" style="font-weight:600">${kac(mh.ad)} ortalama m²</div><div class="k soluk" style="font-size:12px">${mh.n} ilanın ortalaması${mh.tur !== 'mahalle' ? ` · mahallede yeterli ilan yok, ${mh.tur} geneli` : ''}</div></div><b style="font-size:20px">${tl(mh.deger)}</b></div>` : ''}
       ${mh && f0.kat && typeof katEtki === 'function' && katEtki(f0.kat) !== 1 ? `<div class="k soluk" style="margin:-4px 0 10px">${kac(f0.kat)} için kat etkisi ${katYuzde(f0.kat)} · bu kat için beklenen m² <b>${tl(mh.deger * katEtki(f0.kat))}</b></div>` : ''}
       <div class="perf-izgara" style="grid-template-columns:repeat(3,1fr);margin:0 0 10px">
         ${[[1, 'Son 1 yıl'], [5, 'Son 5 yıl'], [10, 'Son 10 yıl']].map(([y, a]) => { const k = kat(y), d = degisim(y);

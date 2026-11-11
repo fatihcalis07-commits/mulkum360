@@ -580,3 +580,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 8.4 (12.11.2026)
 - Rapor: "Mülk Sahibinin Beyanı" tablosu kaldırıldı (kredi hesabı girildiyse "Konut Kredisi Hesabı" sayfası kalır). Taşınmaz bilgilerinde "Net alan · kat" (ör. 58 m² · Bodrum kat; sayı ise "3. kat").
+
+## 8.5 (12.11.2026)
+- "Ortanca" yerine "ortalama": medyan() artık budanmış ortalama (5+ değerde her uçtan en az 1 ve %10 atılır), endeks.js mahalleM2 de aynı; raporda, ilan sayfasında, endeks ekranında, kasko kartında metinler "ortalama". endeks_ilan_ozeti SQL percentile_cont → avg. Admin formundaki TÜİK "Yaş ortancası" alanı değişmedi (TÜİK terimi).

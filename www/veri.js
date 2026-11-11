@@ -124,7 +124,10 @@ function gecen(t) {
   if (s < 86400 * 7) return Math.floor(s / 86400) + ' gün önce';
   return new Date(t).toLocaleDateString('tr-TR');
 }
-function medyan(a) { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+// Fiyatların ortalaması: uç değerler sonucu bozmasın diye en düşük ve en yüksek %10 atılır (budanmış ortalama).
+// Ad eskiden kalma; tüm fiyat hesapları bunu kullanır.
+function medyan(a) { const s = [...a].filter((x) => isFinite(x)).sort((x, y) => x - y); if (!s.length) return NaN; const k = s.length >= 5 ? Math.max(1, Math.floor(s.length * 0.1)) : 0, l = s.slice(k, s.length - k); return l.reduce((t, x) => t + x, 0) / l.length; }
+function medyanEski(a) { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
 function yuzdelik(a, p) { const s = [...a].sort((x, y) => x - y); const i = (s.length - 1) * p, a0 = Math.floor(i); return s[a0] + (s[Math.ceil(i)] - s[a0]) * (i - a0); }
 const kucuk = (s) => String(s || '').toLocaleLowerCase('tr-TR');
 
