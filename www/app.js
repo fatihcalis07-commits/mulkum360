@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '8.0 · 12.11.2026 18:00';
+const SURUM = '8.1 · 12.11.2026 19:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -286,7 +286,7 @@ function piyasaRef(il, islem, ilce = '', mahalle = '') {
     // 1) Yönetici tablosu: mahalle, sonra ilçe (en yeni kayıt)
     for (const [mh, ad] of (mahalle ? [[mahalle, mahalle + ' Mah., ' + ilce]] : []).concat([['', ilce + ' ilçesi']])) {
       const r = (P.yerel || []).find((x) => x.il === il && k(x.ilce) === k(ilce) && k(x.mahalle) === k(mh) && x.islem === isl);
-      if (r) return { birim: +r.m2_fiyat, kaynak: `${ad} piyasa m² fiyatı (${r.kaynak}, ${tarihAd(r.donem)})`, yerel: true };
+      if (r) { const ay = String(r.donem).slice(0, 7), f = P.kfeSon && P.kfe[ay] ? Math.max(1, Math.min(P.kfeSon[1] / P.kfe[ay], 1.5)) : 1; return { birim: +r.m2_fiyat * f, kaynak: `${ad} piyasa m² fiyatı (${r.kaynak}, ${tarihAd(r.donem)}${f > 1.005 ? ', bugüne güncellendi' : ''})`, yerel: true }; }
     }
     // 2) Kullanıcı emsalleri: aynı ilçe (mahalle varsa önce mahalle), en az 3 kayıt, ortanca
     const em = (P.emsal || []).filter((x) => x.il === il && k(x.ilce) === k(ilce) && x.islem === isl);

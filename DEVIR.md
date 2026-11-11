@@ -566,3 +566,8 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 ## 8.0 (12.11.2026)
 - İlçe/mahalle piyasa m²: public.piyasa_m2 (yönetici girer, kaynak+tarih zorunlu; Yönetim > Veri > Piyasa m²). public.kullanici_emsal: değerlemede girilen "Kendi emsallerin" kaydedilir (kimliksiz), aynı ilçede ≥3 olunca ortancası referans olur.
 - piyasaRef(il, islem, ilce, mahalle): sıra mahalle tablosu → ilçe tablosu → kullanıcı emsali (mahalle, ilçe) → il (TCMB/Betam, güncellenmiş) → TR. Yerel referans varken il/Türkiye geneline düşmüş emsal harmanlanmaz (aşağı çekmesin); yalnız aynı ilçe/mahalle ilanları.
+
+## 8.1 (12.11.2026)
+- piyasa_m2 dolduruldu (102 kayıt, veri/piyasa_m2_2026_11.sql): İstanbul 39 ilçe (Endeksa Mart 2026), İstanbul 18 mahalle (Sözcü 30.07.2026 en değerli mahalleler; semt→resmî mahalle: Moda=Caferağa, Nişantaşı=Teşvikiye, Florya=Şenlikköy, Acarkent=Acarlar, Göktürk=Göktürk Merkez; Ataköy ve Dragos alınmadı), Antalya 19 ilçe (Endeksa Ağustos 2026) + Şirinyalı, Ankara 4 ilçe (Endeksa Eylül 2026), İzmir 21 ilçe (Yeni Asır Mart 2026; Çeşme/Foça/Gaziemir kaynakta çelişkili, alınmadı). Basında yayımlanmış rakamlar elle girildi, otomatik çekme yok.
+- Yerel kayıtlar da KFE ile bugüne güncellenir (en çok x1,5).
+- Sonraki: Bursa, Muğla (Bodrum, Fethiye), Mersin, Kocaeli ilçeleri; kiralık m².
