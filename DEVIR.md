@@ -602,3 +602,4 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 9.1 (13.11.2026)
 - Mapbox uydu: edge function uydu (--no-verify-jwt) Mapbox Static Images satellite-v9 682x420@2x, z16, yalnız Türkiye kutusu; anahtar MAPBOX_TOKEN secret (yokken 503). Raporda Mapbox katmanı Sentinelin üstünde (100/250/500 m halkaları), yüklenemezse onerror ile kalkar ve Sentinel görünür. BEKLİYOR: kullanıcı Mapbox hesabı + token → .gizli/mapbox.txt → secrets set MAPBOX_TOKEN.
+- 13.11.2026: MAPBOX_TOKEN eklendi (kullanıcının public pk. anahtarı, sunucu secret). uydu fonksiyonu Liman Mah. için 200, 367 KB JPEG döndürdü; raporda Mapbox katmanı yükleniyor, atıf "© Mapbox © Maxar".
