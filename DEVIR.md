@@ -593,3 +593,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 8.8 (12.11.2026)
 - Rapor konumu: konumVerisi önce ilanın alanlar.enlem/boylam koordinatını kullanır (hassas, duzey "ilan konumu"); yoksa rapor penceresindeki adres, yoksa formdaki/ilandaki sokak + mahalle ile adres arar; yalnız mahalle bulunursa not "mahalle merkezi". Önceden rapor penceresinde adres yazılmadıkça ilçe merkezi kullanılıyordu.
+
+## 8.9 (13.11.2026)
+- Rapor konum haritası altında "Sokağın uydu görüntüsü": karekod + Google Haritalar uydu bağlantısı (yalnız konum hassassa). Görüntüyü PDFe gömmek için lisanslı kaynak gerekir (Mapbox Static Images ücretsiz kotası ya da Google Static Maps; kullanıcı hesap açıp anahtar vermeli). Konum sayfası 939/1123 px.

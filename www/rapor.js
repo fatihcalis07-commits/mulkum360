@@ -115,7 +115,8 @@ function haritaHtml(k) {
   return `<div class="r-harita" style="width:${W}px;height:${H}px">${karolar}
     <svg width="${W}" height="${H}" style="position:absolute;inset:0">${halka.map(([m, c]) => `<circle cx="${W / 2}" cy="${H / 2}" r="${m / mPx}" fill="${c}" fill-opacity=".08" stroke="${c}" stroke-width="3"/>`).join('')}<circle cx="${W / 2}" cy="${H / 2}" r="7" fill="${R_MAVI}" stroke="#fff" stroke-width="3"/></svg>
     <div class="r-harita-not">© OpenStreetMap katkıda bulunanlar</div></div>
-    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c}">${m} m</span>`).join('')}${k.hassas ? '' : k.duzey === 'mahalle' ? '<em>Sokak girilmediği için mahalle merkezi gösterilmiştir</em>' : '<em>Adres girilmediği için ilçe merkezi gösterilmiştir</em>'}</div>`;
+    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c}">${m} m</span>`).join('')}${k.hassas ? '' : k.duzey === 'mahalle' ? '<em>Sokak girilmediği için mahalle merkezi gösterilmiştir</em>' : '<em>Adres girilmediği için ilçe merkezi gösterilmiştir</em>'}</div>
+    ${k.hassas ? (() => { const u = `https://www.google.com/maps/@${k.lat.toFixed(6)},${k.lon.toFixed(6)},150m/data=!3m1!1e3`; return `<div class="r-satir3" style="grid-template-columns:auto 1fr;align-items:center;margin-top:8px"><div style="width:84px">${typeof qrSvg === 'function' ? qrSvg(u) : ''}</div><div style="font-size:12px;line-height:1.5"><b>Sokağın uydu görüntüsü</b><br>Karekodu telefonla okutun ya da <a href="${u}">bu bağlantıya</a> tıklayın; konum uydu görünümünde açılır (Google Haritalar).</div></div>`; })() : ''}`;
 }
 
 // raporAl içinde çağrılır: rapora konacak ek veriyi hazırlar
