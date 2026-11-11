@@ -574,3 +574,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 8.2 (12.11.2026)
 - Emsal il dışına çıkmaz (Türkiye geneli genişleme kaldırıldı). Referans yolunda sonuç emsal listesi yalnız hesaba giren ilanlar; yoksa raporda "yeterli gerçek ilan yok, başka şehir emsal alınmaz, değer şu kaynağa dayanır" notu. emsalDurumu en az 3 gerçek emsal ister.
+
+## 8.3 (12.11.2026)
+- Emsal, bölge analizi ve oda tablosu ilçe seçiliyse yalnız o ilçe (sokak → mahalle → ilçe; il geneline çıkmaz). İlçede ilan yetersizse rapor bölge kartı piyasaRef (ilçe/mahalle piyasa m², Endeksa yayınları) gösterir. Endeksa sitesinden otomatik çekme yapılmaz (kullanım şartları); veri piyasa_m2 tablosundan.

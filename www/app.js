@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '8.2 · 12.11.2026 19:30';
+const SURUM = '8.3 · 12.11.2026 20:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -315,8 +315,8 @@ function emsaller(o) {
     let kapsam;
     if (sokakta.length >= 3) { l = sokakta; kapsam = `${o.sokak}, ${o.mahalle} Mah., ${o.ilce} (aynı sokak)`; }
     else if (mahallece.length >= 3) { l = mahallece; kapsam = `${o.mahalle} Mah., ${o.ilce}`; }
-    else if (ilcede.length >= 3) { l = ilcede; kapsam = `${o.ilce}, ${o.il}`; }
-    else { l = ilde; kapsam = `${o.il} geneli`; } // başka şehirden emsal alınmaz; il içinde yeterli ilan yoksa değer piyasa verisine dayanır
+    else if (o.ilce) { l = ilcede; kapsam = `${o.ilce}, ${o.il}`; } // emsal ilçe dışına çıkmaz; yetersizse değer ilçe/mahalle piyasa verisine dayanır
+    else { l = ilde; kapsam = `${o.il} geneli`; }
     const odali = l.filter((i) => o.oda && i.alanlar?.oda === o.oda);
     if (odali.length >= 3) { l = odali; kapsam += ` · ${o.oda}`; }
     // Kullanıcının kendi bulduğu emsaller (başka sitede gördüğü ilan vb.) havuza eklenir
@@ -2283,7 +2283,7 @@ function bolgeAnaliz(f) {
     let l = S.ilanlar.filter((i) => i.ana === 'emlak' && (TEST_DAHIL || !i.ornek) && i.alt === f.alt && i.il === f.il && i.alanlar?.islem === islem && +i.alanlar?.m2net > 0 && i.fiyat > 0);
     let kapsam = f.il + ' geneli';
     const ilceli = l.filter((i) => f.ilce && kucuk(i.ilce) === kucuk(f.ilce));
-    if (ilceli.length >= 3) { l = ilceli; kapsam = f.ilce + ', ' + f.il; }
+    if (f.ilce) { l = ilceli; kapsam = f.ilce + ', ' + f.il; }
     if (l.length < 3) return { yeterli: false, sayi: l.length, kapsam };
     const m2 = l.map((i) => i.fiyat / +i.alanlar.m2net), o = (l) => l.reduce((t, x) => t + x, 0) / l.length;
     return { yeterli: true, sayi: l.length, kapsam, m2Ort: o(m2), ortalama: o(l.map((i) => i.fiyat)), alanOrt: o(l.map((i) => +i.alanlar.m2net)) };
@@ -2292,7 +2292,7 @@ function bolgeAnaliz(f) {
   let getiri = null;
   if (satis.yeterli && kira.yeterli) { const y = (kira.m2Ort * 12) / satis.m2Ort; getiri = { yuzde: y * 100, yil: 1 / y }; }
   const odalar = {};
-  S.ilanlar.filter((i) => i.ana === 'emlak' && (TEST_DAHIL || !i.ornek) && i.alt === f.alt && i.il === f.il && i.alanlar?.islem === f.islem && i.alanlar?.oda && i.fiyat > 0)
+  S.ilanlar.filter((i) => i.ana === 'emlak' && (TEST_DAHIL || !i.ornek) && i.alt === f.alt && i.il === f.il && (!f.ilce || kucuk(i.ilce) === kucuk(f.ilce)) && i.alanlar?.islem === f.islem && i.alanlar?.oda && i.fiyat > 0)
     .forEach((i) => (odalar[i.alanlar.oda] = odalar[i.alanlar.oda] || []).push(i.fiyat));
   const odaTablo = Object.entries(odalar).filter(([, l]) => l.length >= 2).map(([oda, l]) => ({ oda, sayi: l.length, ortalama: l.reduce((t, x) => t + x, 0) / l.length })).sort((a, b) => a.oda.localeCompare(b.oda, 'tr'));
   return { satis, kira, getiri, odaTablo };
@@ -2308,12 +2308,12 @@ function raporEkBolumler(f, h, parca) {
     <div style="font-size:10px;color:#5B5F68;margin-top:6px">Vade süreleri hedeftir; ${kira ? 'kiralama' : 'satış'} süresi garanti edilmez. Fiyatlar benzer ilanların dağılımından hesaplanır.</div></div>`;
   const b = h.bolge;
   if (b) {
-    const an = (ad, g) => g.yeterli ? kutu(ad, tl(g.m2Ort ?? g.m2Ortanca) + ' / m²', `${g.kapsam} · ${g.sayi} ilan · ortalama ilan ${tl(g.ortalama)}${g.alanOrt ? ' (ortalama ' + Math.round(g.alanOrt) + ' m²)' : ''}`) : kutu(ad, '—', `${g.kapsam}: yetersiz veri (${g.sayi}/3 ilan)`);
+    const an = (ad, g, isl) => !g.yeterli && typeof piyasaRef === 'function' && piyasaRef(f.il, isl, f.ilce, f.mahalle) ? (() => { const p = piyasaRef(f.il, isl, f.ilce, f.mahalle); return kutu(ad, tl(p.birim) + ' / m²', `Piyasa verisi: ${p.kaynak}`); })() : g.yeterli ? kutu(ad, tl(g.m2Ort ?? g.m2Ortanca) + ' / m²', `${g.kapsam} · ${g.sayi} ilan · ortalama ilan ${tl(g.ortalama)}${g.alanOrt ? ' (ortalama ' + Math.round(g.alanOrt) + ' m²)' : ''}`) : kutu(ad, '—', `${g.kapsam}: yetersiz veri (${g.sayi}/3 ilan)`);
     const mulkM2 = +f.m2net > 0 && h.orta ? h.orta / +f.m2net : null;
     s += `<div>${baslik('Bölge fiyat analizleri')}
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        ${an('1 · ORTALAMA SATIŞ m² FİYATI', b.satis)}
-        ${an('2 · ORTALAMA KİRA m² FİYATI (AYLIK)', b.kira)}
+        ${an('1 · ORTALAMA SATIŞ m² FİYATI', b.satis, 'Satılık')}
+        ${an('2 · ORTALAMA KİRA m² FİYATI (AYLIK)', b.kira, 'Kiralık')}
         ${b.getiri ? kutu('3 · KİRA GETİRİSİ', '%' + b.getiri.yuzde.toFixed(1).replace('.', ','), `Yıllık brüt getiri · amortisman yaklaşık ${Math.round(b.getiri.yil)} yıl`) : kutu('3 · KİRA GETİRİSİ', '—', 'Satış ve kira verisi birlikte yeterli olunca hesaplanır')}
       </div>
       ${mulkM2 && b.satis.yeterli && !kira ? `<div style="font-size:11.5px;color:#3F434B;margin-top:8px;line-height:1.5">Bu mülk: net ${sayiBicim(+f.m2net)} m² × ${tl(mulkM2)}/m² = ${tl(h.orta)}. Bölgenin ortalama m² fiyatına göre ${mulkM2 >= (b.satis.m2Ort ?? b.satis.m2Ortanca) ? '%' + Math.round((mulkM2 / (b.satis.m2Ort ?? b.satis.m2Ortanca) - 1) * 100) + ' üstünde' : '%' + Math.round((1 - mulkM2 / (b.satis.m2Ort ?? b.satis.m2Ortanca)) * 100) + ' altında'}. Ortalama ilan fiyatı daha büyük dairelerin etkisiyle yüksek görünebilir; karşılaştırma m² üzerinden yapılmalıdır.</div>` : ''}
