@@ -56,6 +56,8 @@ const ALANLAR = {
     ['asansor', 'Asansör', 'sec', ['Var', 'Yok']],
     ['balkon', 'Balkon', 'sec', ['Var', 'Yok']],
     ['manzara', 'Manzara', 'sec', ['Deniz', 'Şehir', 'Doğa', 'Göl', 'Yok']],
+    ['havuz', 'Havuz', 'sec', ['Var', 'Yok']],
+    ['guvenlik', 'Güvenlik', 'sec', ['Var', 'Yok']],
     // Tapu ve ilan doğrulama (isteğe bağlı): ada/parsel ile TKGM'den parsel bilgisi ve tam konum gelir
     ['ada', 'Ada no', 'metin'],
     ['parsel', 'Parsel no', 'metin'],

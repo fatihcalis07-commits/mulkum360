@@ -180,8 +180,49 @@ function trendSvg(t) {
     ${t.seri.map((s, n) => `<circle cx="${x(n)}" cy="${y(s.deger)}" r="4" fill="${R_MAVI}"/><text x="${x(n)}" y="${H - 12}" font-size="10" fill="${R_SOLUK}" text-anchor="middle">${ad(s.ay)}</text>`).join('')}</svg>`;
 }
 
+// Arazi kullanımı: 1 km yarıçapta OpenStreetMap landuse/leisure/natural alanları, merkezi daire içindekiler toplanır
+const ARAZI_GRUP = [['Konut', /^residential$/], ['Ticaret', /^(commercial|retail)$/], ['Sanayi', /^industrial$/], ['Yeşil alan', /^(park|garden|forest|wood|scrub|grass|recreation_ground|playground|pitch|meadow|village_green|cemetery_no)$/], ['Tarım', /^(farmland|orchard|vineyard|farmyard|greenhouse_horticulture|plant_nursery)$/], ['İnşaat / boş arazi', /^(construction|brownfield|greenfield)$/], ['Eğitim / sağlık / kamu', /^(education|religious|institutional|military|cemetery)$/], ['Su', /^(water|basin|reservoir|beach)$/]];
+async function araziKullanimi(k) {
+  const j = await overpass(`[out:json][timeout:25];(way(around:1000,${k.lat},${k.lon})["landuse"];way(around:1000,${k.lat},${k.lon})["leisure"~"^(park|garden|playground|pitch|recreation_ground)$"];way(around:1000,${k.lat},${k.lon})["natural"~"^(wood|scrub|water|beach)$"];);out geom;`);
+  if (!j) return null;
+  const kx = Math.cos((k.lat * Math.PI) / 180) * 111320, ky = 110570, top = {};
+  for (const e of j.elements || []) {
+    const g = e.geometry; if (!g || g.length < 4) continue;
+    const p = g.map((n) => [(n.lon - k.lon) * kx, (n.lat - k.lat) * ky]);
+    const cx = p.reduce((s, q) => s + q[0], 0) / p.length, cy = p.reduce((s, q) => s + q[1], 0) / p.length;
+    if (Math.hypot(cx, cy) > 1000) continue;
+    let a = 0; for (let i = 0; i < p.length - 1; i++) a += p[i][0] * p[i + 1][1] - p[i + 1][0] * p[i][1];
+    a = Math.min(Math.abs(a) / 2, Math.PI * 1e6);
+    const t = e.tags || {}, deger = t.landuse || t.leisure || t.natural || '';
+    const grup = (ARAZI_GRUP.find(([, re]) => re.test(deger)) || ['Diğer'])[0];
+    top[grup] = (top[grup] || 0) + a;
+  }
+  const daire = Math.PI * 1e6, l = Object.entries(top).map(([ad, a]) => ({ ad, yuzde: Math.round((a / daire) * 1000) / 10 })).filter((x) => x.yuzde >= 0.5).sort((x, y) => y.yuzde - x.yuzde);
+  const toplam = l.reduce((s, x) => s + x.yuzde, 0);
+  return { l, haritali: Math.min(100, Math.round(toplam)) };
+}
 function raporSayfalari2(f, h) {
   const sayfalar = [], emlak = f.ana === 'emlak', c = h.cevre;
+  // Konut ve bina özellikleri + ada/parsel
+  const oz = h.ozellik || {}, p = h.parsel;
+  if (emlak && (Object.keys(oz).length || p)) {
+    const katY = (x) => (x ? x + (/kat/i.test(x) ? '' : /^(bodrum|zemin)$/i.test(x) ? ' kat' : /^\d+$/.test(x) ? '. kat' : '') : '');
+    const konut = [['Net / brüt alan', oz.m2net ? oz.m2net + ' m²' + (oz.m2brut ? ' / ' + oz.m2brut + ' m²' : '') : ''], ['Oda sayısı', oz.oda], ['Bulunduğu kat', katY(oz.kat)], ['Cephe', oz.cephe], ['Manzara', oz.manzara], ['Balkon', oz.balkon], ['Isıtma', oz.isitma], ['Eşya', oz.esya], ['Tadilat durumu', oz.tadilat]];
+    const bina = [['Bina yaşı', oz.binaYasi], ['Bina kat sayısı', oz.katSayisi], ['Asansör', oz.asansor], ['Otopark', oz.otopark], ['Site içinde', oz.site], ['Havuz', oz.havuz], ['Güvenlik', oz.guvenlik], ['Tapu durumu', oz.tapu || oz.iskan], ['Krediye uygun', oz.kredi], ['Aylık aidat', oz.aidat ? tl(+oz.aidat) : '']];
+    const tablo = (l) => { const s = l.filter(([, x]) => x); return s.length ? `<table class="r-tablo iki">${s.map(([a, x]) => `<tr><th>${a}</th><td>${kac(String(x))}</td></tr>`).join('')}</table>` : '<div class="r-not">Bilgi girilmedi.</div>'; };
+    sayfalar.push(`${rBaslik('Konut Özellikleri')}${tablo(konut)}
+      ${rBaslik('Bina Özellikleri')}${tablo(bina)}
+      ${rBaslik('Ada / Parsel Bilgileri (TKGM)')}
+      ${p ? `<table class="r-tablo iki"><tr><th>Ada / parsel</th><td>${kac(p.ada)} / ${kac(p.parsel)}${p.pafta ? ' · pafta ' + kac(p.pafta) : ''}</td></tr><tr><th>Mahalle</th><td>${kac([p.mahalle, p.ilce, p.il].filter(Boolean).join(', '))}</td></tr><tr><th>Parsel yüzölçümü</th><td>${kac(p.alan)} m²</td></tr><tr><th>Nitelik</th><td>${kac(p.nitelik || '—')}</td></tr>${p.mevkii ? `<tr><th>Mevkii</th><td>${kac(p.mevkii)}</td></tr>` : ''}${p.zemin ? `<tr><th>Zemin türü</th><td>${kac(p.zemin)}</td></tr>` : ''}</table>
+        <div class="r-not">Kaynak: TKGM Parsel Sorgu (herkese açık MEGSİS). ${p.kaynak === 'konum' ? 'Ada/parsel girilmediği için adresin harita konumundaki parsel gösterilmiştir; doğruluğu tapuyla kontrol edin.' : 'Rapor bilgilerindeki ada/parsel ile sorgulanmıştır.'} Malik bilgisi bu serviste yer almaz.</div>`
+        : '<div class="r-not">Ada/parsel girilmediği ya da adres parsel düzeyinde bulunamadığı için TKGM bilgisi eklenemedi. Rapor oluştururken "Rapor bilgileri" penceresine ada ve parseli yazın.</div>'}`);
+  }
+  // Arazi kullanımı (1 km)
+  const ar = h.arazi;
+  if (emlak && ar && ar.l.length) {
+    sayfalar.push(`${rBaslik('Arazi Kullanımı (1 km çevre)')}<div class="r-kutu">${cubukSvg(ar.l.map((x) => ({ ad: x.ad, deger: x.yuzde })))}</div>
+      <div class="r-not">1 km yarıçaplı dairenin (3,14 km²) hangi oranının hangi kullanıma ayrıldığı. Haritada işaretlenmiş alanlar daireyi yaklaşık %${ar.haritali} oranında kaplıyor; kalan kısım yollar ve sınıflandırılmamış alanlardır. Kaynak: OpenStreetMap arazi kullanım verisi. Resmî imar durumu için belediyenin e-imar sistemine bakın.</div>`);
+  }
   // A · Toplu taşıma ve ulaşım
   if (emlak && c && !c.hata) {
     sayfalar.push(`${rBaslik('Toplu Taşıma')}
