@@ -557,3 +557,8 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 ## 7.8 (12.11.2026)
 - Deprem: depremSorgu() EMSC (seismicportal.eu FDSN, CORS açık, ~0,3 sn) ana kaynak, USGS yedek (25 sn). depremVerisi: 1976dan 100 km M≥5 + son 12 ay 50 km M≥3 (son[]), kaynak adı rapora yazılır. Önceki boşluk: USGS 15 sn zaman aşımı.
 - Fay hatları: www/faylar.json (GEM Global Active Faults, Türkiye kesimi, 449 parça, 91 KB, CC BY-SA 4.0; tür + kayma hızı + koordinat), fayVerisi() noktadan çizgiye en kısa mesafe; raporda "Aktif Fay Hatları" sayfası (en yakın 4 fay, 10/25/50 km sayıları, yorum) + "Son 12 Ayın Depremleri". Sayfalar ölçüldü, sığıyor.
+
+## 7.9 (12.11.2026)
+- Değerleme düşük çıkıyordu: 580 emlak ilanının 566sı test ilanı (ornek) ve emsallerin çoğu bunlardı. TEST_DAHIL=false (değerleme, bölge analizi, oda tablosu).
+- piyasaRef(il, islem): TCMB BIRIMFIYAT / BK ve Betam SATILIK/KIRALIK.M2 il son değerinden yüksek olanı, KFE TR ile bugüne güncellenir (en çok x2); il verisi yoksa TR. hesapla emlak: gerçek emsal < 8 ise harman (ağırlık n/(n+8), n<3 ise yalnız referans), aralık ±%10, kat etkisi uygulanır; sonuçta "Dayanak" satırı. piyasaRefYukle açılışta ve değerleme öncesi.
+- Sınır: il ortalaması ilçe/mahalle primini yansıtmaz (Kadıköy gibi); gerçek ilan biriktikçe emsal ağırlığı artar.

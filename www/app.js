@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '7.8 · 12.11.2026 16:00';
+const SURUM = '7.9 · 12.11.2026 17:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -260,7 +260,32 @@ function sorgu() { const q = location.hash.split('?')[1] || ''; return Object.fr
 function sorguYap(o) { const p = new URLSearchParams(); Object.entries(o).forEach(([k, v]) => v !== '' && v != null && p.set(k, v)); return p.toString(); }
 
 // ---------- Emsal ve değerleme ----------
-const TEST_DAHIL = true; // GEÇİCİ: gerçek ilan az, test ilanları değerlemeye katılır. YAYINDAN ÖNCE MUTLAKA false yap (test ilanlarıyla birlikte silinecek).
+const TEST_DAHIL = false; // Test ilanları (ornek) değerlemeye, bölge analizine ve trende katılmaz
+// Piyasa referansı: il bazında TCMB değerleme birim fiyatı ve sahibindex/Betam ilan m² fiyatı; ikisinden yüksek olanı
+// TCMB konut fiyat endeksiyle (KFE, Türkiye) bugüne taşınır. Gerçek emsal azsa değer buna dayanır.
+async function piyasaRefYukle() {
+  if (S.PIYASA) return S.PIYASA;
+  try {
+    const [{ data: v }, { data: k }] = await Promise.all([
+      sb.from('endeks_veri').select('kod,bolge,donem,deger').in('kod', ['BIRIMFIYAT', 'BK', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2']).gte('donem', '2024-01-01').order('donem', { ascending: false }).limit(5000),
+      sb.from('kfe').select('donem,deger').eq('bolge', 'TR').gte('donem', '2023-01-01').order('donem')
+    ]);
+    const son = {}; (v || []).forEach((r) => { const key = r.kod + '|' + r.bolge; if (!son[key]) son[key] = r; });
+    const kfe = Object.fromEntries((k || []).map((r) => [r.donem.slice(0, 7), +r.deger])), kfeSon = (k || []).at(-1);
+    S.PIYASA = { son, kfe, kfeSon: kfeSon ? [kfeSon.donem.slice(0, 7), +kfeSon.deger] : null };
+  } catch (_) { S.PIYASA = { son: {}, kfe: {}, kfeSon: null }; }
+  return S.PIYASA;
+}
+function piyasaRef(il, islem) {
+  const P = S.PIYASA; if (!P) return null;
+  const kira = islem === 'Kiralık' || islem === 'Günlük Kiralık';
+  const guncelle = (r) => { if (!r) return null; const f = P.kfeSon && P.kfe[r.donem.slice(0, 7)] ? P.kfeSon[1] / P.kfe[r.donem.slice(0, 7)] : 1; return { deger: +r.deger * Math.max(1, Math.min(f, 2)), donem: r.donem, ham: +r.deger }; };
+  const bul = (kod) => guncelle(P.son[kod + '|' + il]) || null;
+  const aday = [[kira ? 'BK' : 'BIRIMFIYAT', 'TCMB değerleme birim fiyatı'], [kira ? 'BETAM.KIRALIK.M2' : 'BETAM.SATILIK.M2', 'sahibindex ilan fiyatı (Betam)']]
+    .map(([kod, ad]) => { const x = bul(kod); return x ? { ...x, ad } : null; }).filter(Boolean).sort((x, y) => y.deger - x.deger);
+  if (!aday.length) return il !== 'TR' ? piyasaRef('TR', islem) : null;
+  return { birim: aday[0].deger, kaynak: `${aday[0].ad}, ${il === 'TR' ? 'Türkiye ortalaması' : il} (${new Date(aday[0].donem).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}, bugüne güncellendi)`, adaylar: aday };
+}
 function emsaller(o) {
   // o: {ana, alt, il, ilce, mahalle, sokak, islem, oda, m2net, marka, model, yil, haric}
   let l = S.ilanlar.filter((i) => i.ana === o.ana && i.id !== o.haric && i.fiyat > 0 && (TEST_DAHIL || !i.ornek));
@@ -344,6 +369,18 @@ function degerlemeKaydet(v, h, kasko) {
 }
 function hesapla(o) {
   const e = emsaller(o);
+  if (o.ana === 'emlak') {
+    const ref = piyasaRef(o.il, o.islem);
+    const gercek = e.genis ? [] : e; // Türkiye geneline düşen emsal il değerine göre zayıf; referans esas alınır
+    if (ref && gercek.length < 8) {
+      const katli = !!o.kat, kat = katli ? katEtki(o.kat) : 1;
+      const n = gercek.length >= 3 ? gercek.length : 0, w = n / (n + 8);
+      const eb = n ? medyan(gercek.map((x) => katli ? x.birim / katEtki((x.i.alanlar || {}).kat) : x.birim)) : 0;
+      const birim = (w * eb + (1 - w) * ref.birim) * kat, m2 = +o.m2net;
+      const orta = birim * m2;
+      return { yeterli: true, sayi: e.length, emsal: e, orta, alt: orta * 0.9, ust: orta * 1.1, birimOrta: birim, guven: n ? 'Orta' : 'Orta (resmî veri)', kapsam: n ? `${e.kapsam} + il piyasa verisi` : `${o.il} il geneli piyasa verisi`, genis: false, ilSayi: e.ilSayi, katEtkisi: katli ? katYuzde(o.kat) : null, refKaynak: ref.kaynak, refBirim: ref.birim, emsalAgirlik: Math.round(w * 100) };
+    }
+  }
   if (e.length < 3) return { yeterli: false, sayi: e.length, emsal: e, kapsam: e.kapsam, ilSayi: e.ilSayi };
   const katli = o.ana === 'emlak' && !!o.kat;
   const b = e.map((x) => katli ? x.birim / katEtki((x.i.alanlar || {}).kat) : x.birim);
@@ -2062,7 +2099,7 @@ EKRAN.degerle = () => {
     if (!h.yeterli) { el.innerHTML = `<div class="uyari-k">${ic('uyari', 18)}<div><b>Yeterli emsal yok.</b> ${v.ana === 'emlak' ? `Türkiye genelinde bile bu tür ve işlemde ${h.sayi} ilan var; güvenilir bir aralık için en az 3 gerekiyor. Bu kategori yeni; ilanlar arttıkça değerleme açılacak.` : `Bu marka ve modelde (yıl ±2) ${h.sayi} ilan var; en az 3 gerekiyor. Model adını kısaltmayı dene (örn. yalnız “Clio”).`}</div></div>`; return; }
     el.innerHTML = `<div class="deger-k"><div class="ust-yazi">TAHMİNİ ${v.ana === 'emlak' && v.islem === 'Kiralık' ? 'AYLIK KİRA' : 'PİYASA DEĞERİ'}</div><div class="buyuk">${tl(h.alt)} – ${tl(h.ust)}</div>
       <div style="font-size:13px;opacity:.85">Ortası <b>${tl(h.orta)}</b>${v.ana === 'emlak' ? ' · m²: <b>' + tl(h.birimOrta) + '</b>' : ''}</div>
-      ${h.katEtkisi ? `<div style="font-size:12px;opacity:.8">Kat etkisi (${kac(v.kat)}): <b>${h.katEtkisi}</b>, emsaller de kata göre eşitlendi</div>` : ''}<div style="font-size:12px;opacity:.7">Güven: ${h.guven} · ${h.sayi} emsal ilan${h.kapsam ? ' · ' + kac(h.kapsam) : ''}</div></div>
+      ${h.katEtkisi ? `<div style="font-size:12px;opacity:.8">Kat etkisi (${kac(v.kat)}): <b>${h.katEtkisi}</b>, emsaller de kata göre eşitlendi</div>` : ''}${h.refKaynak ? `<div style="font-size:12px;opacity:.8">Dayanak: ${h.emsalAgirlik ? `%${h.emsalAgirlik} Mülküm360 gerçek ilanları, %${100 - h.emsalAgirlik} ` : ''}${kac(h.refKaynak)}</div>` : ''}<div style="font-size:12px;opacity:.7">Güven: ${h.guven} · ${h.sayi} emsal ilan${h.kapsam ? ' · ' + kac(h.kapsam) : ''}</div></div>
       ${h.genis ? `<div class="uyari-k">${ic('uyari', 18)}<div>${kac(v.il)} için yeterli ilan olmadığından (${h.ilSayi ?? 0}) <b>Türkiye geneli</b> emsallerle hesaplandı. Bölge farkı büyük olabilir; sonucu ön fikir olarak değerlendir.</div></div>` : ''}
       <div class="izgara3">${VADE.map(([ad, sure, k], n) => `<div class="kart" style="padding:10px;${n === 1 ? 'border-color:var(--vurgu);background:var(--vurgu-acik)' : ''}"><div class="k soluk" style="font-weight:700">${ad}</div><div class="k soluk">${sure}</div><b style="font-size:14px">${tl(h[k])}</b></div>`).join('')}</div>
       <div class="k soluk" style="text-align:center">Vade fiyatları hedeftir; ${v.islem === 'Kiralık' ? 'kiralama' : 'satış'} süresi garanti edilmez.</div>
@@ -2118,8 +2155,9 @@ EKRAN.degerle = () => {
     };
     const ic2 = $('#ilanaCevir'); if (ic2) ic2.onclick = () => { taslak = { adim: 1, fotolar: [], alt: v.alt, il: v.il, ilce: v.ilce, alanlar: { islem: v.islem, oda: v.oda, m2net: v.m2net, binaYasi: v.binaYasi } }; };
   };
-  $('#df').onsubmit = (e) => {
-    e.preventDefault(); const v = { ...Object.fromEntries(new FormData(e.target)), ana: d.ana, haric: d.haric, baslik: d.baslik, elEmsal: elListe }, h = $('#dh'); h.textContent = '';
+  piyasaRefYukle();
+  $('#df').onsubmit = async (e) => {
+    e.preventDefault(); await piyasaRefYukle(); const v = { ...Object.fromEntries(new FormData(e.target)), ana: d.ana, haric: d.haric, baslik: d.baslik, elEmsal: elListe }, h = $('#dh'); h.textContent = '';
     ['m2net', 'yil', 'km'].forEach((k) => v[k] && (v[k] = v[k].replace(/\D/g, '')));
     if (v.ana === 'emlak' && (!v.il || !v.islem || !(+v.m2net > 0))) return hataGoster(h, 'İl, işlem ve net m² gerekli.');
     if (v.ana === 'vasita' && (!v.marka || !v.model || !v.yil)) return hataGoster(h, 'Marka, model ve yıl gerekli.');
@@ -2224,7 +2262,7 @@ EKRAN.rapor = (id) => {
 function bolgeAnaliz(f) {
   if (f.ana !== 'emlak') return null;
   const grup = (islem) => {
-    let l = S.ilanlar.filter((i) => i.ana === 'emlak' && i.alt === f.alt && i.il === f.il && i.alanlar?.islem === islem && +i.alanlar?.m2net > 0 && i.fiyat > 0);
+    let l = S.ilanlar.filter((i) => i.ana === 'emlak' && (TEST_DAHIL || !i.ornek) && i.alt === f.alt && i.il === f.il && i.alanlar?.islem === islem && +i.alanlar?.m2net > 0 && i.fiyat > 0);
     let kapsam = f.il + ' geneli';
     const ilceli = l.filter((i) => f.ilce && kucuk(i.ilce) === kucuk(f.ilce));
     if (ilceli.length >= 3) { l = ilceli; kapsam = f.ilce + ', ' + f.il; }
@@ -2236,7 +2274,7 @@ function bolgeAnaliz(f) {
   let getiri = null;
   if (satis.yeterli && kira.yeterli) { const y = (kira.m2Ort * 12) / satis.m2Ort; getiri = { yuzde: y * 100, yil: 1 / y }; }
   const odalar = {};
-  S.ilanlar.filter((i) => i.ana === 'emlak' && i.alt === f.alt && i.il === f.il && i.alanlar?.islem === f.islem && i.alanlar?.oda && i.fiyat > 0)
+  S.ilanlar.filter((i) => i.ana === 'emlak' && (TEST_DAHIL || !i.ornek) && i.alt === f.alt && i.il === f.il && i.alanlar?.islem === f.islem && i.alanlar?.oda && i.fiyat > 0)
     .forEach((i) => (odalar[i.alanlar.oda] = odalar[i.alanlar.oda] || []).push(i.fiyat));
   const odaTablo = Object.entries(odalar).filter(([, l]) => l.length >= 2).map(([oda, l]) => ({ oda, sayi: l.length, ortalama: l.reduce((t, x) => t + x, 0) / l.length })).sort((a, b) => a.oda.localeCompare(b.oda, 'tr'));
   return { satis, kira, getiri, odaTablo };
@@ -2499,6 +2537,7 @@ function ciz() {
 addEventListener('hashchange', ciz);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheetEl.hidden) sheetKapat(); });
 async function basla() {
+  setTimeout(() => piyasaRefYukle(), 1500);
   await yukle();
   const uTema = new URLSearchParams(location.search).get('tema'); if (['prestij', 'vitrin', 'alev'].includes(uTema)) S.palet = uTema; // test/derin bağlantı: ?tema=vitrin
   temaUygula();
