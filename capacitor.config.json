@@ -1,1 +1,1 @@
-{"appId":"com.mulkum360.app","appName":"Mülküm360","webDir":"www","plugins":{"LocalNotifications":{"smallIcon":"ic_stat_bildirim","iconColor":"#E89B1A"},"PushNotifications":{"presentationOptions":["badge","sound","alert"]}}}
+{"appId":"com.mulkum360.app","appName":"Mülküm360","webDir":"www","plugins":{"LocalNotifications":{"smallIcon":"ic_stat_bildirim","iconColor":"#D4A24C"},"PushNotifications":{"presentationOptions":["badge","sound","alert"]}}}

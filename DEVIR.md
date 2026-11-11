@@ -538,3 +538,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 7.3 (12.11.2026)
 - Bildirim başlıkları her kelime büyük harfle: DB baslik_buyut() + bildirimler BEFORE INSERT/UPDATE tetikleyicisi (tüm kaynaklar, mevcut kayıtlar da düzeltildi; tırnakla başlayan kelime dahil, i→İ). İstemci yerel bildirimler (mesaj, kayıtlı arama, ajanda) bildir() içinde baslikBuyut().
+
+## 7.4 (12.11.2026)
+- Bildirim simgesi logodan: ic_stat_bildirim = assets/logo.svg şekilleri (çatı, yay, nokta) beyaz tek renk; vurgu rengi logodaki altın #D4A24C (values/bildirim.xml, capacitor.config, push-gonder).

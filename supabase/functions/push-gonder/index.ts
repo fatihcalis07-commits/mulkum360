@@ -35,7 +35,7 @@ async function isle(req: Request) {
   for (const { token } of jl) {
     const r = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
       method: 'POST', headers: { Authorization: 'Bearer ' + jeton, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: { token, notification: { title: b.baslik, body: b.metin || '' }, data: { link: b.link || '#/bildirimler', id }, android: { priority: 'high', notification: { channel_id: 'genel', icon: 'ic_stat_bildirim', color: '#E89B1A' } } } })
+      body: JSON.stringify({ message: { token, notification: { title: b.baslik, body: b.metin || '' }, data: { link: b.link || '#/bildirimler', id }, android: { priority: 'high', notification: { channel_id: 'genel', icon: 'ic_stat_bildirim', color: '#D4A24C' } } } })
     });
     if (r.ok) n++; else if (r.status === 404 || r.status === 400) await sb.from('push_jetonlari').delete().eq('token', token); // geçersiz jeton
   }
