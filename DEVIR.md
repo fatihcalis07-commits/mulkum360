@@ -562,3 +562,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Değerleme düşük çıkıyordu: 580 emlak ilanının 566sı test ilanı (ornek) ve emsallerin çoğu bunlardı. TEST_DAHIL=false (değerleme, bölge analizi, oda tablosu).
 - piyasaRef(il, islem): TCMB BIRIMFIYAT / BK ve Betam SATILIK/KIRALIK.M2 il son değerinden yüksek olanı, KFE TR ile bugüne güncellenir (en çok x2); il verisi yoksa TR. hesapla emlak: gerçek emsal < 8 ise harman (ağırlık n/(n+8), n<3 ise yalnız referans), aralık ±%10, kat etkisi uygulanır; sonuçta "Dayanak" satırı. piyasaRefYukle açılışta ve değerleme öncesi.
 - Sınır: il ortalaması ilçe/mahalle primini yansıtmaz (Kadıköy gibi); gerçek ilan biriktikçe emsal ağırlığı artar.
+
+## 8.0 (12.11.2026)
+- İlçe/mahalle piyasa m²: public.piyasa_m2 (yönetici girer, kaynak+tarih zorunlu; Yönetim > Veri > Piyasa m²). public.kullanici_emsal: değerlemede girilen "Kendi emsallerin" kaydedilir (kimliksiz), aynı ilçede ≥3 olunca ortancası referans olur.
+- piyasaRef(il, islem, ilce, mahalle): sıra mahalle tablosu → ilçe tablosu → kullanıcı emsali (mahalle, ilçe) → il (TCMB/Betam, güncellenmiş) → TR. Yerel referans varken il/Türkiye geneline düşmüş emsal harmanlanmaz (aşağı çekmesin); yalnız aynı ilçe/mahalle ilanları.

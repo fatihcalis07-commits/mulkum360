@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '7.9 · 12.11.2026 17:00';
+const SURUM = '8.0 · 12.11.2026 18:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -266,19 +266,34 @@ const TEST_DAHIL = false; // Test ilanları (ornek) değerlemeye, bölge analizi
 async function piyasaRefYukle() {
   if (S.PIYASA) return S.PIYASA;
   try {
-    const [{ data: v }, { data: k }] = await Promise.all([
+    const [{ data: v }, { data: k }, { data: pm }, { data: ke }] = await Promise.all([
       sb.from('endeks_veri').select('kod,bolge,donem,deger').in('kod', ['BIRIMFIYAT', 'BK', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2']).gte('donem', '2024-01-01').order('donem', { ascending: false }).limit(5000),
-      sb.from('kfe').select('donem,deger').eq('bolge', 'TR').gte('donem', '2023-01-01').order('donem')
+      sb.from('kfe').select('donem,deger').eq('bolge', 'TR').gte('donem', '2023-01-01').order('donem'),
+      sb.from('piyasa_m2').select('il,ilce,mahalle,islem,m2_fiyat,kaynak,donem').order('donem', { ascending: false }).limit(3000),
+      sb.from('kullanici_emsal').select('il,ilce,mahalle,islem,m2net,fiyat,olusturma').gte('olusturma', new Date(Date.now() - 365 * 864e5).toISOString()).limit(5000)
     ]);
     const son = {}; (v || []).forEach((r) => { const key = r.kod + '|' + r.bolge; if (!son[key]) son[key] = r; });
     const kfe = Object.fromEntries((k || []).map((r) => [r.donem.slice(0, 7), +r.deger])), kfeSon = (k || []).at(-1);
-    S.PIYASA = { son, kfe, kfeSon: kfeSon ? [kfeSon.donem.slice(0, 7), +kfeSon.deger] : null };
-  } catch (_) { S.PIYASA = { son: {}, kfe: {}, kfeSon: null }; }
+    S.PIYASA = { son, kfe, kfeSon: kfeSon ? [kfeSon.donem.slice(0, 7), +kfeSon.deger] : null, yerel: pm || [], emsal: ke || [] };
+  } catch (_) { S.PIYASA = { son: {}, kfe: {}, kfeSon: null, yerel: [], emsal: [] }; }
   return S.PIYASA;
 }
-function piyasaRef(il, islem) {
+function piyasaRef(il, islem, ilce = '', mahalle = '') {
   const P = S.PIYASA; if (!P) return null;
-  const kira = islem === 'Kiralık' || islem === 'Günlük Kiralık';
+  const kira = islem === 'Kiralık' || islem === 'Günlük Kiralık', isl = kira ? 'Kiralık' : 'Satılık', k = (x) => kucuk(x || '');
+  const tarihAd = (d) => new Date(d).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+  if (il !== 'TR' && ilce) {
+    // 1) Yönetici tablosu: mahalle, sonra ilçe (en yeni kayıt)
+    for (const [mh, ad] of (mahalle ? [[mahalle, mahalle + ' Mah., ' + ilce]] : []).concat([['', ilce + ' ilçesi']])) {
+      const r = (P.yerel || []).find((x) => x.il === il && k(x.ilce) === k(ilce) && k(x.mahalle) === k(mh) && x.islem === isl);
+      if (r) return { birim: +r.m2_fiyat, kaynak: `${ad} piyasa m² fiyatı (${r.kaynak}, ${tarihAd(r.donem)})`, yerel: true };
+    }
+    // 2) Kullanıcı emsalleri: aynı ilçe (mahalle varsa önce mahalle), en az 3 kayıt, ortanca
+    const em = (P.emsal || []).filter((x) => x.il === il && k(x.ilce) === k(ilce) && x.islem === isl);
+    const emM = mahalle ? em.filter((x) => k(x.mahalle) === k(mahalle)) : [];
+    const l = emM.length >= 3 ? emM : em.length >= 3 ? em : null;
+    if (l) return { birim: medyan(l.map((x) => +x.fiyat / +x.m2net)), kaynak: `${l === emM ? mahalle + ' Mah.' : ilce} için kullanıcıların girdiği ${l.length} emsal (son 12 ay)`, yerel: true };
+  }
   const guncelle = (r) => { if (!r) return null; const f = P.kfeSon && P.kfe[r.donem.slice(0, 7)] ? P.kfeSon[1] / P.kfe[r.donem.slice(0, 7)] : 1; return { deger: +r.deger * Math.max(1, Math.min(f, 2)), donem: r.donem, ham: +r.deger }; };
   const bul = (kod) => guncelle(P.son[kod + '|' + il]) || null;
   const aday = [[kira ? 'BK' : 'BIRIMFIYAT', 'TCMB değerleme birim fiyatı'], [kira ? 'BETAM.KIRALIK.M2' : 'BETAM.SATILIK.M2', 'sahibindex ilan fiyatı (Betam)']]
@@ -360,6 +375,7 @@ async function kaskoDegeri(marka, model, yil) {
 // Her değerleme isteği kendi veri bankamıza (kimlik bilgisi olmadan) yazılır
 function degerlemeKaydet(v, h, kasko) {
   try {
+    if (v.ana === 'emlak' && v.il && ben() && (v.elEmsal || []).length) sb.from('kullanici_emsal').insert(v.elEmsal.filter((x) => +x.fiyat > 0 && +x.m2net >= 10).map((x) => ({ il: v.il, ilce: v.ilce || '', mahalle: x.mahalle || v.mahalle || '', islem: v.islem === 'Kiralık' ? 'Kiralık' : 'Satılık', alt: v.alt || null, oda: x.oda || null, m2net: +x.m2net, fiyat: +x.fiyat }))).then(() => { S.PIYASA = null; }, () => {});
     const k = { ana: v.ana, alt: v.alt || null, islem: v.islem || null, il: v.il || null, ilce: v.ilce || null, mahalle: v.mahalle || null,
       m2net: +v.m2net || null, oda: v.oda || null, kat: v.kat || null, bina_yasi: v.binaYasi || null,
       marka: v.marka || null, model: v.model || null, yil: +v.yil || null, km: +v.km || null, hasar: v.hasar || null,
@@ -370,9 +386,11 @@ function degerlemeKaydet(v, h, kasko) {
 function hesapla(o) {
   const e = emsaller(o);
   if (o.ana === 'emlak') {
-    const ref = piyasaRef(o.il, o.islem);
-    const gercek = e.genis ? [] : e; // Türkiye geneline düşen emsal il değerine göre zayıf; referans esas alınır
-    if (ref && gercek.length < 8) {
+    const ref = piyasaRef(o.il, o.islem, o.ilce, o.mahalle);
+    // Emsal ilçe/mahalle düzeyinde mi? (il ya da Türkiye geneline düştüyse yerel fiyatı aşağı çekmesin)
+    const emsalYerel = !e.genis && !/geneli/.test(e.kapsam || '');
+    const gercek = e.genis || (ref?.yerel && !emsalYerel) ? [] : e;
+    if (ref && (gercek.length < 8 || (ref.yerel && !emsalYerel))) {
       const katli = !!o.kat, kat = katli ? katEtki(o.kat) : 1;
       const n = gercek.length >= 3 ? gercek.length : 0, w = n / (n + 8);
       const eb = n ? medyan(gercek.map((x) => katli ? x.birim / katEtki((x.i.alanlar || {}).kat) : x.birim)) : 0;

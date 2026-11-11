@@ -1,8 +1,8 @@
 // Mülküm360 — Yönetim (yalnız yönetici; tüm işlemleri sunucu kuralları da denetler)
 'use strict';
 
-const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Yükleme'], ['vitrin', 'yildiz', 'Vitrin'], ['doping', 'tik', 'Öne Çıkarma'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim Verileri'], ['gosterge', 'grafik', 'Göstergeler']];
-const YON_GRUP = [['Kullanıcı ve kredi', ['ozet', 'uyeler', 'kredi', 'satis']], ['Denetim', ['sikayet', 'dogrulama']], ['Görünürlük', ['vitrin', 'doping']], ['Veri', ['bolge', 'secim', 'gosterge', 'banka']]];
+const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Yükleme'], ['vitrin', 'yildiz', 'Vitrin'], ['doping', 'tik', 'Öne Çıkarma'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['piyasa', 'grafik', 'Piyasa m²'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim Verileri'], ['gosterge', 'grafik', 'Göstergeler']];
+const YON_GRUP = [['Kullanıcı ve kredi', ['ozet', 'uyeler', 'kredi', 'satis']], ['Denetim', ['sikayet', 'dogrulama']], ['Görünürlük', ['vitrin', 'doping']], ['Veri', ['piyasa', 'bolge', 'secim', 'gosterge', 'banka']]];
 let YON_BEKLEYEN = 0; // bekleyen kredi satın alma talebi sayısı (satis.js günceller)
 const HAREKET_IKON ={ kayit: 'kisi', giris: 'kilit', ilan: 'ev', rapor: 'belge', kredi: 'kredi', mesaj: 'mesaj', sikayet: 'bayrak', ai: 'yildiz' };
 const tarihSaat = (t) => (t ? new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
@@ -277,4 +277,26 @@ YON.doping = async (el) => {
     f.onsubmit = (e) => { e.preventDefault(); kaydet(null); };
     f.querySelector('[data-togglesat]').onclick = () => kaydet(!f.querySelector('[data-togglesat]').textContent.includes('✓'));
   });
+};
+// Piyasa m²: ilçe / mahalle güncel m² fiyatı (yönetici; kaynak ve tarih zorunlu). Değerleme önce bunu kullanır.
+YON.piyasa = async (el) => {
+  const { data } = await sb.from('piyasa_m2').select('*').order('olusturma', { ascending: false }).limit(300);
+  const l = data || [];
+  el.innerHTML = `<div class="kart"><h3 style="margin:0 0 6px">İlçe / mahalle m² fiyatı ekle</h3>
+    <div class="k soluk" style="margin-bottom:8px;line-height:1.5">Değerleme bu bölgede önce bu rakamı kullanır (il ortalaması yerine). Kaynağı mutlaka yaz: kendi portföy ortalaman, bölge emlakçılarından aldığın fiyat, lisanslı bir veri raporu gibi. Başka sitelerin verisini otomatik çekme; elle, kaynağını belirterek gir.</div>
+    <form id="pmf" class="ic" style="padding:0">
+      <div class="izgara2"><label class="alan">İl<select name="il" required><option value="">Seç</option>${ILLER.map((x) => `<option>${x}</option>`).join('')}</select></label><label class="alan">İlçe<select name="ilce"><option value="">İl geneli</option></select></label></div>
+      <div class="izgara2"><label class="alan">Mahalle<select name="mahalle" data-bos="İlçe geneli"><option value="">İlçe geneli</option></select></label><label class="alan">İşlem<select name="islem"><option>Satılık</option><option>Kiralık</option></select></label></div>
+      <div class="izgara2"><label class="alan">m² fiyatı (TL)<input name="m2" inputmode="numeric" required placeholder="örn. 95000"></label><label class="alan">Tarih<input name="donem" type="date" value="${new Date().toISOString().slice(0, 10)}"></label></div>
+      <label class="alan">Kaynak<input name="kaynak" maxlength="200" required placeholder="örn. Bölge emlak ofisleri, Kasım 2026"></label>
+      <button class="btn tam">Kaydet</button></form></div>
+    <div class="bolum-bas"><h2 style="font-size:15px">Girilen fiyatlar · ${l.length}</h2></div>
+    ${l.length ? `<div class="liste">${l.map((r) => `<div class="oge"><div class="ara"><b>${kac([r.mahalle, r.ilce, r.il].filter(Boolean).join(', '))} · ${r.islem}</b><div class="k soluk">${tl(+r.m2_fiyat)}/m² · ${kac(r.kaynak)} · ${new Date(r.donem).toLocaleDateString('tr-TR')}</div></div><button class="btn sade kucuk" data-pmsil="${r.id}">Sil</button></div>`).join('')}</div>` : '<div class="k soluk">Henüz kayıt yok.</div>'}`;
+  konumSecBagla($('#pmf [name=il]'), $('#pmf [name=ilce]'), $('#pmf [name=mahalle]'));
+  $('#pmf').onsubmit = async (e) => {
+    e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)); const m2 = +String(v.m2).replace(/\D/g, '');
+    if (!v.il || !(m2 > 0) || String(v.kaynak).trim().length < 3) return toast('İl, m² fiyatı ve kaynak gerekli.');
+    if (await dene(() => islem(sb.from('piyasa_m2').insert({ il: v.il, ilce: v.ilce || '', mahalle: v.mahalle || '', islem: v.islem, m2_fiyat: m2, kaynak: v.kaynak.trim(), donem: v.donem || undefined })), 'Kaydedildi')) { S.PIYASA = null; YON.piyasa(el); }
+  };
+  el.querySelectorAll('[data-pmsil]').forEach((b) => (b.onclick = async () => { if (await onayla('Silinsin mi?', 'Bu m² fiyatı değerlemede kullanılmaz olur.', 'Sil', true) && (await dene(() => islem(sb.from('piyasa_m2').delete().eq('id', +b.dataset.pmsil)), 'Silindi'))) { S.PIYASA = null; YON.piyasa(el); } }));
 };
