@@ -916,6 +916,10 @@ html.koyu .segment button.secili{background:#636366!important}
 .tur-sec small{font-size:11.5px;line-height:1.35}
 
 /* Kurum rozeti satır içinde (sayaç rozetinin mutlak konumunu almasın) */
+.sifre-sar{position:relative;display:block}.sifre-sar input{width:100%;padding-right:48px}
+.sifre-goz{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:44px;border:0;background:none;color:var(--soluk);display:flex;align-items:center;justify-content:center;cursor:pointer}.sifre-goz.acik{color:var(--vurgu-ikon)}
+/* Yazılı rozetler (simgeli) sayaç rozeti gibi köşeye yapışmaz */
+.rozet:has(svg){position:static;top:auto;right:auto;min-width:0;height:auto}
 .rozet.kurum{position:static;top:auto;right:auto;min-width:0;height:auto;margin-left:4px}
 .kart-alt{right:8px;flex-wrap:wrap}
 .kart-alt span{white-space:nowrap}

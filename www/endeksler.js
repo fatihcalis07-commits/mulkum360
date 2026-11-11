@@ -13,7 +13,7 @@ const tabanla = (l) => { if (!l || !l.length) return []; const b = l[0][1]; retu
 // İki seriyi aynı aylarda böl (reel = nominal / TÜFE, dolar = TL / kur)
 const bol = (a, b) => { const m = new Map(b.map(([d, v]) => [d, v])); return a.filter(([d]) => m.has(d)).map(([d, v]) => [d, v / m.get(d)]); };
 const degisim = (l) => (l && l.length > 1 ? ((l[l.length - 1][1] / l[0][1]) - 1) * 100 : null);
-const yuzdeY = (x) => (x == null ? '—' : (x >= 0 ? '+' : '') + Math.round(x).toLocaleString('tr-TR') + '%');
+const yuzdeY = (x) => (x == null ? '—' : (x >= 0 ? '+' : '−') + '%' + Math.abs(Math.round(x)).toLocaleString('tr-TR'));
 const sayiY = (x) => Math.round(x).toLocaleString('tr-TR');
 
 // Sade SVG çizgi grafik: birden çok seri, yıl etiketleri

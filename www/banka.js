@@ -43,7 +43,7 @@ const KREDI_UYARI = `<div class="k soluk" style="font-size:12px;line-height:1.5;
 async function krediHesaplayiciCiz(kap, { tur = 'konut', fiyat = 0, turSec = true, kisa = false } = {}) {
   let acik = !kisa; // ilan sayfasında yalnız en uygun teklif görünür, kalanı "Diğer teklifler" ile açılır
   kap.innerHTML = `${turSec ? `<div class="ciplar" id="bkTur">${KREDI_TUR.map(([k, a]) => `<button class="cip ${k === tur ? 'secili' : ''}" data-tur="${k}">${a}</button>`).join('')}</div>` : ''}
-    <div class="izgara3"><label class="alan">${fiyat ? 'Fiyat' : 'Kredi tutarı'} (TL)<input id="bkTutar" inputmode="numeric" value="${fiyat || 1000000}"></label>
+    <div class="izgara3" style="grid-template-columns:1.7fr 1fr 1fr"><label class="alan">${fiyat ? 'Fiyat' : 'Kredi tutarı'} (TL)<input id="bkTutar" inputmode="numeric" value="${fiyat || 1000000}"></label>
     <label class="alan">Peşinat %<input id="bkPes" inputmode="numeric" value="${fiyat ? 20 : 0}"></label>
     <label class="alan">Vade (ay)<input id="bkVade" inputmode="numeric" value="${tur === 'konut' ? 120 : 36}" list="bkVadeOn"><datalist id="bkVadeOn"><option value="12"><option value="24"><option value="36"><option value="48"><option value="60"><option value="120"><option value="180"></datalist></label></div>
     <div id="bkOrt" class="k soluk"></div><div id="bkListe">${bosDurum('kredi', 'Teklifler yükleniyor…', '')}</div>${KREDI_UYARI}`;
