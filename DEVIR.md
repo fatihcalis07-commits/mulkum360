@@ -548,3 +548,8 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 ## 7.6 (12.11.2026)
 - Rapor bölge analizi: ortanca yerine ortalama (m2Ort, ortalama, alanOrt; oda tablosu ortalama fiyat). Kartlar m² fiyatı üzerinden (ortalama ilan fiyatı ve ortalama alan alt satırda). "Bu mülk: net N m² × X TL/m² = değer, bölge ortalamasına göre %Y" satırı (7,43 M bölge ilan ortalaması 120 m² ilanlardan; 3,36 M mülk ~58 m², çelişki değildi). Eski raporlar m2Ortanca/ortanca alanlarına geri düşer.
 - Medeni durum 18+: medeni18() TÜİK 15+ dağılımından 15-17 yaşı (15-19 grubunun 3/5i, hiç evlenmemiş) çıkarır; grafik ve tablo 18+.
+
+## 7.7 (12.11.2026)
+- Rapor A4 taşması: bölge sayfası (raporEkBolumler parca=bolge) yalnız fiyat+ilçe; yeni "Demografik ve Sosyal Yapı" sayfası (parca=demo + cinsiyet + medeni), sonraki sayfa yaş + eğitim. Tüm sayfalar ölçüldü, en dolu 874/1123 px.
+- Rozet çakışması: kurum rozeti .rozet.kurum (sayaç .rozet position:absolute alıyordu, fotoğraf köşesine kayıyordu). .kart-alt sarılır.
+- m² öne çıktı: ilan sayfasında .m2-hap (m² fiyatı + net/brüt m²), rapor vade kartlarında m² başına fiyat.

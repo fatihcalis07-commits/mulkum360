@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '7.6 · 12.11.2026 14:00';
+const SURUM = '7.7 · 12.11.2026 15:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -28,7 +28,7 @@ const ilan = (id) => S.ilanlar.find((i) => i.id === id);
 const gorunenAd = (k) => { if (!k?.soyadGizle || k.id === S.oturum) return k?.ad || ''; const p = String(k.ad).trim().split(/\s+/); return p.length < 2 ? k.ad : p.slice(0, -1).join(' ') + ' ' + p[p.length - 1][0].toLocaleUpperCase('tr-TR') + '.'; };
 // Emlak ofisi rozeti: firma ya da yetki belgesi beyan eden üyeler
 const kurumAd = (k, ana) => (k?.sektor ? k.sektor === 'galeri' : ana === 'vasita') ? 'Oto galeri' : 'Emlak ofisi';
-const rozet = (k, ana = 'emlak') => k?.dogrulanmis ? `<span class="rozet dogru">${ic('kalkan', 12)}Doğrulanmış ${kurumAd(k, ana) === 'Oto galeri' ? 'galeri' : 'ofis'}</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet">${ic('kalkan', 12)}${kurumAd(k, ana)}</span>` : '';
+const rozet = (k, ana = 'emlak') => k?.dogrulanmis ? `<span class="rozet kurum dogru">${ic('kalkan', 12)}Doğrulanmış ${kurumAd(k, ana) === 'Oto galeri' ? 'galeri' : 'ofis'}</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet kurum">${ic('kalkan', 12)}${kurumAd(k, ana)}</span>` : '';
 // İlanın kimden olduğu: emlakta ilan sahibinin hesap türü, vasıtada ilandaki alan
 const kimden = (i) => (i.ana === 'emlak' ? (kullanici(i.sahip).ofis ? 'Emlak ofisinden' : 'Sahibinden') : i.alanlar?.kimden || '');
 const basHarf = (ad) => kac(String(ad || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR'));
@@ -709,7 +709,7 @@ EKRAN.ilan = (id) => {
       ${i.ornek ? `<div class="uyari-k">${ic('uyari', 18)}<div>Bu bir <b>test ilanıdır</b>; ekranları denemek için eklendi, gerçek değildir.</div></div>` : ''}
       <div style="display:flex;flex-direction:column;gap:4px">
         <div style="font-size:26px;font-weight:800;letter-spacing:-.5px">${tl(i.fiyat)}${f.islem === 'Kiralık' ? '<span class="soluk" style="font-size:14px;font-weight:500"> / ay</span>' : ''}</div>
-        ${+f.oncekiFiyat > i.fiyat || (i.ana === 'emlak' && +f.m2net > 0) ? `<div class="k soluk">${+f.oncekiFiyat > i.fiyat ? `<s>${tl(+f.oncekiFiyat)}</s> <b style="color:var(--guven)">%${Math.round((1 - i.fiyat / f.oncekiFiyat) * 100)} indirim</b>` : ''}${+f.oncekiFiyat > i.fiyat && +f.m2net > 0 ? ' · ' : ''}${i.ana === 'emlak' && +f.m2net > 0 ? tl(i.fiyat / f.m2net) + '/m² (net)' : ''}</div>` : ''}
+        ${+f.oncekiFiyat > i.fiyat || (i.ana === 'emlak' && +f.m2net > 0) ? `<div class="k soluk">${+f.oncekiFiyat > i.fiyat ? `<s>${tl(+f.oncekiFiyat)}</s> <b style="color:var(--guven)">%${Math.round((1 - i.fiyat / f.oncekiFiyat) * 100)} indirim</b>` : ''}${+f.oncekiFiyat > i.fiyat && +f.m2net > 0 ? ' · ' : ''}${i.ana === 'emlak' && +f.m2net > 0 ? `<span class="m2-hap">${tl(i.fiyat / f.m2net)} / m²</span> <span class="soluk">net ${sayiBicim(+f.m2net)} m²${+f.m2brut > 0 ? ' · brüt ' + sayiBicim(+f.m2brut) + ' m²' : ''}</span>` : ''}</div>` : ''}
         <h2 style="font-size:17px;font-weight:600" id="ilanBaslik">${kac(i.baslik)}</h2>
         ${DIL !== 'tr' ? `<button class="btn sade kucuk" id="orjBtn" data-cevirme style="margin:2px 0 6px">${ic('dil', 14)}<span>Orijinalini göster</span></button>` : ''}
         ${i.dogrulanmis ? `<div><span class="rozet dogru">${ic('kalkan', 12)}Tapu bilgisi doğrulandı</span></div>` : ''}
@@ -2242,12 +2242,13 @@ function bolgeAnaliz(f) {
   return { satis, kira, getiri, odaTablo };
 }
 // PDF rapora eklenen bölümler: vade fiyatları, bölge fiyat analizleri, demografik ve sosyal yapı
-function raporEkBolumler(f, h) {
+// parca: 'bolge' = fiyat + ilçe (demografi tabloları hariç), 'demo' = yalnız demografik/sosyal tablolar, boş = hepsi (uygulama içi)
+function raporEkBolumler(f, h, parca) {
   const baslik = (t) => `<div style="font-size:13px;font-weight:700;margin-bottom:8px">${t}</div>`;
   const kutu = (ust, buyuk, alt, vurgu) => `<div style="border:1px solid ${vurgu ? '#FFC72C' : '#E1E5EE'};background:${vurgu ? '#FFF4CC' : '#fff'};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:3px"><div style="font-size:11px;color:#5B5F68;font-weight:700">${ust}</div><div style="font-size:17px;font-weight:700">${buyuk}</div><div style="font-size:11px;color:#5B5F68;line-height:1.4">${alt}</div></div>`;
   const kira = f.islem === 'Kiralık' || f.islem === 'Günlük Kiralık';
   let s = `<div>${baslik(kira ? 'Kiralama hedef fiyatları (vadeye göre)' : 'Satış hedef fiyatları (vadeye göre)')}
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${VADE.map(([ad, sure, k, acik], n) => kutu(`${ad.toUpperCase()} · ${sure}`, tl(h[k]), acik, n === 1)).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${VADE.map(([ad, sure, k, acik], n) => kutu(`${ad.toUpperCase()} · ${sure}`, tl(h[k]), (+f.m2net > 0 && f.ana === 'emlak' ? `<b style="color:#0B1B33">${tl(h[k] / +f.m2net)} / m²</b> · ` : '') + acik, n === 1)).join('')}</div>
     <div style="font-size:10px;color:#5B5F68;margin-top:6px">Vade süreleri hedeftir; ${kira ? 'kiralama' : 'satış'} süresi garanti edilmez. Fiyatlar benzer ilanların dağılımından hesaplanır.</div></div>`;
   const b = h.bolge;
   if (b) {
@@ -2274,15 +2275,17 @@ function raporEkBolumler(f, h) {
         ${kutu('NÜFUS', sayiBicim(iv.nufus), art ? 'Yıllık değişim ' + art : '')}
         ${kutu('YABANCILARA KONUT SATIŞI', yd != null ? sayiBicim(yd) : '—', yd != null ? 'Son 12 ay' + yDeg : 'Bu ilçede kayıt yok')}
         ${kutu('YILLIK DOĞUM / EVLENME', [binde(iv.dogum), binde(iv.evlenme)].filter(Boolean).join(' / ') || '—', 'Bin kişi başına, ' + iv.yil)}
-      </div><div style="font-size:10px;color:#5B5F68;margin-top:4px">Kaynak: ${kac(iv.kaynak)}. Yaş, eğitim ve medeni durum ilçe bazında yayımlanmadığı için aşağıda il geneli verilmiştir.</div></div>`;
+      </div><div style="font-size:10px;color:#5B5F68;margin-top:4px">Kaynak: ${kac(iv.kaynak)}. Yaş, eğitim ve medeni durum ilçe bazında yayımlanmadığı için ${parca === 'bolge' ? 'sonraki sayfada' : 'aşağıda'} il geneli verilmiştir.</div></div>`;
     }
-    s += d ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    const demo = d ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div>${baslik(iv ? kac(d.il) + ' Geneli · Demografik Yapı' : 'Demografik yapı')}<table>${satir('Nüfus', d.nufus != null ? sayiBicim(d.nufus) : null)}${satir('Yaş ortancası', d.yas_ortanca)}${satir('Erkek nüfus', d.erkek_sayisi != null ? sayiBicim(d.erkek_sayisi) + ' (' + yuzde(d.erkek_orani) + ')' : yuzde(d.erkek_orani))}${satir('Kadın nüfus', d.kadin_sayisi != null ? sayiBicim(d.kadin_sayisi) + ' (' + yuzde(Math.round((100 - d.erkek_orani) * 10) / 10) + ')' : null)}${satir('Çalışma çağı (20–59 yaş)', d.yas_20_39 != null && d.yas_40_59 != null ? yuzde(Math.round((+d.yas_20_39 + +d.yas_40_59) * 10) / 10) : null)}${satir('65 yaş ve üstü', d.yas_dagilim ? yuzde(Math.round(['65-69', '70-74', '75-79', '80-84', '85-89', '90+'].reduce((t, k) => t + (+d.yas_dagilim[k] || 0), 0) * 10) / 10) : null)}${satir('Yıllık nüfus artışı (binde)', d.nufus_artisi)}</table></div>
         <div>${baslik('Sosyal yapı')}<table>${satir('Ortalama hane büyüklüğü', d.hane_buyuklugu)}${satir('Üniversite mezunu oranı', yuzde(d.universite_orani))}${satir('Lise mezunu (15+)', d.egitim_dagilim ? yuzde(d.egitim_dagilim['Lise']) : null)}${satir('Yüksek lisans / doktora (15+)', d.egitim_dagilim ? yuzde(Math.round(((+d.egitim_dagilim['Yüksek lisans'] || 0) + (+d.egitim_dagilim['Doktora'] || 0)) * 10) / 10) : null)}${satir('Okuryazarlık oranı', yuzde(d.okuryazar_orani))}${satir('Evli (18+)', medeni18(d) ? yuzde(medeni18(d)['Evli']) : null)}${satir('Not', d.notlar ? kac(d.notlar) : null)}</table></div>
         <div style="grid-column:1/-1;font-size:10px;color:#5B5F68">Kaynak: ${kac(d.demografi_kaynak || d.kaynak + ' (' + d.yil + ')')}${d.ilce ? '' : ' · il geneli verisi'}</div></div>`
       : `<div class="kutu" style="font-size:12px;color:#5B5F68">${baslik('Demografik ve sosyal yapı')}${kac([f.ilce, f.il].filter(Boolean).join(', '))} için resmî bölge verisi (TÜİK) henüz sisteme girilmedi. Veri eklendiğinde yeni raporlarda nüfus, yaş, hane ve eğitim bilgileri yer alır.</div>`;
+    if (parca === 'demo') return demo;
+    if (parca !== 'bolge') s += demo;
   }
-  return s;
+  return parca === 'demo' ? '' : s;
 }
 // Rapor ve ilan sayfası için: cinsiyet, eğitim (15+), medeni durum (15+) çubukları (TÜİK)
 function medeni18(d) {
@@ -2293,13 +2296,13 @@ function medeni18(d) {
   const oran = (k, eksi = 0) => Math.round(((+m[k] || 0) / 100 * p15 - eksi) / p18 * 1000) / 10;
   return { 'Hiç evlenmemiş': oran('Hiç evlenmemiş', c), 'Evli': oran('Evli'), 'Boşanmış': oran('Boşanmış'), 'Eşi ölmüş': oran('Eşi ölmüş') };
 }
-function demografiGrafikleri(d, baslik) {
+function demografiGrafikleri(d, baslik, secim = ['cinsiyet', 'egitim', 'medeni']) {
   if (!d || typeof cubukSvg !== 'function') return '';
   const e = d.egitim_dagilim, m = medeni18(d), b = [];
-  if (d.erkek_orani != null) b.push(baslik('Cinsiyet Dağılımı') + cubukSvg([{ ad: 'Erkek', deger: +d.erkek_orani }, { ad: 'Kadın', deger: Math.round((100 - d.erkek_orani) * 10) / 10 }]));
-  if (e) { const t = (...k) => Math.round(k.reduce((s, x) => s + (+e[x] || 0), 0) * 10) / 10;
+  if (secim.includes('cinsiyet') && d.erkek_orani != null) b.push(baslik('Cinsiyet Dağılımı') + cubukSvg([{ ad: 'Erkek', deger: +d.erkek_orani }, { ad: 'Kadın', deger: Math.round((100 - d.erkek_orani) * 10) / 10 }]));
+  if (secim.includes('egitim') && e) { const t = (...k) => Math.round(k.reduce((s, x) => s + (+e[x] || 0), 0) * 10) / 10;
     b.push(baslik('Eğitim Düzeyi (15 Yaş ve Üstü)') + cubukSvg([{ ad: 'Okuma yazma bilmiyor', deger: t('Okuma yazma bilmiyor') }, { ad: 'Okul bitirmemiş', deger: t('Okur-yazar, okul bitirmemiş') }, { ad: 'İlkokul / ilköğretim', deger: t('İlkokul', 'İlköğretim') }, { ad: 'Ortaokul', deger: t('Ortaokul') }, { ad: 'Lise', deger: t('Lise') }, { ad: 'Üniversite', deger: t('Üniversite (lisans/ön lisans)') }, { ad: 'Yüksek lisans, doktora', deger: t('Yüksek lisans', 'Doktora') }])); }
-  if (m) b.push(baslik('Medeni Durum (18 Yaş ve Üstü)') + cubukSvg(['Hiç evlenmemiş', 'Evli', 'Boşanmış', 'Eşi ölmüş'].filter((k) => m[k] != null).map((ad) => ({ ad, deger: +m[ad] }))));
+  if (secim.includes('medeni') && m) b.push(baslik('Medeni Durum (18 Yaş ve Üstü)') + cubukSvg(['Hiç evlenmemiş', 'Evli', 'Boşanmış', 'Eşi ölmüş'].filter((k) => m[k] != null).map((ad) => ({ ad, deger: +m[ad] }))));
   return b.length ? `<div style="grid-column:1/-1">${b.join('')}</div>` : '';
 }
 // Vade hedef fiyatları (kullanıcı tanımı): kısa 1–2 ay, orta 6 aya kadar, uzun 1 yıla kadar

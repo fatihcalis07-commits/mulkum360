@@ -914,3 +914,9 @@ html.koyu .segment button.secili{background:#636366!important}
 .tur-sec{grid-template-columns:repeat(3,1fr)!important;gap:8px}
 .tur-sec button{padding:12px 8px}
 .tur-sec small{font-size:11.5px;line-height:1.35}
+
+/* Kurum rozeti satır içinde (sayaç rozetinin mutlak konumunu almasın) */
+.rozet.kurum{position:static;top:auto;right:auto;min-width:0;height:auto;margin-left:4px}
+.kart-alt{right:8px;flex-wrap:wrap}
+.kart-alt span{white-space:nowrap}
+.m2-hap{display:inline-block;font-weight:800;color:var(--murekkep,#0B1B33);background:var(--vurgu-acik,#FFF4CC);padding:2px 8px;border-radius:8px;margin-right:4px}

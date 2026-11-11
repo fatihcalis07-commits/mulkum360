@@ -275,8 +275,11 @@ EKRAN.rapor = (id) => {
   if (emlak) {
     const dm = h.demografi, yd = dm?.yas_dagilim, on = (a, b2) => Math.round(Object.entries(yd || {}).filter(([k]) => { const n = parseInt(k, 10); return n >= a && n <= b2; }).reduce((t, [, x]) => t + +x, 0) * 10) / 10;
     const yas = yd ? [['0–9 yaş', on(0, 9)], ['10–19 yaş', on(10, 19)], ['20–29 yaş', on(20, 29)], ['30–39 yaş', on(30, 39)], ['40–49 yaş', on(40, 49)], ['50–59 yaş', on(50, 59)], ['60–69 yaş', on(60, 69)], ['70–79 yaş', on(70, 79)], ['80 yaş ve üstü', on(80, 200)]] : dm ? [['0–19 yaş (Z kuşağı)', dm.yas_0_19], ['20–39 yaş (Y kuşağı)', dm.yas_20_39], ['40–59 yaş (X kuşağı)', dm.yas_40_59], ['60 yaş ve üstü', dm.yas_60]].filter(([, x]) => x != null) : [];
-    sayfalar.push(raporEkBolumler(f, h));
-    const dg = typeof demografiGrafikleri === 'function' ? demografiGrafikleri(dm, rBaslik) : '';
+    sayfalar.push(raporEkBolumler(f, h, 'bolge'));
+    // Demografik ve sosyal yapı: tablolar + cinsiyet + medeni durum; sonraki sayfa yaş + eğitim (A4 taşmasın)
+    const kaynakNot = dm ? `<div class="r-not">Kaynak: ${kac(dm.demografi_kaynak || dm.kaynak || 'TÜİK')}. İl geneli verisidir; mahalle ve ilçe yapısı farklı olabilir.</div>` : '';
+    if (dm) sayfalar.push(`${rBaslik('Demografik ve Sosyal Yapı')}${raporEkBolumler(f, h, 'demo')}${demografiGrafikleri(dm, rBaslik, ['cinsiyet', 'medeni'])}`);
+    const dg = typeof demografiGrafikleri === 'function' ? demografiGrafikleri(dm, rBaslik, ['egitim']) : '';
     if (yas.length || dg) sayfalar.push(`${yas.length ? `${rBaslik('Yaş Grupları')}<div class="r-kutu">${cubukSvg(yas.map(([ad, x]) => ({ ad, deger: +x })))}</div>` : ''}${dg}${dm ? `<div class="r-not">Kaynak: ${kac(dm.demografi_kaynak || dm.kaynak || 'TÜİK')}. İl geneli verisidir; mahalle ve ilçe yapısı farklı olabilir.</div>` : ''}`);
   }
   // 7 · Seçim sonuçları (YSK, girilmişse)
