@@ -355,6 +355,13 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - **Pusula-AR (FAZ 5 ②)**: fizibilite KURALI — "getUserMedia+DeviceOrientation Capacitor APK'da test edilmeden kamera modu YOK". Cihaz/ekran kaydı elimizde yok; `@capacitor/geolocation` + kamera izni manifest'te yok. **Bilinçli ertelendi (bozuk AR sunulmaz)**: v3.5 APK + telefonu olan bir spike oturumu gerekir; kamerasız tam ekran pusula bandı yedeği o spike'la birlikte ele alınacak.
 - **v3.5 notları (birikmiş)**: `@capacitor/geolocation@8.2.4` kuruldu + manifest `ACCESS_FINE/COARSE_LOCATION` eklendi + `cap sync` ✔ (751a705) — **kalan: v3.5 derlemesi** (`eids.js`/`harita.js` bundle'lı; `npm i && npx cap sync && gradlew assembleRelease`); v3.4 kullanıcı testi beklemede.
 
+## v3.7 — EMLAKÇI ARAÇLARI (11.11 sabah, kullanıcı: "web sekmesi koy, emlakçılar için kolaylık")
+- Kullanıcı seçti: **Emlakçı hızlı araçlar**. `EKRAN.hesap` üstüne `WEB_ARACLAR` sabiti + `webAc()` (Capacitor Browser → yoksa window.open → yoksa location) + `aracBolumu()` eklendi; misafir VE üye görür. Araçlar: TAKBİS parsel sorgu, e-Devlet, TKGM, DASK, GİB (hepsi resmî gov domaini). Genişletmek: WEB_ARACLAR dizisine satır ekle.
+- Headless doğrulandı: 5 satır, 0 boş ikon, tıklama TAKBİS URL'sini açıyor, SPA yerinde. Commit `e4afdce`, push'lu. **v3.7 APK** masada (versionCode 37, imza kodu 0).
+- **Alan adı durumu**: mulkum360.com hâlâ GoDaddy PARK'ta (kullanıcı elle girmedi, API anahtarı da verilmedi). Bu yüzden CNAME GEÇİCİ GERİ ALINDI (`4f26098`) — github.io gizlilik linki yine doğrudan 200 veriyor (canlı doğrulandı). DNS hazırlanınca CNAME geri + rebuild = kesintisiz geçiş.
+- **DİSK KRİZİ (2. kez)**: Build ortasında C: 0,00 GB → commit patladı. Kalıcı önlem: npm önbelleği artık `D:\araclar\npm-cache` (global config), test geçicileri silindi. ~1.5 GB `.gradle\caches` ileride `GRADLE_USER_HOME=D:\gradle-home` ile taşınabilir. **Kullanıcıya C: disk temizliği önerilmeli** — 0 GB tekrar build kırar.
+- gh CLI artık `D:\araclar\gh\bin\gh.exe` (oturum keyring'de; push'lar `git -c credential.interactive=false push` ile sorunsuz).
+
 ## GİTHUB PUSH + GÜVENLİK REVİZYONU (10.11 akşam, kullanıcı "benim yapacaklarımı da yap")
 - **Kimlik**: gh CLI taşınabilir (D:\araclar\gh), cihaz akışıyla `fatihcalis07-commits` oturumu (kullanıcı tarayıcıda onayladı). Token keyring'de, ekrana hiç basılmadı.
 - **GÜVENLİK KRİTİK**: Depoya ilk push öncesi taramada `android/keystore.properties` (gerçek storePassword/keyPassword) bir commit'te izlenmiş olduğu bulundu. → Dosya takipten çıkarıldı, `keystore.example.properties` kondu, **filter-branch ile TÜM geçmişten blob silindi** (37 commit yeniden yazıldı → uç `6ae1a29`). Dosya diskte duruyor, build'ler etkilenmedi.
