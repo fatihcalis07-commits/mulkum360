@@ -596,3 +596,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 8.9 (13.11.2026)
 - Rapor konum haritası altında "Sokağın uydu görüntüsü": karekod + Google Haritalar uydu bağlantısı (yalnız konum hassassa). Görüntüyü PDFe gömmek için lisanslı kaynak gerekir (Mapbox Static Images ücretsiz kotası ya da Google Static Maps; kullanıcı hesap açıp anahtar vermeli). Konum sayfası 939/1123 px.
+
+## 9.0 (13.11.2026)
+- Rapor "Uydu Görünümü" sayfası (konum hassassa): uyduHtml() EOX Sentinel-2 cloudless 2016 karoları (tiles.maps.eox.at s2cloudless_3857, CC BY 4.0, ticari serbest; 2018+ sürümleri CC BY-NC-SA, kullanılmadı), z14 (~3 km), 300/600/1000 m halkaları, atıf. Google uydu karekodu/bağlantısı bu sayfaya taşındı. CORS açık, 9 karo yüklendi; sayfa 796/1123 px.

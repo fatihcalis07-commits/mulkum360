@@ -102,6 +102,22 @@ async function konumVerisi(f) {
   } catch (_) { sonuc.poiHata = true; }
   return sonuc;
 }
+// Uydu görüntüsü: EOX Sentinel-2 cloudless 2016 (CC BY 4.0). 10 m çözünürlük, mahalle ölçeği; 300/600/1000 m halkaları
+function uyduHtml(k) {
+  if (!k) return '';
+  const z = 14, W = 682, H = 420, n = 2 ** z;
+  const px = ((k.lon + 180) / 360) * n * 256, py = ((1 - Math.log(Math.tan((k.lat * Math.PI) / 180) + 1 / Math.cos((k.lat * Math.PI) / 180)) / Math.PI) / 2) * n * 256;
+  const x0 = px - W / 2, y0 = py - H / 2;
+  let karolar = '';
+  for (let tx = Math.floor(x0 / 256); tx <= Math.floor((x0 + W) / 256); tx++) for (let ty = Math.floor(y0 / 256); ty <= Math.floor((y0 + H) / 256); ty++)
+    karolar += `<img src="https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/${z}/${ty}/${tx}.jpg" crossorigin="anonymous" alt="" style="position:absolute;left:${tx * 256 - x0}px;top:${ty * 256 - y0}px;width:256px;height:256px">`;
+  const mPx = (156543.03392 * Math.cos((k.lat * Math.PI) / 180)) / n;
+  const halka = [[300, '#FFFFFF'], [600, '#FFC72C'], [1000, '#7FB3E6']];
+  return `<div class="r-harita" style="width:${W}px;height:${H}px">${karolar}
+    <svg width="${W}" height="${H}" style="position:absolute;inset:0">${halka.map(([m, c]) => `<circle cx="${W / 2}" cy="${H / 2}" r="${m / mPx}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="6 4"/>`).join('')}<circle cx="${W / 2}" cy="${H / 2}" r="6" fill="#C8553D" stroke="#fff" stroke-width="2"/></svg>
+    <div class="r-harita-not">Sentinel-2 cloudless 2016, s2maps.eu, EOX IT Services GmbH (Copernicus Sentinel verisi içerir)</div></div>
+    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c === '#FFFFFF' ? '#9AA3AE' : c}">${m} m</span>`).join('')}</div>`;
+}
 // OSM karo haritası + 150/300/600 m halkaları
 function haritaHtml(k) {
   if (!k) return '';
@@ -115,8 +131,7 @@ function haritaHtml(k) {
   return `<div class="r-harita" style="width:${W}px;height:${H}px">${karolar}
     <svg width="${W}" height="${H}" style="position:absolute;inset:0">${halka.map(([m, c]) => `<circle cx="${W / 2}" cy="${H / 2}" r="${m / mPx}" fill="${c}" fill-opacity=".08" stroke="${c}" stroke-width="3"/>`).join('')}<circle cx="${W / 2}" cy="${H / 2}" r="7" fill="${R_MAVI}" stroke="#fff" stroke-width="3"/></svg>
     <div class="r-harita-not">© OpenStreetMap katkıda bulunanlar</div></div>
-    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c}">${m} m</span>`).join('')}${k.hassas ? '' : k.duzey === 'mahalle' ? '<em>Sokak girilmediği için mahalle merkezi gösterilmiştir</em>' : '<em>Adres girilmediği için ilçe merkezi gösterilmiştir</em>'}</div>
-    ${k.hassas ? (() => { const u = `https://www.google.com/maps/@${k.lat.toFixed(6)},${k.lon.toFixed(6)},150m/data=!3m1!1e3`; return `<div class="r-satir3" style="grid-template-columns:auto 1fr;align-items:center;margin-top:8px"><div style="width:84px">${typeof qrSvg === 'function' ? qrSvg(u) : ''}</div><div style="font-size:12px;line-height:1.5"><b>Sokağın uydu görüntüsü</b><br>Karekodu telefonla okutun ya da <a href="${u}">bu bağlantıya</a> tıklayın; konum uydu görünümünde açılır (Google Haritalar).</div></div>`; })() : ''}`;
+    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c}">${m} m</span>`).join('')}${k.hassas ? '' : k.duzey === 'mahalle' ? '<em>Sokak girilmediği için mahalle merkezi gösterilmiştir</em>' : '<em>Adres girilmediği için ilçe merkezi gösterilmiştir</em>'}</div>`;
 }
 
 // raporAl içinde çağrılır: rapora konacak ek veriyi hazırlar
@@ -294,6 +309,7 @@ EKRAN.rapor = (id) => {
       ${Object.keys(p).length ? `<table class="r-tablo bolge"><tr><th></th><th>500 m</th><th>1000 m</th><th>1500 m</th><th>En yakın</th></tr>${Object.values(p).map((x) => `<tr><th>${x.ad}</th><td>${x.r500}</td><td>${x.r1000}</td><td>${x.r1500}</td><td>${x.enYakin != null ? x.enYakin + ' m' : '—'}</td></tr>`).join('')}</table>
       <div class="r-not">Kaynak: OpenStreetMap (açık veri), ${tarih}. Sayılar haritaya işlenmiş noktalardır; OSM’de eksik kayıt olabilir.${h.konum.hassas ? '' : h.konum.duzey === 'mahalle' ? ' Sokak girilmediği için mahalle merkezine göre sayılmıştır.' : ' Adres girilmediği için ilçe merkezine göre sayılmıştır.'}</div>`
       : `<div class="r-not">Önemli konum verisi alınamadı${h.konum.poiHata ? ' (OpenStreetMap servisine ulaşılamadı)' : ''}.</div>`}`);
+    if (h.konum.hassas) { const k = h.konum, u = `https://www.google.com/maps/@${k.lat.toFixed(6)},${k.lon.toFixed(6)},150m/data=!3m1!1e3`; sayfalar.push(`${rBaslik('Uydu Görünümü')}${uyduHtml(k)}<div class="r-not">Mülkün çevresindeki yerleşim dokusu, yeşil alanlar ve kıyı/su alanları. Görüntü 10 metre çözünürlüklüdür, bina ölçeğinde değildir.</div><div class="r-satir3" style="grid-template-columns:auto 1fr;align-items:center;margin-top:8px"><div style="width:84px">${typeof qrSvg === 'function' ? qrSvg(u) : ''}</div><div style="font-size:12px;line-height:1.5"><b>Sokağın yakın uydu görüntüsü</b><br>Karekodu telefonla okutun ya da <a href="${u}">bu bağlantıya</a> tıklayın; konum sokak ölçeğinde uydu görünümünde açılır (Google Haritalar).</div></div>`); }
   }
   // 6 · Bölge: fiyat analizleri + demografi + sosyal (+ yaş grupları grafiği)
   if (emlak) {
