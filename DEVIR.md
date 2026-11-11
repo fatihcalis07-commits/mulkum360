@@ -541,3 +541,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 7.4 (12.11.2026)
 - Bildirim simgesi logodan: ic_stat_bildirim = assets/logo.svg şekilleri (çatı, yay, nokta) beyaz tek renk; vurgu rengi logodaki altın #D4A24C (values/bildirim.xml, capacitor.config, push-gonder).
+
+## 7.5 (12.11.2026)
+- Öne çıkarma/vitrin kredi ile: doping_paketleri.kredi (fiyat/25, en az 1), doping_kredi_talep() RPC (kredi düşer, talep bekler), doping_bildirimi tetikleyicisi: talep→yöneticiye, onay→üyeye, red→üyeye + kredi iadesi. dopingAlimSheet ve ilan kartı kredi gösterir; yönetim listesinde kredi.

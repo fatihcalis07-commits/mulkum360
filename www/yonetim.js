@@ -238,7 +238,7 @@ YON.doping = async (el) => {
   el.innerHTML = `
     <div class="bolum-bas"><h2 style="font-size:15px">Bekleyen talepler</h2></div>
     ${talepler.length ? `<div class="liste">${talepler.map((t) => { const k = kullanici(t.kullanici); return `<div class="oge" style="flex-direction:column;align-items:stretch;gap:6px">
-      <div><b>${tAd(paketler.find((p) => p.id === t.paket)?.tur)} · ${kac(t.paket)}</b> · ${tl(t.tutar)} · ${kac(k ? k.ad : 'Üye')} · ${tarihSaat(t.olusturma)}</div>
+      <div><b>${tAd(paketler.find((p) => p.id === t.paket)?.tur)} · ${kac(t.paket)}</b> · ${t.kredi ? t.kredi + ' kredi' : tl(t.tutar)} · ${kac(k ? k.ad : 'Üye')} · ${tarihSaat(t.olusturma)}</div>
       <div class="k soluk">${yayinla(t.ilan)}</div>
       <div class="izgara2"><button class="btn sade kucuk" data-red="${t.id}">Reddet</button><button class="btn guven kucuk" data-onay="${t.id}" data-ilan="${t.ilan}" data-paket="${t.paket}">Onayla ve başlat</button></div></div>`; }).join('')}</div>` : '<div class="bos">Bekleyen doping talebi yok</div>'}
     <div class="bolum-bas"><h2 style="font-size:15px">Dopingte olan ilanlar</h2></div>

@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '7.4 · 12.11.2026 12:20';
+const SURUM = '7.5 · 12.11.2026 13:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1733,7 +1733,7 @@ const okunmamisBildirim = () => (S.bildirimler || []).filter((x) => !x.okundu).l
 EKRAN.bildirimler = () => {
   if (girisGerek('Bildirimler için giriş yap')) return;
   const l = S.bildirimler || [], yeni = l.filter((x) => !x.okundu).map((x) => x.id);
-  const ikon = { onay_bekliyor: 'kalkan', ilan_onay: 'tik', ilan_red: 'uyari', piyasa: 'grafik' };
+  const ikon = { onay_bekliyor: 'kalkan', ilan_onay: 'tik', ilan_red: 'uyari', piyasa: 'grafik', doping_talep: 'yildiz', doping_onay: 'yildiz', doping_red: 'uyari' };
   const zaman = (t) => new Date(t).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   app.innerHTML = ustBar('Bildirimler') + `<div class="ic">
     <a class="kart satir" href="#/kayitli" style="text-decoration:none;color:inherit">${ic('zil', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Kayıtlı aramalarım</b><div class="k soluk">Yeni ilan çıkınca haber veririz</div></div><span class="ok">›</span></a>

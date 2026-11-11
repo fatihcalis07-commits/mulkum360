@@ -63,7 +63,35 @@ async function dopingTaleplerGetir() { const { data } = await sb.from('doping_sa
 async function dopingTalepRed(id) { await islem(sb.from('doping_satislari').update({ durum: 'reddedildi', onay_zamani: new Date().toISOString() }).eq('id', id)); }
 
 // Sahibinin alım ekranı: Play ürünü hazırsa doğrudan Google Play satışı (sunucu dopingleme), değilse talep kuyruğu (yönetici onayı)
+// Öne çıkarma kredi ile: talepte kredi düşer, yönetici onaylayınca başlar, reddedilirse iade edilir
+async function dopingKrediTalep(ilanId, paketId) {
+  const r = await islem(sb.rpc('doping_kredi_talep', { p_ilan: ilanId, p_paket: paketId }));
+  const b = ben(); if (b && r && r.kredi != null) b.kredi = r.kredi;
+  return r;
+}
 function dopingAlimSheet(i) {
+  dopingPaketlerGetir().then((pk) => {
+    pk = pk.filter((p) => +p.kredi > 0);
+    const bakiye = ben()?.kredi ?? 0;
+    const t2 = () => S.DOPING.turler;
+    return sheetAc(`<h2 style="font-size:19px;font-weight:800">İlanı öne çıkar</h2>
+      ${dopingBilgi(i) ? `<p class="soluk" style="margin:0 0 8px">Bu ilan şu anda görünürlük desteğinde · bitiş ${new Date(dopingBilgi(i).bitis).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.</p>` : ''}
+      <div class="satir" style="justify-content:space-between"><span class="k soluk">Bakiyen: <b>${bakiye} kredi</b></span><a href="#/kredi" id="dkAl">Kredi al</a></div>
+      ${pk.length ? pk.map((p) => `<div class="kart satir" style="align-items:center"><div class="ara"><b>${kac((t2()[p.tur] || {}).ad || p.tur)} · ${p.gun} gün</b><div class="k soluk">${kac(DOPING_ACIKLAMA[p.tur] || (t2()[p.tur] || {}).aciklama || '')}</div></div>
+          <button class="btn kucuk ${+p.kredi > bakiye ? 'sade' : ''}" data-paket="${p.id}">${p.kredi} kredi</button></div>`).join('') : '<p class="soluk">Şu anda satışta olan paket yok.</p>'}
+      <p class="k soluk" style="line-height:1.5">Kredi talep anında düşer. Talebin onaylanınca ilanın "Sponsorlu" ya da "Acil" etiketiyle öne çıkar ve sana bildirim gelir; onaylanmazsa kredin iade edilir.</p>`,
+      (s) => {
+        $('#dkAl', s).onclick = sheetKapat;
+        s.querySelectorAll('[data-paket]').forEach((b) => (b.onclick = async () => {
+          const p = pk.find((x) => x.id === b.dataset.paket);
+          if ((ben()?.kredi ?? 0) < +p.kredi) { toast(`Bu paket ${p.kredi} kredi; bakiyen yetmiyor.`); sheetKapat(); return git('#/kredi'); }
+          if (!(await onayla('Öne çıkarma talebi', `${(t2()[p.tur] || {}).ad || p.tur} · ${p.gun} gün için ${p.kredi} kredi düşülecek. Onaylanmazsa iade edilir.`, 'Talep et'))) return;
+          if (await dene(() => dopingKrediTalep(i.id, p.id), 'Talebin alındı; onaylanınca bildirim gelecek')) { sheetKapat(); ciz(); }
+        }));
+      });
+  });
+}
+function dopingAlimSheetEski(i) {
   dopingPaketlerGetir().then((pk) => {
     const ak = dopingBilgi(i), t = () => S.DOPING.turler;
     const playVar = (p) => !!playUrun(p.play_urun)?.getOffer();
@@ -99,9 +127,9 @@ async function dopingKartiYukle(i) {
   if (!document.getElementById('dopingK')) return;
   const ak = dopingBilgi(i), t = (S.DOPING && S.DOPING.turler) || {};
   const turler = {};
-  pk.forEach((p) => { const f = +p.indirim_orani > 0 && (!p.gecerlilik || new Date(p.gecerlilik) >= new Date(new Date().toDateString())) ? +p.fiyat * (1 - +p.indirim_orani) : +p.fiyat; if (!turler[p.tur] || f < turler[p.tur].f) turler[p.tur] = { f, gun: p.gun }; });
+  pk.filter((p) => +p.kredi > 0).forEach((p) => { const f = +p.kredi; if (!turler[p.tur] || f < turler[p.tur].f) turler[p.tur] = { f, gun: p.gun }; });
   const l = Object.entries(turler).sort((x, y) => ((t[x[0]] || {}).sira ?? 9) - ((t[y[0]] || {}).sira ?? 9));
   kap.innerHTML = `<h3 style="margin:0 0 4px">Öne Çıkar · Vitrin</h3><div class="k soluk" style="margin-bottom:6px">${ak ? `Şu anda <b>${kac((t[ak.tur] || {}).ad || ak.tur)}</b> etkin · bitiş ${new Date(ak.bitis).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}` : 'İlanını daha çok kişiye göster; ilan sayfası ve aramalarda "Sponsorlu" etiketiyle gösterilir.'}</div>
-    ${l.length ? `<div class="liste">${l.map(([k, v]) => `<button class="oge" data-dopal="${k}">${ic(DOPING_IKON[k] || 'yildiz', 20)}<div class="ara" style="text-align:left"><b>${kac((t[k] || {}).ad || k)}</b><div class="k soluk">${kac(DOPING_ACIKLAMA[k] || (t[k] || {}).aciklama || '')}</div></div><span class="k" style="font-weight:700;white-space:nowrap">${v.gun} gün · ${tl(v.f)}'den</span></button>`).join('')}</div>` : '<div class="k soluk">Şu anda satışta paket yok.</div>'}`;
+    ${l.length ? `<div class="liste">${l.map(([k, v]) => `<button class="oge" data-dopal="${k}">${ic(DOPING_IKON[k] || 'yildiz', 20)}<div class="ara" style="text-align:left"><b>${kac((t[k] || {}).ad || k)}</b><div class="k soluk">${kac(DOPING_ACIKLAMA[k] || (t[k] || {}).aciklama || '')}</div></div><span class="k" style="font-weight:700;white-space:nowrap">${v.gun} gün · ${v.f} kredi</span></button>`).join('')}</div>` : '<div class="k soluk">Şu anda satışta paket yok.</div>'}`;
   kap.querySelectorAll('[data-dopal]').forEach((x) => (x.onclick = () => dopingAlimSheet(i)));
 }
