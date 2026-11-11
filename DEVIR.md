@@ -544,3 +544,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 7.5 (12.11.2026)
 - Öne çıkarma/vitrin kredi ile: doping_paketleri.kredi (fiyat/25, en az 1), doping_kredi_talep() RPC (kredi düşer, talep bekler), doping_bildirimi tetikleyicisi: talep→yöneticiye, onay→üyeye, red→üyeye + kredi iadesi. dopingAlimSheet ve ilan kartı kredi gösterir; yönetim listesinde kredi.
+
+## 7.6 (12.11.2026)
+- Rapor bölge analizi: ortanca yerine ortalama (m2Ort, ortalama, alanOrt; oda tablosu ortalama fiyat). Kartlar m² fiyatı üzerinden (ortalama ilan fiyatı ve ortalama alan alt satırda). "Bu mülk: net N m² × X TL/m² = değer, bölge ortalamasına göre %Y" satırı (7,43 M bölge ilan ortalaması 120 m² ilanlardan; 3,36 M mülk ~58 m², çelişki değildi). Eski raporlar m2Ortanca/ortanca alanlarına geri düşer.
+- Medeni durum 18+: medeni18() TÜİK 15+ dağılımından 15-17 yaşı (15-19 grubunun 3/5i, hiç evlenmemiş) çıkarır; grafik ve tablo 18+.
