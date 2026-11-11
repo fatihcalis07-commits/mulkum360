@@ -113,10 +113,13 @@ function uyduHtml(k) {
     karolar += `<img src="https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/${z}/${ty}/${tx}.jpg" crossorigin="anonymous" alt="" style="position:absolute;left:${tx * 256 - x0}px;top:${ty * 256 - y0}px;width:256px;height:256px">`;
   const mPx = (156543.03392 * Math.cos((k.lat * Math.PI) / 180)) / n;
   const halka = [[300, '#FFFFFF'], [600, '#FFC72C'], [1000, '#7FB3E6']];
-  return `<div class="r-harita" style="width:${W}px;height:${H}px">${karolar}
+  // Üst katman: Mapbox uydu (z16, bina ölçeği; anahtar sunucuda). Yüklenemezse katman kalkar, alttaki Sentinel görünür.
+  const zM = 16, mPxM = (156543.03392 * Math.cos((k.lat * Math.PI) / 180)) / 2 ** zM, halkaM = [[100, '#FFFFFF'], [250, '#FFC72C'], [500, '#7FB3E6']];
+  const mapbox = `<div class="r-mapbox" style="position:absolute;inset:0;z-index:2"><img src="${SB_URL}/functions/v1/uydu?lat=${k.lat.toFixed(6)}&lon=${k.lon.toFixed(6)}&z=${zM}" crossorigin="anonymous" alt="" style="width:${W}px;height:${H}px;display:block" onerror="this.parentElement.remove()" onload="var l=document.getElementById('uyduKaynak');if(l)l.textContent='Uydu görüntüsü © Mapbox © Maxar';var g=document.getElementById('uyduLejant');if(g)g.style.display='none'"><svg width="${W}" height="${H}" style="position:absolute;inset:0">${halkaM.map(([m, c]) => `<circle cx="${W / 2}" cy="${H / 2}" r="${m / mPxM}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="6 4"/>`).join('')}<circle cx="${W / 2}" cy="${H / 2}" r="6" fill="#C8553D" stroke="#fff" stroke-width="2"/></svg><div class="r-lejant" style="position:absolute;left:8px;bottom:26px;margin:0">${halkaM.map(([m, c]) => `<span style="background:${c === '#FFFFFF' ? '#9AA3AE' : c}">${m} m</span>`).join('')}</div></div>`;
+  return `<div class="r-harita" style="width:${W}px;height:${H}px">${mapbox}${karolar}
     <svg width="${W}" height="${H}" style="position:absolute;inset:0">${halka.map(([m, c]) => `<circle cx="${W / 2}" cy="${H / 2}" r="${m / mPx}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="6 4"/>`).join('')}<circle cx="${W / 2}" cy="${H / 2}" r="6" fill="#C8553D" stroke="#fff" stroke-width="2"/></svg>
-    <div class="r-harita-not">Sentinel-2 cloudless 2016, s2maps.eu, EOX IT Services GmbH (Copernicus Sentinel verisi içerir)</div></div>
-    <div class="r-lejant">${halka.map(([m, c]) => `<span style="background:${c === '#FFFFFF' ? '#9AA3AE' : c}">${m} m</span>`).join('')}</div>`;
+    <div class="r-harita-not" id="uyduKaynak" style="z-index:3">Sentinel-2 cloudless 2016, s2maps.eu, EOX IT Services GmbH (Copernicus Sentinel verisi içerir)</div></div>
+    <div class="r-lejant" id="uyduLejant">${halka.map(([m, c]) => `<span style="background:${c === '#FFFFFF' ? '#9AA3AE' : c}">${m} m</span>`).join('')}</div>`;
 }
 // OSM karo haritası + 150/300/600 m halkaları
 function haritaHtml(k) {

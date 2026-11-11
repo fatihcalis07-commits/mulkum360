@@ -599,3 +599,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 9.0 (13.11.2026)
 - Rapor "Uydu Görünümü" sayfası (konum hassassa): uyduHtml() EOX Sentinel-2 cloudless 2016 karoları (tiles.maps.eox.at s2cloudless_3857, CC BY 4.0, ticari serbest; 2018+ sürümleri CC BY-NC-SA, kullanılmadı), z14 (~3 km), 300/600/1000 m halkaları, atıf. Google uydu karekodu/bağlantısı bu sayfaya taşındı. CORS açık, 9 karo yüklendi; sayfa 796/1123 px.
+
+## 9.1 (13.11.2026)
+- Mapbox uydu: edge function uydu (--no-verify-jwt) Mapbox Static Images satellite-v9 682x420@2x, z16, yalnız Türkiye kutusu; anahtar MAPBOX_TOKEN secret (yokken 503). Raporda Mapbox katmanı Sentinelin üstünde (100/250/500 m halkaları), yüklenemezse onerror ile kalkar ve Sentinel görünür. BEKLİYOR: kullanıcı Mapbox hesabı + token → .gizli/mapbox.txt → secrets set MAPBOX_TOKEN.
