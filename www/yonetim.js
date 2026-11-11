@@ -34,7 +34,8 @@ YON.ozet = async (el) => {
   const toplamKredi = l.reduce((t, u) => t + (u.kredi || 0), 0), rapor = l.reduce((t, u) => t + u.rapor, 0);
   const k = (ik, b, a, h, renk) => `<a class="yon-k ${renk}" href="${h || '#/yonetim/ozet'}"><span>${ic(ik, 18)}</span><b>${b}</b><small>${a}</small></a>`;
   const test = S.ilanlar.filter((i) => i.ornek).length;
-  const uyari = [st.sikayet ? [`${st.sikayet} açık şikayet`, '#/yonetim/sikayet'] : null, YON_BEKLEYEN ? [`${YON_BEKLEYEN} kredi talebi`, '#/yonetim/satis'] : null, dopBek ? [`${dopBek} doping talebi`, '#/yonetim/doping'] : null, test ? [`${test} test ilanı yayında`, '#/yonetim/ozet'] : null].filter(Boolean);
+  const onayda = S.ilanlar.filter((i) => i.durum === 'onayda').length;
+  const uyari = [onayda ? [`${onayda} ilan onay bekliyor`, '#/yonetim/dogrulama'] : null, st.sikayet ? [`${st.sikayet} açık şikayet`, '#/yonetim/sikayet'] : null, YON_BEKLEYEN ? [`${YON_BEKLEYEN} kredi talebi`, '#/yonetim/satis'] : null, dopBek ? [`${dopBek} doping talebi`, '#/yonetim/doping'] : null, test ? [`${test} test ilanı yayında`, '#/yonetim/ozet'] : null].filter(Boolean);
   el.innerHTML = `${uyari.length ? `<div class="yon-uyari">${uyari.map(([m, h]) => `<a href="${h}">${ic('uyari', 15)}${m}</a>`).join('')}</div>` : ''}
     <div class="bolum-bas"><h2>Üyeler</h2></div>
     <div class="yon-izgara">${k('kisi', st.uye, 'Toplam üye', '#/yonetim/uyeler', 'p2')}${k('davet', yeni7, 'Yeni (7 gün)', '#/yonetim/uyeler', 'p3')}${k('goz', aktif7, 'Aktif (7 gün)', '#/yonetim/uyeler', 'p4')}</div>

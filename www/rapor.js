@@ -354,10 +354,11 @@ EKRAN.rapor = (id) => {
 // Her .r-sayfa ayrı bir A4 PDF sayfası olur (içerik sayfa ortasından bölünmez)
 async function pdfOlustur(el, ad) {
   const dugme = $('#pdf'); dugme.disabled = true; dugme.textContent = 'PDF hazırlanıyor…';
+  let kopya = null;
   try {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
-    const kopya = el.cloneNode(true);
+    kopya = el.cloneNode(true);
     kopya.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px';
     document.body.appendChild(kopya);
     const sayfalar = [...kopya.querySelectorAll('.r-sayfa')];
@@ -367,14 +368,15 @@ async function pdfOlustur(el, ad) {
       if (n) pdf.addPage();
       pdf.addImage(tuval.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297);
     }
-    kopya.remove();
+    kopya.remove(); kopya = null;
     pdf.setProperties({ title: ad.replace('.pdf', ''), creator: 'Mülküm360', subject: 'MülkümAI Elektronik Değerleme Raporu' });
     const P = window.Capacitor?.Plugins;
     if (window.Capacitor?.isNativePlatform?.() && P?.Filesystem && P?.Share) {
       const yaz = await P.Filesystem.writeFile({ path: ad, data: pdf.output('datauristring').split(',')[1], directory: 'CACHE' });
-      await P.Share.share({ title: ad, url: yaz.uri, dialogTitle: 'Raporu kaydet veya paylaş' });
+      // Paylaşım penceresini kapatmak hata değildir
+      try { await P.Share.share({ title: ad, url: yaz.uri, dialogTitle: 'Raporu kaydet veya paylaş' }); } catch (p) { if (!/cancel|iptal/i.test(String(p?.message || p))) throw p; }
     } else pdf.save(ad);
     toast('PDF hazır');
   } catch (e) { console.error(e); toast('PDF oluşturulamadı: ' + (e.message || e)); }
-  finally { dugme.disabled = false; dugme.innerHTML = ic('indir', 18) + 'PDF olarak kaydet / paylaş'; }
+  finally { kopya?.remove(); dugme.disabled = false; dugme.innerHTML = ic('indir', 18) + 'PDF olarak kaydet / paylaş'; }
 }

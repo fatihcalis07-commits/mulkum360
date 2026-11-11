@@ -32,7 +32,7 @@ function perfCiz(ilanlar) {
   const komSatis = top(satilan) * (A.satisYuzde / 100) * A.taraf, komKira = top(kiralanan) * A.taraf;
   const aktif = ilanlar.filter((i) => i.durum === 'yayinda' && !i.ornek);
   const gor = ilanlar.reduce((s, i) => s + (i.goruntulenme || 0), 0);
-  const sohbet = (S.sohbetler || []).filter((s) => ilanlar.some((i) => i.id === s.ilan)).length;
+  const sohbet = (S.sohbetler || []).filter((s) => ilanlar.some((i) => i.id === s.ilanId && s.mesajlar?.length)).length;
   const oran = ilanlar.filter((i) => !i.ornek).length ? Math.round((ilanlar.filter((i) => i.durum === 'satildi' && !i.ornek).length / ilanlar.filter((i) => !i.ornek).length) * 100) : 0;
 
   // Son 12 ay: satılan ve kiralanan adet

@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '9.5 · 13.11.2026 01:00';
+const SURUM = '9.6 · 13.11.2026 01:45';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -105,7 +105,7 @@ const KUCUK_KAL = new Set([]); // kullanıcı kuralı: her kelimenin baş harfi 
 const basHarfBuyuk = (s) => s.replace(/(^|[\s(/])([^\s(/]+)/g, (m, on, w, i) => {
   const k = w.toLocaleLowerCase('tr-TR');
   if (i > 0 && KUCUK_KAL.has(k)) return on + k;
-  if (/^[\d+%₺㎡]/.test(w) || /^[A-ZÇĞİÖŞÜ]{2,}/.test(w)) return on + w; // sayı, birim, kısaltma (PDF, AI)
+  if (/^[\d+%₺㎡]/.test(w) || /^[A-ZÇĞİÖŞÜ]{2,}/.test(w) || /^(m²|m³|km|cm|mm|kg|cc|hp|kW|kWh|dk|sn)[.,;:)]?$/.test(w)) return on + w; // sayı, birim, kısaltma (PDF, AI)
   return on + w.charAt(0).toLocaleUpperCase('tr-TR') + w.slice(1);
 });
 function baslikDuzelt(kok = document) {
@@ -2277,48 +2277,7 @@ EKRAN.raporlar = () => {
 };
 const raporBaslik = (f) => f.ana === 'emlak' ? [ALT[f.alt]?.ad, f.islem, f.oda, f.m2net && f.m2net + ' m²', [f.ilce, f.il].filter(Boolean).join(', ')].filter(Boolean).join(' · ') : [f.marka, f.model, f.yil, f.km && sayiBicim(f.km) + ' km'].filter(Boolean).join(' · ');
 
-EKRAN.rapor = (id) => {
-  if (girisGerek()) return;
-  const b = ben(), r = (b.raporlar || []).find((x) => x.id === id);
-  if (!r) { git('#/raporlar'); return; }
-  const f = r.form, h = r.sonuc, em = h.emsalOzet || h.emsal.map(ilan).filter(Boolean);
-  const yorum = mulkumAiYorum(f, h);
-  const kira = f.islem === 'Kiralık';
-  const sat = (a, b2) => `<tr><td style="color:#5B5F68;border:0;padding:4px 0">${a}</td><td style="border:0;padding:4px 0;font-weight:600">${kac(b2 || '—')}</td></tr>`;
-  const raporHtml = `<div class="rapor" id="raporSayfa">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0B1B33;padding-bottom:16px">
-      <div style="display:flex;align-items:center;gap:12px"><img src="logo.png" alt="" style="width:44px;height:44px;border-radius:12px"><div><div style="font-size:22px;font-weight:800">mülküm<span style="color:#FFC72C">360</span></div><div style="font-size:12px;color:#5B5F68">${f.ana === 'emlak' ? 'Taşınmaz' : 'Araç'} Değer Analizi Raporu</div></div></div>
-      <div style="text-align:right;font-size:11px;color:#5B5F68;line-height:1.7">Rapor no: <b style="color:#0B1B33">${r.no}</b><br>Tarih: ${new Date(r.zaman).toLocaleDateString('tr-TR')}<br>Hazırlayan: ${kac(b.ad)}</div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-      <div><div style="font-size:11px;font-weight:700;color:#5B5F68;letter-spacing:.5px;margin-bottom:8px">${f.ana === 'emlak' ? 'TAŞINMAZ' : 'ARAÇ'}</div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:8px">${kac(f.baslik || raporBaslik(f))}</div>
-        <table>${f.ana === 'emlak' ? sat('Tür', ALT[f.alt]?.ad) + sat('İşlem', f.islem) + sat('Konum', [f.ilce, f.il].filter(Boolean).join(', ')) + sat('Net alan', f.m2net && f.m2net + ' m²') + sat('Oda', f.oda) + sat('Bina yaşı', f.binaYasi)
-          : sat('Marka', f.marka) + sat('Model', f.model) + sat('Model yılı', f.yil) + sat('Kilometre', f.km && sayiBicim(f.km) + ' km') + sat('Boya / değişen', f.hasar)}</table></div>
-      <div style="background:#0B1B33;color:#fff;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:11px;font-weight:700;color:#C9CCD3;letter-spacing:.5px">TAHMİNİ ${kira ? 'AYLIK KİRA' : 'PİYASA DEĞERİ'}</div>
-        <div style="font-size:30px;font-weight:800">${tl(h.orta)}</div>
-        <div style="font-size:12px;color:#C9CCD3">Aralık: ${tl(h.alt)} – ${tl(h.ust)}</div>
-        ${f.ana === 'emlak' ? `<div style="font-size:12px;color:#C9CCD3">Birim değer: ${tl(h.birimOrta)} / m²</div>` : ''}
-        <div style="font-size:12px;color:#C9CCD3">Güven düzeyi: ${h.guven} (${h.sayi} emsal)</div></div></div>
-    ${raporEkBolumler(f, h)}
-    <div><div style="font-size:13px;font-weight:700;margin-bottom:8px">Emsal ilanlar</div>
-      <table><tr><th>İlan</th><th>Konum</th><th>${f.ana === 'emlak' ? 'm² / oda' : 'Yıl / km'}</th><th>Fiyat</th>${f.ana === 'emlak' ? '<th>TL/m²</th>' : ''}</tr>
-      ${em.map((i) => `<tr><td>${kac(i.baslik.slice(0, 38))}</td><td>${kac([i.ilce, i.il].filter(Boolean).join(', '))}</td><td>${f.ana === 'emlak' ? kac(i.alanlar.m2net + ' m² · ' + (i.alanlar.oda || '—')) : kac(i.alanlar.yil + ' · ' + sayiBicim(i.alanlar.km) + ' km')}</td><td>${tl(i.fiyat)}</td>${f.ana === 'emlak' ? `<td>${tl(i.fiyat / i.alanlar.m2net)}</td>` : ''}</tr>`).join('')}</table>
-      ${h.sayi > em.length ? `<div style="font-size:11px;color:#5B5F68;margin-top:6px">Hesapta ${h.sayi} emsal kullanıldı; ilk ${em.length} tanesi listelendi.</div>` : ''}</div>
-    <div style="border-radius:12px;background:#FFF4CC;padding:14px;font-size:12.5px;line-height:1.65;color:#3D3016"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;color:#8A6516;margin-bottom:6px">MÜLKÜMAI DEĞERLENDİRMESİ</div>${yorum.map((y) => `<div style="margin-bottom:4px">• ${kac(y)}</div>`).join('')}</div>
-    <div class="kutu" style="font-size:12px;line-height:1.6;color:#3F434B"><b style="color:#0B1B33">Yöntem.</b> Değer, Mülküm360’ta yayınlanan ve ${f.ana === 'emlak' ? 'aynı tür, işlem ve ilde (yeterli sayıda varsa aynı ilçe ve oda sayısında) bulunan' : 'aynı marka ve modelde, model yılı ±2 olan'} ilanların ${f.ana === 'emlak' ? 'metrekare fiyatlarının' : 'fiyatlarının'} ortalamasıyla hesaplanmıştır. Aralık, emsallerin alt ve üst çeyreğidir.${f.ana === 'vasita' ? ' Kilometre farkı için ±%15 ile sınırlı küçük bir düzeltme uygulanmıştır.' : ''} İlan fiyatları, gerçekleşen satış fiyatlarından farklı olabilir.</div>
-    <div style="margin-top:auto;padding-top:12px;border-top:1px solid #E1E5EE;font-size:10px;line-height:1.5;color:#5B5F68">Bu rapor bilgilendirme amaçlı bir değer tahminidir. SPK lisanslı değerleme uzmanı raporu ya da ekspertiz raporu yerine geçmez; kredi, mahkeme ve resmî işlemlerde kullanılamaz. Mülküm360 · ${r.no}</div>
-  </div>`;
-  app.innerHTML = ustBar('Değerleme raporu') + `<div class="ic">
-    <div class="rapor-kap" id="kap"><div class="rapor-olcek" id="olcek">${raporHtml}</div></div>
-    <button class="btn tam" id="pdf">${ic('indir', 18, '#fff')}PDF olarak kaydet / paylaş</button>
-    <button class="btn sade tam" id="sil" style="color:var(--hata)">Raporu sil</button></div>`;
-  const olc = () => { const kap = $('#kap'), o = $('#olcek'); if (!kap) return; const k = Math.min(1, (kap.clientWidth - 24) / 794); o.style.transform = `scale(${k})`; o.style.width = '794px'; kap.style.height = $('#raporSayfa').offsetHeight * k + 24 + 'px'; kap.style.overflow = 'hidden'; };
-  olc(); setTimeout(olc, 300);
-  $('#pdf').onclick = () => pdfOlustur($('#raporSayfa'), 'Mulkum360-' + r.no + '.pdf');
-  $('#sil').onclick = async () => { if (await onayla('Rapor silinsin mi?', 'Bu rapor listenden kaldırılır.', 'Sil', true) && (await dene(() => raporSil(id), 'Rapor silindi'))) git('#/raporlar'); };
-  navCiz();
-};
+// Rapor ekranı (EKRAN.rapor) ve pdfOlustur rapor.js içindedir
 
 // Bölge fiyat analizleri: uygulamadaki ilanlardan (ilçe yetersizse il geneli)
 function bolgeAnaliz(f) {
@@ -2421,33 +2380,6 @@ function mulkumAiYorum(f, h) {
   return y;
 }
 
-async function pdfOlustur(el, ad) {
-  const dugme = $('#pdf'); dugme.disabled = true; dugme.textContent = 'PDF hazırlanıyor…';
-  try {
-    const kopya = el.cloneNode(true);
-    kopya.style.position = 'fixed'; kopya.style.left = '-10000px'; kopya.style.top = '0';
-    document.body.appendChild(kopya);
-    const tuval = await html2canvas(kopya, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-    kopya.remove();
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const g = 210, y = (tuval.height * g) / tuval.width;
-    const resim = tuval.toDataURL('image/jpeg', 0.92);
-    let kalan = y, konum = 0;
-    pdf.addImage(resim, 'JPEG', 0, 0, g, y);
-    kalan -= 297;
-    while (kalan > 1) { konum -= 297; pdf.addPage(); pdf.addImage(resim, 'JPEG', 0, konum, g, y); kalan -= 297; }
-    pdf.setProperties({ title: ad.replace('.pdf', ''), creator: 'Mülküm360' });
-    const P = window.Capacitor?.Plugins;
-    if (window.Capacitor?.isNativePlatform?.() && P?.Filesystem && P?.Share) {
-      const veri = pdf.output('datauristring').split(',')[1];
-      const yaz = await P.Filesystem.writeFile({ path: ad, data: veri, directory: 'CACHE' });
-      await P.Share.share({ title: ad, url: yaz.uri, dialogTitle: 'Raporu kaydet veya paylaş' });
-    } else pdf.save(ad);
-    toast('PDF hazır');
-  } catch (e) { console.error(e); toast('PDF oluşturulamadı: ' + (e.message || e)); }
-  finally { dugme.disabled = false; dugme.innerHTML = ic('indir', 18, '#fff') + 'PDF olarak kaydet / paylaş'; }
-}
 
 // ---------- MülkümAI sohbet ----------
 let aiGecmis = [];
