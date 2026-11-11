@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '5.7 · 12.11.2026 02:30';
+const SURUM = '7.0 · 12.11.2026 10:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -27,7 +27,8 @@ const ilan = (id) => S.ilanlar.find((i) => i.id === id);
 // Soyadını gizleyen üye başkalarına "Fatih Ç." olarak görünür
 const gorunenAd = (k) => { if (!k?.soyadGizle || k.id === S.oturum) return k?.ad || ''; const p = String(k.ad).trim().split(/\s+/); return p.length < 2 ? k.ad : p.slice(0, -1).join(' ') + ' ' + p[p.length - 1][0].toLocaleUpperCase('tr-TR') + '.'; };
 // Emlak ofisi rozeti: firma ya da yetki belgesi beyan eden üyeler
-const rozet = (k) => k?.dogrulanmis ? `<span class="rozet dogru">${ic('kalkan', 12)}Doğrulanmış ofis</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet">${ic('kalkan', 12)}Emlak ofisi</span>` : '';
+const kurumAd = (k, ana) => (k?.sektor ? k.sektor === 'galeri' : ana === 'vasita') ? 'Oto galeri' : 'Emlak ofisi';
+const rozet = (k, ana = 'emlak') => k?.dogrulanmis ? `<span class="rozet dogru">${ic('kalkan', 12)}Doğrulanmış ${kurumAd(k, ana) === 'Oto galeri' ? 'galeri' : 'ofis'}</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet">${ic('kalkan', 12)}${kurumAd(k, ana)}</span>` : '';
 // İlanın kimden olduğu: emlakta ilan sahibinin hesap türü, vasıtada ilandaki alan
 const kimden = (i) => (i.ana === 'emlak' ? (kullanici(i.sahip).ofis ? 'Emlak ofisinden' : 'Sahibinden') : i.alanlar?.kimden || '');
 const basHarf = (ad) => kac(String(ad || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR'));
@@ -294,6 +295,50 @@ function katEtki(k) {
   const n = parseInt(s, 10); if (isNaN(n)) return 1; if (n < 0) return 0.85; if (n === 0) return 0.92; if (n === 1) return 0.98; if (n <= 5) return 1; return 1.02;
 }
 const katYuzde = (k) => { const e = katEtki(k); return e === 1 ? 'etkisiz (ara kat)' : (e > 1 ? '+' : '−') + '%' + Math.round(Math.abs(e - 1) * 100); };
+// Marka adı ya da yaygın kısaltması → listedeki marka
+const MARKA_TAKMA = { vw: 'Volkswagen', volkswagon: 'Volkswagen', mercedes: 'Mercedes-Benz', merso: 'Mercedes-Benz', mb: 'Mercedes-Benz', bmv: 'BMW', citroen: 'Citroën', alfa: 'Alfa Romeo', range: 'Land Rover', 'range rover': 'Land Rover', landrover: 'Land Rover', tofaş: 'Fiat', tofas: 'Fiat', skoda: 'Skoda', hyundaı: 'Hyundai', chevy: 'Chevrolet', ssangyong: 'SsangYong', kgm: 'KG Mobility' };
+function markaBul(x) { const s = String(x || '').trim(); if (!s) return ''; return secenekBul(MARKALAR, s) || MARKA_TAKMA[s.toLocaleLowerCase('tr-TR')] || MARKA_TAKMA[s.toLowerCase()] || secenekBul(MARKALAR, s.split(/s+/)[0]) || ''; }
+// Serbest model yazısını markanın bilinen serisine eşler; bulamazsa düzgün yazımla döndürür
+function aracModelEsle(marka, model) {
+  const m = String(model || '').trim(); if (!m) return '';
+  const l = (typeof ARAC_MODELLER !== 'undefined' && ARAC_MODELLER[marka]) || [], k = m.toLocaleLowerCase('tr-TR').replace(/ı/g, 'i');
+  const s = l.filter((x) => k.startsWith(x.toLowerCase())).sort((a, b) => b.length - a.length)[0];
+  return s || (m === m.toUpperCase() ? m.toLowerCase().replace(/(^|\s)(\S)/g, (a, b, c) => b + c.toUpperCase()) : m).slice(0, 60);
+}
+// Marka seçilince model listesini doldurur (select ise seçenek, input ise öneri listesi)
+function aracModelBagla(markaEl, modelEl, bos = 'Seç') {
+  if (!markaEl || !modelEl) return;
+  const doldur = () => {
+    const l = (typeof ARAC_MODELLER !== 'undefined' && ARAC_MODELLER[markaEl.value]) || [], v = modelEl.value;
+    if (modelEl.tagName === 'SELECT') modelEl.innerHTML = `<option value="">${markaEl.value ? bos : 'Önce marka seç'}</option>` + (v && !l.includes(v) ? [v, ...l] : l).map((x) => `<option ${x === v ? 'selected' : ''}>${kac(x)}</option>`).join('');
+    else { let d = document.getElementById('dl-model-on'); if (!d) { d = document.createElement('datalist'); d.id = 'dl-model-on'; modelEl.after(d); } modelEl.setAttribute('list', 'dl-model-on'); d.innerHTML = l.map((x) => `<option value="${kac(x)}">`).join(''); }
+  };
+  markaEl.addEventListener('change', () => { if (modelEl.tagName === 'SELECT') modelEl.value = ''; doldur(); });
+  markaEl.addEventListener('input', doldur);
+  doldur();
+}
+// TSB kasko değeri: marka + model + model yılı için tiplerin ortancası ve aralığı
+async function kaskoDegeri(marka, model, yil) {
+  if (!marka || !model || !yil) return null;
+  const adlar = (typeof ARAC_KASKO_AD !== 'undefined' && ARAC_KASKO_AD[marka]) || [marka];
+  const md = String(model).trim().split(/\s+/)[0];
+  try {
+    const { data } = await sb.from('arac_kasko').select('deger,tip,donem').in('marka', adlar).ilike('model', md + '%').eq('yil', +yil).order('donem', { ascending: false }).limit(400);
+    if (!data?.length) return null;
+    const son = data[0].donem, l = data.filter((x) => x.donem === son).map((x) => +x.deger).sort((a, b) => a - b);
+    return { orta: medyan(l), alt: yuzdelik(l, 0.25), ust: yuzdelik(l, 0.75), en: l[0], ek: l[l.length - 1], tipSayi: l.length, donem: son };
+  } catch (_) { return null; }
+}
+// Her değerleme isteği kendi veri bankamıza (kimlik bilgisi olmadan) yazılır
+function degerlemeKaydet(v, h, kasko) {
+  try {
+    const k = { ana: v.ana, alt: v.alt || null, islem: v.islem || null, il: v.il || null, ilce: v.ilce || null, mahalle: v.mahalle || null,
+      m2net: +v.m2net || null, oda: v.oda || null, kat: v.kat || null, bina_yasi: v.binaYasi || null,
+      marka: v.marka || null, model: v.model || null, yil: +v.yil || null, km: +v.km || null, hasar: v.hasar || null,
+      emsal_sayi: h?.sayi ?? null, sonuc_orta: h?.yeterli ? Math.round(h.orta) : null, kasko_orta: kasko ? Math.round(kasko.orta) : null };
+    sb.from('degerleme_kayitlari').insert(k).then(() => {}, () => {});
+  } catch (_) {}
+}
 function hesapla(o) {
   const e = emsaller(o);
   if (e.length < 3) return { yeterli: false, sayi: e.length, emsal: e, kapsam: e.kapsam, ilSayi: e.ilSayi };
@@ -373,8 +418,9 @@ EKRAN.giris = () => {
 EKRAN.kayit = () => {
   document.body.classList.add('navsiz'); nav.innerHTML = '';
   app.innerHTML = ustBar('Üye ol') + `<form class="ic" id="f" novalidate>
-    <div class="alan">Hesap türü<div class="tur-sec"><button type="button" class="secili" data-tur="bireysel">${ic('kisi', 22)}<b>Bireysel</b><small>Kendi evimi, aracımı satıyorum ya da arıyorum</small></button><button type="button" data-tur="ofis">${ic('kalkan', 22)}<b>Emlak ofisi</b><small>Portföy, müşteri ve randevu yönetiyorum</small></button></div><input type="hidden" name="tur" value="bireysel"></div>
-    <div id="ofisAlan" hidden><div class="izgara2"><label class="alan">Firma adı<input name="firma" maxlength="80"></label><label class="alan">Yetki belgesi no <span style="font-weight:500">(isteğe bağlı)</span><input name="yetkiNo" maxlength="20"></label></div><label class="alan">Davet kodu <span style="font-weight:500">(varsa; ikinize de 3 kredi)</span><input name="davet" maxlength="8" autocapitalize="characters" value="${kac(sorgu().davet || '')}"></label></div>
+    <div class="alan">Hesap türü<div class="tur-sec"><button type="button" class="secili" data-tur="bireysel">${ic('kisi', 22)}<b>Bireysel</b><small>Kendi evimi, aracımı satıyorum ya da arıyorum</small></button><button type="button" data-tur="emlak">${ic('ev', 22)}<b>Emlak ofisi</b><small>Portföy, müşteri ve randevu yönetiyorum</small></button><button type="button" data-tur="galeri">${ic('araba', 22)}<b>Oto galeri</b><small>Araç alıp satıyorum, stok ve müşteri yönetiyorum</small></button></div><input type="hidden" name="tur" value="bireysel"></div>
+    <div id="ofisAlan" hidden><div class="izgara2"><label class="alan">Firma adı<input name="firma" maxlength="80"></label><label class="alan">Yetki belgesi no <span style="font-weight:500">(isteğe bağlı)</span><input name="yetkiNo" maxlength="20"></label></div></div>
+    <label class="alan">Davet kodu <span style="font-weight:500">(varsa; ikinize de 3 kredi)</span><input name="davet" maxlength="8" autocapitalize="characters" value="${kac(sorgu().davet || '')}"></label>
     ${googleDugme()}<div class="ayrac">veya e-postayla</div>
     <label class="alan">Ad soyad<input name="ad" autocomplete="name" required></label>
     <label class="alan">E-posta<input name="eposta" type="email" autocomplete="email" required></label>
@@ -388,7 +434,7 @@ EKRAN.kayit = () => {
     <p class="soluk" style="text-align:center;margin:8px 0">Zaten üye misin? <a href="#/giris"><b>Giriş yap</b></a></p></form>`;
   app.querySelectorAll('[data-tur]').forEach((b) => (b.onclick = () => {
     app.querySelectorAll('[data-tur]').forEach((x) => x.classList.toggle('secili', x === b));
-    $('[name=tur]').value = b.dataset.tur; $('#ofisAlan').hidden = b.dataset.tur !== 'ofis';
+    $('[name=tur]').value = b.dataset.tur; $('#ofisAlan').hidden = b.dataset.tur === 'bireysel';
     try { localStorage.setItem('kayitTuru', b.dataset.tur); } catch (_) {}
   }));
   $('#f').onsubmit = async (e) => {
@@ -401,10 +447,10 @@ EKRAN.kayit = () => {
     if (v.sifre.length < 8 || !/\d/.test(v.sifre)) return hataGoster(h, 'Şifre en az 8 karakter olmalı ve rakam içermeli.');
     if (!v.kvkk) return hataGoster(h, 'Devam etmek için koşulları kabul etmelisin.');
     const btn = e.target.querySelector('button.btn'); btn.disabled = true; btn.textContent = 'Hesap oluşturuluyor…';
-    if (v.tur === 'ofis' && !v.firma.trim()) return hataGoster(h, 'Emlak ofisi için firma adını yaz.');
-    try { await uyeOl({ ad: v.ad.trim().replace(/\s+/g, ' '), eposta, tel: '0' + tel.slice(-10), sifre: v.sifre, ileti: !!v.ileti, ofis: v.tur === 'ofis', firma: v.firma.trim(), yetkiNo: v.yetkiNo.trim() }); }
+    if (v.tur !== 'bireysel' && !v.firma.trim()) return hataGoster(h, (v.tur === 'galeri' ? 'Galeri' : 'Emlak ofisi') + ' için firma adını yaz.');
+    try { await uyeOl({ ad: v.ad.trim().replace(/\s+/g, ' '), eposta, tel: '0' + tel.slice(-10), sifre: v.sifre, ileti: !!v.ileti, ofis: v.tur !== 'bireysel', sektor: v.tur === 'galeri' ? 'galeri' : 'emlak', firma: v.firma.trim(), yetkiNo: v.yetkiNo.trim() }); }
     catch (x) { h.textContent = hataMetni(x); btn.disabled = false; btn.textContent = 'Hesap oluştur'; return; }
-    if (v.tur === 'ofis' && (v.davet || '').trim()) { try { localStorage.setItem('davetKodu', v.davet.trim()); } catch (_) {} davetUygula(); }
+    if ((v.davet || '').trim()) { try { localStorage.setItem('davetKodu', v.davet.trim()); } catch (_) {} davetUygula(); }
     S.karsilandi = true; kaydet();
     toast('Hesabın oluşturuldu');
     const d = S.donus; S.donus = null; git(d && !d.includes('giris') && !d.includes('kayit') ? d : '#/');
@@ -433,7 +479,7 @@ EKRAN.kesfet = () => {
   app.innerHTML = `<header class="ust ust-hero"><button class="ikon-btn dolu" aria-label="Menü" id="menuBtn">${ic('menu')}</button><div class="logo"><img src="logo.png" alt=""><span>mülküm<b>360</b></span></div>
       <button class="ikon-btn" data-dilac aria-label="Dil" style="font-weight:800;font-size:12px;letter-spacing:.5px">${DIL.toUpperCase()}</button>
       ${b ? `<a class="kredi-hap" href="#/kredi" aria-label="Kredin ${b.kredi ?? 0}, kredi al">${ic('kredi', 15)}${b.kredi ?? 0}<span class="hap-arti">+</span></a>` : `<a class="kredi-hap" href="#/giris">Giriş</a>`}
-      <a class="ikon-btn" href="#/mesajlar" aria-label="Mesajlar">${ic('mesaj')}${okunmamis() ? `<span class="rozet">${okunmamis()}</span>` : ''}</a><a class="ikon-btn" href="#/kayitli" aria-label="Kayıtlı aramalar">${ic('zil')}${yeniKayitli ? `<span class="rozet">${yeniKayitli}</span>` : ''}</a></header>
+      <a class="ikon-btn" href="#/mesajlar" aria-label="Mesajlar">${ic('mesaj')}${okunmamis() ? `<span class="rozet">${okunmamis()}</span>` : ''}</a><a class="ikon-btn" href="#/bildirimler" aria-label="Bildirimler">${ic('zil')}${yeniKayitli + okunmamisBildirim() ? `<span class="rozet">${yeniKayitli + okunmamisBildirim()}</span>` : ''}</a></header>
     <section class="hero">
       <div class="hero-selam">${selam}${b ? ', ' + kac(b.ad.split(' ')[0]) : ''}</div>
       <h1 class="hero-baslik">Hayalindekine<br><b>bir adım.</b></h1>
@@ -554,6 +600,7 @@ function aramaYap(q) {
     if (o.yilmax && +f.yil > +o.yilmax) return false;
     if (o.kmmin && !(+f.km >= +o.kmmin)) return false;
     for (const k of ['kasa', 'hasar', 'takas']) if (o[k] && f[k] !== o[k]) return false;
+    if (o.agirhasar && (o.agirhasar === 'Evet') !== (f.hasar === 'Ağır hasar kayıtlı')) return false;
     if (o.renk && !kucuk(f.renk || '').includes(kucuk(o.renk))) return false;
     if (o.yilmin && +f.yil < +o.yilmin) return false;
     if (o.kmmax && +f.km > +o.kmmax) return false;
@@ -572,7 +619,7 @@ function aramaYap(q) {
 
 EKRAN.ara = () => {
   const o = sorgu(), l = aramaYap(o);
-  const filtreSay = ['il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'aidatmax', 'site', 'asansor', 'otopark', 'esya', 'kimden', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk'].filter((k) => o[k]).length;
+  const filtreSay = ['il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'aidatmax', 'site', 'asansor', 'otopark', 'esya', 'kimden', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk', 'agirhasar'].filter((k) => o[k]).length;
   const cip = (ad, deg) => `<button class="cip ${deg.secili ? 'secili' : ''}" data-q='${kac(JSON.stringify(deg.q))}'>${ad}</button>`;
   const seciliAna = o.ana || (o.alt && ALT[o.alt]?.ana) || '';
   const altlar = seciliAna ? Object.entries(ALT).filter(([, a]) => a.ana === seciliAna) : [];
@@ -613,18 +660,19 @@ function filtreSheet(o) {
   const sec = (ad, ad2, ops, ozel = '') => `<label class="fs-satir"><span>${ad2}</span><select name="${ad}" ${ozel}><option value="">Farketmez</option>${ops.map((x) => `<option ${o[ad] === x ? 'selected' : ''}>${kac(x)}</option>`).join('')}</select></label>`;
   const sayi = (ad, ad2, ph, ek = '') => `<label class="fs-satir"><span>${ad2}</span><input name="${ad}" inputmode="numeric" placeholder="${ph}" value="${kac(o[ad] || '')}" ${ek}></label>`;
   const grup = (baslik, ic2) => `<div class="fs-grup"><div class="fs-baslik">${baslik}</div><div class="fs-liste">${ic2}</div></div>`;
-  const aktif = ['kimden', 'il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'site', 'asansor', 'otopark', 'esya', 'aidatmax', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk'].filter((k) => o[k]).length;
+  const aktif = ['kimden', 'il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'site', 'asansor', 'otopark', 'esya', 'aidatmax', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk', 'agirhasar'].filter((k) => o[k]).length;
   sheetAc(`<div class="fs-ust"><h2 style="font-size:19px;font-weight:800;margin:0">Filtrele</h2>${aktif ? `<span class="fs-say">${aktif} filtre</span>` : ''}</div><form id="ff" class="fs-form">
     ${grup('Konum', sec('il', 'İl', ILLER) + `<label class="fs-satir"><span>İlçe</span><select name="ilce" data-bos="Farketmez"><option value="">Farketmez</option>${o.ilce ? `<option selected>${kac(o.ilce)}</option>` : ''}</select></label><label class="fs-satir"><span>Mahalle</span><select name="mahalle" data-bos="Farketmez"><option value="">Farketmez</option>${o.mahalle ? `<option selected>${kac(o.mahalle)}</option>` : ''}</select></label>`)}
     ${grup('Fiyat (TL)', `<div class="fs-satir fs-ikili"><input name="min" inputmode="numeric" placeholder="En az" value="${kac(o.min || '')}"><i>–</i><input name="max" inputmode="numeric" placeholder="En çok" value="${kac(o.max || '')}"></div>`)}
     ${ana !== 'vasita' ? grup('Emlak', sec('islem', 'İşlem', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Sezonluk', 'Devren']) + sec('oda', 'Oda sayısı', ALANLAR.emlak[2][3]) + sec('yas', 'Bina yaşı', YAS_GRUPLARI) + sec('kat', 'Bulunduğu kat', ONERI.kat) + sec('kimden', 'Kimden', ['Sahibinden', 'Emlak ofisinden']))
       + grup('Özellikler', sec('site', 'Site içinde', ['Evet', 'Hayır']) + sec('asansor', 'Asansör', ['Var', 'Yok']) + sec('otopark', 'Otopark', ['Kapalı', 'Açık', 'Yok']) + sec('esya', 'Eşya', ['Eşyasız', 'Eşyalı']) + sayi('aidatmax', 'En çok aidat (TL)', 'Farketmez', `list="on-aidat" autocomplete="off"`) + `<datalist id="on-aidat">${ONERI.aidat.map((x) => `<option value="${x}">`).join('')}</datalist>`) : ''}
-    ${ana !== 'emlak' ? grup('Araç', sec('marka', 'Marka', MARKALAR) + `<label class="fs-satir"><span>Model / seri</span><input name="model" maxlength="40" placeholder="Farketmez" value="${kac(o.model || '')}"></label>` + sec('kasa', 'Kasa tipi', ALANLAR.vasita[6][3]))
+    ${ana !== 'emlak' ? grup('Araç', sec('marka', 'Marka', MARKALAR) + `<label class="fs-satir"><span>Model / seri</span><select name="model"><option value="">Farketmez</option>${o.model ? `<option selected>${kac(o.model)}</option>` : ''}</select></label>` + sec('kasa', 'Kasa tipi', ALANLAR.vasita[6][3]))
       + grup('Model yılı', `<div class="fs-satir fs-ikili"><input name="yilmin" inputmode="numeric" placeholder="En eski" value="${kac(o.yilmin || '')}"><i>–</i><input name="yilmax" inputmode="numeric" placeholder="En yeni" value="${kac(o.yilmax || '')}"></div>`)
       + grup('Kilometre', `<div class="fs-satir fs-ikili"><input name="kmmin" inputmode="numeric" placeholder="En az" value="${kac(o.kmmin || '')}"><i>–</i><input name="kmmax" inputmode="numeric" placeholder="En çok" value="${kac(o.kmmax || '')}"></div>`)
-      + grup('Teknik ve durum', sec('yakit', 'Yakıt', ALANLAR.vasita[4][3]) + sec('vites', 'Vites', ALANLAR.vasita[5][3]) + sec('hasar', 'Boya / değişen', ALANLAR.vasita[8][3]) + `<label class="fs-satir"><span>Renk</span><input name="renk" maxlength="20" placeholder="Farketmez" value="${kac(o.renk || '')}"></label>` + sec('takas', 'Takas', ALANLAR.vasita[9][3]) + (ana === 'vasita' ? sec('kimden', 'Kimden', ['Sahibinden', 'Galeriden']) : '')) : ''}
+      + grup('Teknik ve durum', sec('yakit', 'Yakıt', ALANLAR.vasita[4][3]) + sec('vites', 'Vites', ALANLAR.vasita[5][3]) + sec('agirhasar', 'Ağır hasar kayıtlı', ['Evet', 'Hayır']) + sec('hasar', 'Boya / değişen', ALANLAR.vasita[8][3]) + `<label class="fs-satir"><span>Renk</span><input name="renk" maxlength="20" placeholder="Farketmez" value="${kac(o.renk || '')}"></label>` + sec('takas', 'Takas', ALANLAR.vasita[9][3]) + (ana === 'vasita' ? sec('kimden', 'Kimden', ['Sahibinden', 'Galeriden']) : '')) : ''}
     <div class="fs-alt"><button type="button" class="btn sade" id="temizle">Temizle</button><button class="btn">Sonuçları göster</button></div></form>`, (s) => {
     konumSecBagla($('[name=il]', s), $('[name=ilce]', s), $('[name=mahalle]', s));
+    aracModelBagla($('[name=marka]', s), $('[name=model]', s), 'Farketmez');
     $('#temizle', s).onclick = () => { sheetKapat(); git('#/ara?' + sorguYap({ q: o.q, ana: o.ana, alt: o.alt })); };
     $('#ff', s).onsubmit = (e) => {
       e.preventDefault();
@@ -686,7 +734,7 @@ EKRAN.ilan = (id) => {
         ${f.mahalle ? `<div><span>Mahalle</span><b>${kac(f.mahalle)}</b></div>` : ''}${f.sokak ? `<div><span>Sokak / cadde</span><b>${kac(f.sokak)}</b></div>` : ''}
       </div></div>
       ${i.ana === 'emlak' && f.ada && f.parsel ? `<div class="kart" id="parselK"><h3>Ada / Parsel (TKGM)</h3><div class="bilgi-tablo"><div><span>Ada / parsel</span><b>${kac(f.ada)} / ${kac(f.parsel)}</b></div></div><div class="k soluk" style="margin-top:6px">Tapu ve Kadastro kayıtları yükleniyor…</div></div>` : ''}
-      <a class="kart satir" href="#/uye/${s.id}" style="text-decoration:none;color:inherit">${avatarHtml(s, 44)}<div class="ara"><b>${kac(gorunenAd(s))}</b> ${rozet(s)}${s.firma ? `<div class="k">${kac(s.firma)}</div>` : ''}<div class="k soluk">${s.olusturma ? 'Üyelik: ' + new Date(s.olusturma).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) + ' · ' : ''}${S.ilanlar.filter((x) => x.sahip === s.id && x.durum === 'yayinda').length} ilan${s.acikTel ? ' · ' + kac(s.acikTel) : ''}</div></div><span class="ok">›</span></a>
+      <a class="kart satir" href="#/uye/${s.id}" style="text-decoration:none;color:inherit">${avatarHtml(s, 44)}<div class="ara"><b>${kac(gorunenAd(s))}</b> ${rozet(s, i.ana)}${s.firma ? `<div class="k">${kac(s.firma)}</div>` : ''}<div class="k soluk">${s.olusturma ? 'Üyelik: ' + new Date(s.olusturma).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) + ' · ' : ''}${S.ilanlar.filter((x) => x.sahip === s.id && x.durum === 'yayinda').length} ilan${s.acikTel ? ' · ' + kac(s.acikTel) : ''}</div></div><span class="ok">›</span></a>
       </div>
       <div data-panel="aciklama" hidden>
         ${i.aciklama ? `<div class="kart"><h3>Açıklama</h3><div class="aciklama-metin">${kac(i.aciklama)}</div></div>` : bosDurum('belge', 'Açıklama yazılmamış', 'Satıcı bu ilana açıklama eklememiş. Merak ettiklerini mesajla sorabilirsin.')}
@@ -701,17 +749,18 @@ EKRAN.ilan = (id) => {
         <div class="k soluk">${e.sayi} benzer ilanın ortancası: ${i.ana === 'emlak' ? tl(e.birimOrta) + '/m²' : tl(e.birimOrta)}. Uygulamadaki ilanlarla hesaplanır.</div></div>` : ''}
       ${[['video', 'Videoyu izle', 'Satıcının eklediği tanıtım videosu'], ['tur360', '360° sanal tur', 'Evi sanal olarak gez']].filter(([k]) => /^https:\/\//.test(f[k] || '')).map(([k, b, a]) => `<a class="kart satir" href="${kac(f[k])}" target="_blank" rel="noopener nofollow" style="text-decoration:none;color:inherit">${ic(k === 'video' ? 'foto' : 'pusula', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>${b}</b><div class="k soluk">${a} · dış bağlantı</div></div><span class="ok">›</span></a>`).join('')}
       ${i.ana === 'emlak' && f.islem === 'Satılık' ? `<div class="kart" id="krediK"><h3>Kredi hesabı</h3><div class="izgara3"><label class="alan">Peşinat %<input id="kPes" inputmode="numeric" value="20"></label><label class="alan">Vade (ay)<input id="kVade" inputmode="numeric" value="120" list="kVadeOn"><datalist id="kVadeOn"><option value="60"><option value="120"><option value="180"></datalist></label><label class="alan">Aylık faiz %<input id="kFaiz" inputmode="decimal" placeholder="bankanınki"></label></div><div id="kSonuc" class="k soluk">Bankanın güncel aylık faiz oranını yaz; taksit hesaplansın.</div></div>` : ''}
-      ${sahip ? `<div class="bolum-bas"><h2>İlanını güçlendir</h2><a href="#/kredi">${b.kredi ?? 0} kredi · Kredi al</a></div>` : ''}
+      ${sahip ? `<div class="bolum-bas"><h2>İlanını güçlendir</h2><a href="#/kredi">${b.kredi ?? 0} kredi · Kredi al</a></div><div class="kart" id="dopingK"><div class="k soluk">Görünürlük paketleri yükleniyor…</div></div>` : ''}
       ${(sahip && fotolar.length) || (f.videolar || []).length ? '<div class="kart" id="videoK"><div class="k soluk">Videolar yükleniyor…</div></div>' : ''}
-      ${sahip && fotolar.length ? `<button class="kart satir" id="dekoAc" style="text-align:left;width:100%;border:0;font:inherit;color:inherit;cursor:pointer">${ic('yildiz', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümDeko ile fotoğraf oluştur</b><div class="k soluk">Odalarını Modern, Klasik, İskandinav ya da Rustik stilde yapay zekâyla döşe · görsel başına 1 kredi</div></div><span class="ok">›</span></button>` : ''}
-      ${sahip && i.ana === 'emlak' && eidsAcik() && i.durum === 'onayda' ? `<button class="kart satir" data-eids="${i.id}" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>EİDS doğrulaması sürüyor</b><div class="k soluk">Onaylanınca ilanın otomatik yayına çıkar; bilgileri güncellemek için talebi yenileyebilirsin</div></div><span class="ok">›</span></button>` : sahip && i.ana === 'emlak' && !i.dogrulanmis ? `<button class="kart satir" id="tapuIste" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>Tapu doğrulaması iste</b><div class="k soluk">Onaylanırsa ilanında "Tapu bilgisi doğrulandı" rozeti çıkar; alıcı güveni artar</div></div><span class="ok">›</span></button>` : ''}
+      ${sahip && fotolar.length && i.ana === 'emlak' ? `<button class="kart satir" id="dekoAc" style="text-align:left;width:100%;border:0;font:inherit;color:inherit;cursor:pointer">${ic('yildiz', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümDeko ile fotoğraf oluştur</b><div class="k soluk">Odalarını Modern, Klasik, İskandinav ya da Rustik stilde yapay zekâyla döşe · görsel başına 1 kredi</div></div><span class="ok">›</span></button>` : ''}
+      ${sahip && eidsAcik() && i.durum === 'onayda' ? `<button class="kart satir" data-eids="${i.id}" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>EİDS doğrulaması sürüyor</b><div class="k soluk">Onaylanınca ilanın otomatik yayına çıkar; bilgileri güncellemek için talebi yenileyebilirsin</div></div><span class="ok">›</span></button>` : sahip && i.ana === 'emlak' && !i.dogrulanmis ? `<button class="kart satir" id="tapuIste" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>Tapu doğrulaması iste</b><div class="k soluk">Onaylanırsa ilanında "Tapu bilgisi doğrulandı" rozeti çıkar; alıcı güveni artar</div></div><span class="ok">›</span></button>` : ''}
       ${!sahip && !satildi ? `<button class="kart satir" id="randevu" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('takvim', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Yerinde görmek için randevu iste</b><div class="k soluk">Uygun zamanını seç, satıcıya mesaj olarak gitsin</div></div><span class="ok">›</span></button>` : ''}
       ${(f.deko || []).length ? `<div class="kart" id="dekoKart"><h3>Yapay zekâ ile dekorasyon önerileri</h3>
         <div class="ciplar">${f.deko.map((d, n) => `<button class="cip ${n ? '' : 'secili'}" data-deko="${n}">${kac(d.oda)} · ${kac(d.stil)}</button>`).join('')}</div>
         <div id="dekoGoster">${dekoKarsilastir(f.deko[0])}</div>
         <div class="k soluk">Görseldeki mobilya ve eşyalar ilana dahil değildir. Görseller dekorasyon fikri vermek için yapay zekâyla oluşturuldu; gerçeği birebir yansıtmayabilir.</div></div>` : ''}
-      ${i.ana === 'emlak' ? `<a class="kart satir" href="#/degerle?ilan=${i.id}" style="text-decoration:none;color:inherit">${ic('belge', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Bu mülkün değer raporu</b><div class="k soluk">Benzer ilanlara göre değer aralığı, PDF</div></div></a>` : `<a class="kart satir" href="#/degerle?ilan=${i.id}" style="text-decoration:none;color:inherit">${ic('belge', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Bu aracın değer raporu</b><div class="k soluk">Benzer ilanlara göre değer aralığı, PDF</div></div></a>`}
+      ${i.ana === 'emlak' ? `<a class="kart satir" href="#/degerle?ilan=${i.id}" style="text-decoration:none;color:inherit">${ic('belge', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Bu mülkün değer raporu</b><div class="k soluk">Benzer ilanlara göre değer aralığı, PDF</div></div></a>` : `<a class="kart satir" href="#/degerle?ilan=${i.id}" style="text-decoration:none;color:inherit">${ic('belge', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Bu aracın değeri</b><div class="k soluk">TSB kasko değeri ve benzer ilanlara göre aralık</div></div></a>`}
       ${sahip ? '' : `<div class="kart" id="aiKart"><button class="btn sade tam" id="aiOzet">${ic('yildiz', 18)}MülkümAI bu ilanı değerlendirsin</button></div>`}
+      ${i.ana === 'vasita' ? aracKontrolKarti(i) : ''}
       <div class="uyari-k">${ic('kalkan', 18)}<div>Görmeden kapora gönderme. Ödeme ve konuşmaları uygulama içinde tut; kaporayı ya da ödemeyi başka bir siteye veya hesaba yönlendirenlere dikkat et.</div></div>
       ${(() => { const bz = yayinda().filter((x) => x.id !== i.id && x.alt === i.alt && x.il === i.il && (x.alanlar?.islem || '') === (f.islem || '') && x.fiyat >= i.fiyat * 0.7 && x.fiyat <= i.fiyat * 1.3).sort((x, y) => (x.ilce === i.ilce ? -1 : 0) - (y.ilce === i.ilce ? -1 : 0) || Math.abs(x.fiyat - i.fiyat) - Math.abs(y.fiyat - i.fiyat)).slice(0, 6); return bz.length ? `<div class="bolum-bas"><h2>Benzer ilanlar</h2></div><div class="ciplar" style="gap:10px">${bz.map((x) => `<div style="width:170px;flex-shrink:0">${ilanKart(x)}</div>`).join('')}</div>` : ''; })()}
       ${sahip ? '' : `<button class="btn sade tam" id="sikayet">${ic('bayrak', 18)}İlanı şikayet et</button>`}
@@ -722,9 +771,11 @@ EKRAN.ilan = (id) => {
       : `<button class="btn cizgili" id="teklif">Teklif ver</button><button class="btn" id="mesaj" style="flex:1.4">${ic('mesaj', 18, '#fff')}Mesaj gönder</button>${s.acikTel ? `<a class="btn iletisim-ara" href="tel:${kac(telTemiz(s.acikTel))}" aria-label="Ara">${ic('telefon', 20, '#fff')}</a><a class="btn iletisim-wa" href="${waBaglanti(s.acikTel, i)}" target="_blank" rel="noopener" aria-label="WhatsApp ile yaz">${WA_SVG}</a>` : ''}`}</div></div>`;
   if (typeof endeksKartiYukle === 'function') endeksKartiYukle(i);
   const oc = $('#oneCikar'); if (oc) oc.onclick = () => { if (!girisGerek()) dopingAlimSheet(i); };
+  if ($('#dopingK') && typeof dopingKartiYukle === 'function') dopingKartiYukle(i);
   if (typeof sekmeBagla === 'function') sekmeBagla(i);
   if (typeof parselKartiYukle === 'function') parselKartiYukle(i);
   if (typeof videoKartiYukle === 'function') videoKartiYukle(i);
+  if (i.ana === 'vasita') webBagla();
   const acD = $('#acDevam'); if (acD) acD.onclick = () => { const m = $('#acMetin'), k = m.classList.toggle('kisa'); acD.textContent = k ? 'Devamını oku' : 'Daha az göster'; if (k) $('#aciklamaK').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
   const serit = $('#serit');
   if (serit) serit.querySelectorAll('img').forEach((im, n) => (im.onclick = () => fotoGoster(fotolar, n)));
@@ -930,8 +981,8 @@ function panelForm(k) {
 // Google ile üye olurken "Emlak ofisi" seçildiyse yeni hesabı ofis yap ve firma bilgisine yönlendir
 async function kayitTuruUygula() {
   let tur = null; try { tur = localStorage.getItem('kayitTuru'); localStorage.removeItem('kayitTuru'); } catch (_) {}
-  const b = ben(); if (tur !== 'ofis' || !b || b.ofis || Date.now() - b.olusturma > 15 * 60000) return;
-  if (await dene(() => hesapTuruYap(true))) { toast('Emlak ofisi hesabın hazır; firma bilgilerini tamamla'); git('#/profil'); davetUygula(); }
+  const b = ben(); if (!['ofis', 'emlak', 'galeri'].includes(tur) || !b || b.ofis || Date.now() - b.olusturma > 15 * 60000) return;
+  if (await dene(() => hesapTuruYap(true, tur === 'galeri' ? 'galeri' : 'emlak'))) { toast('Kurumsal hesabın hazır; firma bilgilerini tamamla'); git('#/profil'); davetUygula(); }
 }
 // Davet kodu (kayıtta yazıldıysa) ilk oturumda bir kez kullanılır: yeni ofise ve davet edene 3'er kredi
 async function davetUygula(kod) {
@@ -947,14 +998,14 @@ async function davetUygula(kod) {
     toast(hataMetni(x)); return false;
   }
 }
-const davetMetni = () => DAVET_METNI + `\nDavet kodum: ${(ben()?.id || '').slice(0, 8).toUpperCase()} (üye olurken Emlak ofisi seçip yaz; ikimize de 3 kredi)`;
+const davetMetni = () => DAVET_METNI + `\nDavet kodum: ${(ben()?.id || '').slice(0, 8).toUpperCase()} (üye olurken Davet kodu kutusuna yaz; ikimize de 3 kredi)`;
 
 // ---------- Emlak ofisleri: davet ve toplu ilan yükleme ----------
-const DAVET_METNI = `Merhaba, ilanlarını Mülküm360'ta da ücretsiz yayınlayabilirsin.
-• Portaldan dışa aktardığın Excel/CSV ile tüm ilanlarını tek seferde yükle
-• Her ilana MülkümAI ile profesyonel açıklama ve yapay zekâ dekorasyon görselleri
-• Müşterine TCMB, TÜİK ve emsal verili PDF değer raporu (yeni üyeye 1 rapor hediye)
-• Profilinde "Emlak ofisi" rozeti
+const DAVET_METNI = `Merhaba, evini, arsanı ya da aracını Mülküm360'ta ücretsiz ilan verebilirsin.
+• Başka sitedeki ilanını bağlantıyla aktar, MülkümAI açıklamasını yazsın
+• Evinin ya da aracının değerini ücretsiz öğren (TCMB, TÜİK ve TSB kasko verisiyle)
+• PDF değer raporu (yeni üyeye 1 rapor hediye)
+• Emlak ofisleri ve galeriler için kurumsal profil, toplu ilan yükleme ve ajanda
 Uygulama: https://fatihcalis07-commits.github.io/mulkum360/`;
 
 // Excel'in "CSV olarak kaydet" çıktısı: ; ya da , ayraçlı, tırnaklı alanlar desteklenir
@@ -1433,7 +1484,7 @@ EKRAN.ver = (id) => {
       ${t.fotolar.length < FOTO_SINIR ? `<label class="foto-ekle" aria-label="Fotoğraf ekle">${ic('foto', 24)}<input type="file" accept="image/*" multiple hidden id="dosya"></label>` : ''}</div>
       <div class="k soluk">${t.fotolar.length}/${FOTO_SINIR} fotoğraf. İlk fotoğraf kapak olur; bir fotoğrafa dokunup kapak yapabilirsin. Fotoğraflı ilanlar çok daha fazla görüntülenir.</div>
       <label class="alan">İlan başlığı<input id="baslik" maxlength="80" value="${kac(t.baslik || '')}" placeholder="${ALT[t.alt].ana === 'emlak' ? 'örn. Metroya yakın, bakımlı 3+1 daire' : 'örn. Hatasız, tek elden 2019 Clio'}"></label>
-      <div class="izgara2"><label class="alan">Video bağlantısı <span style="font-weight:500">(isteğe bağlı)</span><input id="video" inputmode="url" placeholder="YouTube bağlantısı" value="${kac(t.alanlar.video || '')}"></label><label class="alan">360° tur bağlantısı <span style="font-weight:500">(isteğe bağlı)</span><input id="tur360" inputmode="url" placeholder="Matterport, Kuula…" value="${kac(t.alanlar.tur360 || '')}"></label></div>
+      <div class="${ALT[t.alt].ana === 'emlak' ? 'izgara2' : ''}"><label class="alan">Video bağlantısı <span style="font-weight:500">(isteğe bağlı)</span><input id="video" inputmode="url" placeholder="YouTube bağlantısı" value="${kac(t.alanlar.video || '')}"></label>${ALT[t.alt].ana === 'emlak' ? `<label class="alan">360° tur bağlantısı <span style="font-weight:500">(isteğe bağlı)</span><input id="tur360" inputmode="url" placeholder="Matterport, Kuula…" value="${kac(t.alanlar.tur360 || '')}"></label>` : ''}</div>
       <div class="k soluk">Açıklamayı bir sonraki adımda yazacaksın; istersen MülkümAI senin için taslak hazırlar.</div>`;
   } else if (t.adim === 2) {
     const ana = ALT[t.alt].ana;
@@ -1452,9 +1503,9 @@ EKRAN.ver = (id) => {
     govde = `<div class="izgara2">${alanlar.map(alan).join('')}</div>
       <div class="izgara2"><label class="alan">İl<select id="il"><option value="">Seç</option>${ILLER.map((x) => `<option ${t.il === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="alan">İlçe<select id="ilce"><option value="">Seç</option>${t.ilce ? `<option selected>${kac(t.ilce)}</option>` : ''}</select></label></div>
-      <div class="izgara2"><label class="alan">Mahalle<select id="mahalle" data-bos="${t.ilce ? 'Seç' : 'Önce ilçe seç'}"><option value="">${t.ilce ? 'Seç' : 'Önce ilçe seç'}</option>${t.alanlar.mahalle ? `<option selected>${kac(t.alanlar.mahalle)}</option>` : ''}</select></label>
+      ${ana === 'emlak' ? `<div class="izgara2"><label class="alan">Mahalle<select id="mahalle" data-bos="${t.ilce ? 'Seç' : 'Önce ilçe seç'}"><option value="">${t.ilce ? 'Seç' : 'Önce ilçe seç'}</option>${t.alanlar.mahalle ? `<option selected>${kac(t.alanlar.mahalle)}</option>` : ''}</select></label>
       <label class="alan">Sokak / cadde <span style="font-weight:500">(isteğe bağlı)</span><input id="sokak" list="sokakOn" maxlength="80" autocomplete="off" placeholder="Yazmaya başla" value="${kac(t.alanlar.sokak || '')}"><datalist id="sokakOn"></datalist></label></div>
-      <div class="k soluk" style="font-size:12px;margin-top:-4px">Kapı numarası yazma; ilanda yalnız sokak adı görünür.</div>
+      <div class="k soluk" style="font-size:12px;margin-top:-4px">Kapı numarası yazma; ilanda yalnız sokak adı görünür.</div>` : ''}
       <label class="alan">Fiyat (TL)<input id="fiyat" inputmode="numeric" value="${t.fiyat ? sayiBicim(t.fiyat) : ''}" style="font-weight:800"></label>
       <div id="oneri"></div>
       <label class="alan">Açıklama<textarea id="aciklama" maxlength="3000" placeholder="Durumunu, öne çıkan özelliklerini ve neden sattığını anlat.">${kac(t.aciklama || '')}</textarea></label>
@@ -1467,17 +1518,17 @@ EKRAN.ver = (id) => {
       ${i.ana === 'emlak' ? (eidsAcik() ? `<div class="bilgi-k">${ic('kalkan', 18)}<div><b>EİDS doğrulaması zorunlu.</b> İlanın, kimlik ve mülkiyet/yetki doğrulandıktan sonra yayına çıkar. Taşınmaz numarasını e-Devlet "Tapu Bilgileri Sorgulama" hizmetinden veya yeni tip tapu senedinden alabilirsin.</div></div>
       <label class="alan">İlanı kim veriyor?<select id="eYontem"><option value="sahibim" ${t.eids?.yontem === 'sahibim' || !t.eids ? 'selected' : ''}>Taşınmazın sahibiyim</option><option value="hisim" ${t.eids?.yontem === 'hisim' ? 'selected' : ''}>Eşim ya da 1./2. derece kan hısmımın taşınmazı</option>${ben()?.ofis ? `<option value="yetkili" ${t.eids?.yontem === 'yetkili' ? 'selected' : ''}>Yetkili emlak işletmesiyim (sahibi e-Devlet'ten yetkilendirdi)</option>` : ''}</select></label>
       <label class="alan">Taşınmaz numarası <span style="font-weight:500">(zorunlu)</span><input id="eNo" inputmode="numeric" maxlength="20" value="${kac(t.eids?.no || '')}"></label>
-      <label class="alan" id="eYetkiK"${t.eids?.yontem === 'yetkili' ? '' : ' hidden'}>Yetki belge numarası <span style="font-weight:500">(yetkili işletme için)</span><input id="eYetki" maxlength="20" value="${kac(t.eids?.yetki || '')}"></label>` : `<div class="bilgi-k">${ic('belge', 18)}<div>Emlak ilanlarında, yürürlükteki mevzuat gereği ilan sahibinin tapu bilgisiyle doğrulanması istenebilir. Bu doğrulama sunucu bağlantısıyla eklenecek.</div></div>`) : ''}`;
+      <label class="alan" id="eYetkiK"${t.eids?.yontem === 'yetkili' ? '' : ' hidden'}>Yetki belge numarası <span style="font-weight:500">(yetkili işletme için)</span><input id="eYetki" maxlength="20" value="${kac(t.eids?.yetki || '')}"></label>` : `<div class="bilgi-k">${ic('belge', 18)}<div>Emlak ilanlarında, yürürlükteki mevzuat gereği ilan sahibinin tapu bilgisiyle doğrulanması istenebilir. Bu doğrulama sunucu bağlantısıyla eklenecek.</div></div>`) : eidsAcik() ? `<div class="bilgi-k">${ic('kalkan', 18)}<div><b>EİDS doğrulaması zorunlu.</b> Taşıt ilanları, ilan verenin aracın sahibi, eşi ya da 1./2. derece akrabası veya yetkili galeri olduğu doğrulandıktan sonra yayına çıkar. Galeriler araç sahibinden e-Devlet üzerinden satış yetkisi almalıdır.</div></div>${eidsTasitAlanlari(t.eids || {}, !!ben()?.ofis)}` : ''}`;
   }
   app.innerHTML = bas + `<div class="ic" style="padding-bottom:110px">${t.adim > 0 ? `<div id="guc">${gucHtml(t)}</div>` : ''}${govde}<div class="hata-yazi" id="hata" role="alert"></div></div>
     <div class="alt-bar"><div class="alt-bar-ic">${t.adim > (t.id ? 1 : 0) ? `<button class="btn sade" id="geriAdim" style="flex:.6">Geri</button>` : ''}<button class="btn" id="ileri">${t.adim === 3 ? (t.id ? 'Değişiklikleri kaydet' : 'İlanı yayınla') : 'Devam et'}</button></div></div>`;
 
   const topla = () => {
-    if (t.adim === 1) { t.baslik = $('#baslik').value.trim(); for (const k of ['video', 'tur360']) { const v = $('#' + k).value.trim(); if (/^https:\/\/\S+$/i.test(v)) t.alanlar[k] = v.slice(0, 300); else delete t.alanlar[k]; } }
+    if (t.adim === 1) { t.baslik = $('#baslik').value.trim(); for (const k of ['video', 'tur360']) { if (!$('#' + k)) { delete t.alanlar[k]; continue; } const v = $('#' + k).value.trim(); if (/^https:\/\/\S+$/i.test(v)) t.alanlar[k] = v.slice(0, 300); else delete t.alanlar[k]; } }
     if (t.adim === 2) t.aciklama = $('#aciklama').value.trim();
     if (t.adim === 2) {
       app.querySelectorAll('[data-alan]').forEach((x) => { let v = x.value.trim(); if (['m2net', 'm2brut', 'yil', 'km', 'aidat', 'katSayisi'].includes(x.dataset.alan)) v = v.replace(/\D/g, ''); t.alanlar[x.dataset.alan] = v; });
-      t.il = $('#il').value; t.ilce = $('#ilce').value.trim(); t.alanlar.mahalle = $('#mahalle').value; t.alanlar.sokak = $('#sokak').value.replace(/\s*(no|numara|kapı)\s*[:.]?\s*\d+.*$/i, '').trim().slice(0, 80); t.fiyat = +$('#fiyat').value.replace(/\D/g, '') || 0;
+      t.il = $('#il').value; t.ilce = $('#ilce').value.trim(); if (ALT[t.alt].ana !== 'emlak') { delete t.alanlar.mahalle; delete t.alanlar.sokak; } else t.alanlar.mahalle = $('#mahalle').value; if ($('#sokak')) t.alanlar.sokak = $('#sokak').value.replace(/\s*(no|numara|kapı)\s*[:.]?\s*\d+.*$/i, '').trim().slice(0, 80); t.fiyat = +$('#fiyat').value.replace(/\D/g, '') || 0;
     }
   };
   const oneriCiz = () => {
@@ -1501,14 +1552,17 @@ EKRAN.ver = (id) => {
   }));
   const bi = $('#baslik'); if (bi) bi.oninput = () => { t.baslik = bi.value.trim(); $('#guc').innerHTML = gucHtml(t); };
   const ac = $('#aciklama'); if (ac) ac.addEventListener('input', () => { t.aciklama = ac.value.trim(); $('#guc').innerHTML = gucHtml(t); });
-  if (t.adim === 2) { konumSecBagla($('#il'), $('#ilce'), $('#mahalle'), () => { oneriCiz(); const m = $('#mahalle'); if (m) m.dataset.bos = $('#ilce').value ? 'Seç' : 'Önce ilçe seç'; }); oneriCiz(); sokakOneriBagla(); app.querySelectorAll('[data-alan],#il,#ilce').forEach((x) => (x.onchange = oneriCiz)); const fy = $('#fiyat'); fy.oninput = () => { const n = fy.value.replace(/\D/g, ''); fy.value = n ? sayiBicim(+n) : ''; }; }
+  if (t.adim === 2) { konumSecBagla($('#il'), $('#ilce'), $('#mahalle'), () => { oneriCiz(); const m = $('#mahalle'); if (m) m.dataset.bos = $('#ilce').value ? 'Seç' : 'Önce ilçe seç'; }); oneriCiz(); sokakOneriBagla(); app.querySelectorAll('[data-alan],#il,#ilce').forEach((x) => (x.onchange = oneriCiz)); const fy = $('#fiyat'); fy.oninput = () => { const n = fy.value.replace(/\D/g, ''); fy.value = n ? sayiBicim(+n) : ''; }; aracModelBagla($('[data-alan=marka]'), $('[data-alan=model]')); }
   if (t.adim === 3) { const ey = $('#eYontem'); if (ey) ey.onchange = () => { const k = $('#eYetkiK'); if (k) k.hidden = ey.value !== 'yetkili'; }; }
   if (typeof belgeOkuBagla === 'function') belgeOkuBagla();
   const ia = $('#iceAktar'); if (ia) ia.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:800">İlanını aktar</h2>
+      <div class="segment" role="tablist" id="iaTur"><button type="button" role="tab" aria-selected="true" class="secili" data-iatur="emlak">${ic('ev', 16)}Emlak ilanı</button><button type="button" role="tab" aria-selected="false" data-iatur="vasita">${ic('araba', 16)}Araç ilanı</button></div>
       <div class="k soluk">${tarayiciVar() ? 'İlanının bağlantısını yapıştır (sahibinden dahil). İlan açılır, okunur ve kendiliğinden kapanır; başlık, fiyat, m², özellikler, açıklama ve fotoğraflar otomatik gelir. İstersen ilan metnini de yapıştırabilirsin.' : 'İlanının bağlantısını ya da başlık, fiyat, özellikler ve açıklama metnini yapıştır. Bazı siteler (ör. sahibinden) bağlantıdan okumaya izin vermez; o zaman metni kopyala.'}</div>
       <textarea id="iaMetin" maxlength="3000" style="min-height:180px" placeholder="Bağlantı (https://…) ya da ilan metni"></textarea>
       <div id="iaYardim" class="kart k" hidden style="line-height:1.55;background:var(--krem, #FFF4CC)"></div>
       <button class="btn tam" id="iaGit">${ic('yildiz', 18, '#fff')}Bilgileri doldur</button>`, (s) => {
+    let iaAna = 'emlak';
+    s.querySelectorAll('[data-iatur]').forEach((x) => (x.onclick = () => { iaAna = x.dataset.iatur; s.querySelectorAll('[data-iatur]').forEach((y) => { y.classList.toggle('secili', y === x); y.setAttribute('aria-selected', y === x); }); }));
     $('#iaGit', s).onclick = async () => {
       const metin = $('#iaMetin', s).value.trim(), b = $('#iaGit', s);
       const link = (metin.match(/https?:\/\/\S+/) || [])[0];
@@ -1549,24 +1603,27 @@ EKRAN.ver = (id) => {
         }
         ek.simdi('ai', 'Yapay zekâ ilan metnini alanlara ayırıyor (10–30 sn)');
         // Alan şablonu uygulamanın kendi listelerinden: seçenekli alanlar yalnız bu değerleri alır
-        const sema = ['emlak', 'vasita'].map((a) => ALANLAR[a].map(([k, ad, tur, sec]) => `${k} (${ad.replace(/<[^>]+>/g, '')}): ${sec ? sec.slice(0, 40).join(' | ') : tur === 'sayi' ? 'yalnız rakam' : 'metin'}`).join('\n')).join('\n');
+        const sema = [iaAna].map((a) => `[${a === 'emlak' ? 'EMLAK ilanıysa' : 'VASITA (araç) ilanıysa'}]\n` + ALANLAR[a].map(([k, ad, tur, sec]) => `${k} (${ad.replace(/<[^>]+>/g, '')}): ${k === 'marka' ? 'markanın tam adı (ör. Volkswagen, Mercedes-Benz)' : k === 'model' ? 'seri ve paket (ör. Jetta 1.6 TDI Comfortline)' : sec ? sec.slice(0, 40).join(' | ') : tur === 'sayi' ? 'yalnız rakam' : 'metin'}`).join('\n')).join('\n')
+          + `\nBu bir ${iaAna === 'emlak' ? 'EMLAK' : 'ARAÇ (vasıta)'} ilanıdır. alt (kategori) yalnız şunlardan biri: ${altlari(iaAna).map((k) => k + '=' + ALT[k].ad).join(', ')}.${iaAna === 'vasita' ? ' m², oda, kat, mahalle ve sokak yazma; marka, model, yıl, km, yakıt, vites, kasa, renk, boya/değişen (hasar) alanlarını doldur.' : ''}`;
         const cevap = await aiSorTam('ice_aktar', sayfa ? { metin: sayfa.t, sayfa: true, sema } : yalnizLink ? { url: link, sema } : { metin, sema });
         const ham = cevap.metin || '';
         if (!sayfa && (cevap.fotolar || []).length) sayfa = { f: cevap.fotolar };
         const v = JSON.parse(ham.slice(ham.indexOf('{'), ham.lastIndexOf('}') + 1));
-        const alt = ALT[v.alt] ? v.alt : 'konut', ana = ALT[alt].ana, al = {};
+        const aracMi = !!(v.marka || v.km || v.vites || v.yakit) && !(+v.m2net > 0 || v.oda);
+        const alt = ALT[v.alt]?.ana === iaAna ? v.alt : iaAna === 'vasita' ? 'otomobil' : 'konut', ana = iaAna, al = {}; void aracMi;
         ALANLAR[ana].forEach(([k, , tur, sec]) => {
           if (v[k] == null || v[k] === '') return;
           if (tur === 'sayi') { const n = sayiCoz(v[k]); if (n) al[k] = String(n); }
           else if (sec) { const s = secenekBul(sec, v[k]); if (s) al[k] = s; }
           else al[k] = String(v[k]).slice(0, 80);
         });
-        if (v.mahalle) al.mahalle = String(v.mahalle).replace(/\s*(mahallesi|mah\.?)$/i, '');
-        if (v.sokak) al.sokak = String(v.sokak).slice(0, 80);
+        if (ana === 'emlak' && v.mahalle) al.mahalle = String(v.mahalle).replace(/\s*(mahallesi|mah\.?)$/i, '');
+        if (ana === 'emlak' && v.sokak) al.sokak = String(v.sokak).slice(0, 80);
+        if (ana === 'vasita') { const mk = markaBul(v.marka); if (mk) al.marka = mk; if (al.model || v.model) al.model = aracModelEsle(al.marka, al.model || v.model); }
         const il = ILLER.find((x) => x.toLocaleLowerCase('tr') === String(v.il || '').trim().toLocaleLowerCase('tr')) || '';
         taslak = { adim: 1, fotolar: [], alt, baslik: buyukHarfDuzelt(String(v.baslik || '')).slice(0, 80), fiyat: sayiCoz(v.fiyat), il, ilce: String(v.ilce || '').trim(), aciklama: aciklamaSec(v.aciklama, yalnizLink ? '' : metin), alanlar: al };
         // Sayfadaki ilan fotoğrafları (izin veren sunucudan) indirilir; olmazsa kullanıcı ekler
-        const dolu = [taslak.baslik && 'başlık', taslak.fiyat && 'fiyat', al.m2net && 'm²', al.oda && 'oda', taslak.il && 'konum', taslak.aciklama && 'açıklama'].filter(Boolean);
+        const dolu = [taslak.baslik && 'başlık', taslak.fiyat && 'fiyat', al.m2net && 'm²', al.oda && 'oda', al.marka && 'marka', al.model && 'model', al.yil && 'yıl', al.km && 'km', taslak.il && 'konum', taslak.aciklama && 'açıklama'].filter(Boolean);
         if (sayfa && sayfa.f && sayfa.f.length) {
           let n = 0; sayfa.f = galeriSec(sayfa.f); const N = Math.min(FOTO_SINIR, sayfa.f.length);
           for (const u of sayfa.f.slice(0, FOTO_SINIR)) { ++n; b.textContent = `Fotoğraflar alınıyor ${n}/${N}…`; ek.simdi('foto', `${n} / ${N} · ${taslak.fotolar.length} eklendi`); try { taslak.fotolar.push(await fotoKucult(await urlDosya(u))); } catch (_) {} }
@@ -1606,6 +1663,15 @@ EKRAN.ver = (id) => {
     if (t.adim === 3) {
       if (!$('#dogru').checked) return hataGoster(h, 'Yayınlamak için onay kutusunu işaretle.');
       let eid = null;
+      if (eidsAcik() && ALT[t.alt].ana === 'vasita') {
+        const p = plakaDuzelt($('#ePlaka')?.value), sa = ($('#eSasi')?.value || '').trim().toUpperCase().replace(/\s/g, ''), yt = $('#eYontem')?.value || 'sahibim', yk = ($('#eYetki')?.value || '').trim();
+        if (!t.id || p || yk || yt !== 'sahibim') {
+          if (!plakaGecerli(p)) return hataGoster(h, 'EİDS doğrulaması için plakayı yaz (ör. 34 ABC 123).');
+          if (!sasiGecerli(sa)) return hataGoster(h, 'Şasi numarası 17 karakter olmalı ya da boş bırak.');
+          if (yt === 'yetkili' && yk.length < 6) return hataGoster(h, 'Yetki belge numarasını gir.');
+          eid = { tasit: true, yontem: yt, plaka: p, sasi: sa, yetki: yk }; t.eids = eid;
+        }
+      }
       if (eidsAcik() && ALT[t.alt].ana === 'emlak') {
         const no = ($('#eNo')?.value || '').replace(/\D/g, ''), yt = $('#eYontem')?.value || 'sahibim', yk = ($('#eYetki')?.value || '').trim();
         if (!t.id || no || yk || yt !== 'sahibim') {
@@ -1619,7 +1685,7 @@ EKRAN.ver = (id) => {
       const i = await dene(() => ilanKaydet(t, (m) => (btn.textContent = m)));
       if (!i) { btn.disabled = false; btn.textContent = duzenleme ? 'Değişiklikleri kaydet' : 'İlanı yayınla'; return; }
       let eidsOldu = false;
-      if (eid) { try { await eidsIste(i.id, eid.yontem, eid.no, eid.yetki); eidsOldu = true; } catch (x) { toast('İlan kaydedildi; doğrulama talebi gönderilemedi: ' + hataMetni(x)); } }
+      if (eid) { try { if (eid.tasit) await eidsIsteTasit(i.id, eid.yontem, eid.plaka, eid.sasi, eid.yetki); else await eidsIste(i.id, eid.yontem, eid.no, eid.yetki); eidsOldu = true; } catch (x) { toast('İlan kaydedildi; doğrulama talebi gönderilemedi: ' + hataMetni(x)); } }
       taslak = null; toast(duzenleme ? (eidsOldu ? 'Kaydedildi — doğrulama sonrası yayına çıkacak' : 'İlan güncellendi') : eidsOldu ? 'İlanın doğrulamaya alındı — onaylanınca otomatik yayına çıkacak' : 'İlanın yayında!'); git('#/ilan/' + i.id);
       if (!duzenleme && !eid) setTimeout(() => yayinSonrasi(ilan(i.id) || i), 900);
       return;
@@ -1634,8 +1700,9 @@ function yayinSonrasi(i) {
   const foto = (i.fotolar || []).length, b = ben();
   const secenek = [
     foto && i.ana === 'emlak' ? ['foto', 'MülkümVideo Drone', 'Dış cephe fotoğrafından havadan görünüm · 3 kredi', 'video'] : null,
-    foto ? ['yildiz', 'MülkümDeko ile odaları döşe', 'Boş ya da eski odayı lüks stilde göster · 1 kredi', 'deko'] : null,
-    foto ? ['foto', 'MülkümVideo Tanıtım', 'Fotoğrafından kısa video; Reels ve WhatsApp durumu için dikey video · 3 kredi', 'video'] : null,
+    foto && i.ana === 'emlak' ? ['yildiz', 'MülkümDeko ile odaları döşe', 'Boş ya da eski odayı lüks stilde göster · 1 kredi', 'deko'] : null,
+    foto ? ['foto', i.ana === 'emlak' ? 'MülkümVideo Tanıtım' : 'MülkümVideo Araç Tanıtımı', i.ana === 'emlak' ? 'Fotoğrafından kısa video; Reels ve WhatsApp durumu için dikey video · 3 kredi' : 'Araç fotoğrafından hareketli tanıtım videosu; Reels ve WhatsApp durumu için · 3 kredi', 'video'] : null,
+    i.ana === 'vasita' ? ['grafik', 'Fiyatın piyasaya göre nerede?', 'TSB kasko değeri ve benzer ilanlarla karşılaştır · ücretsiz', 'deger'] : null,
     ['paylas', 'İlanını paylaş', 'WhatsApp, Instagram ve gruplarında ücretsiz duyur', 'paylas']
   ].filter(Boolean);
   sheetAc(`<h2 style="font-size:19px;font-weight:800">İlanın yayında</h2><div class="k soluk">Fotoğrafları güçlü ilanlar daha çok mesaj alıyor. Bir sonraki adım:</div>
@@ -1646,7 +1713,7 @@ function yayinSonrasi(i) {
     s.querySelector('a[href="#/kredi"]')?.addEventListener('click', sheetKapat);
     s.querySelectorAll('[data-ys]').forEach((x) => (x.onclick = () => {
       sheetKapat(); const k = x.dataset.ys;
-      setTimeout(() => { if (k === 'video' && typeof videoSheet === 'function') videoSheet(i); else if (k === 'deko') dekoSheet(i); else if (k === 'paylas') $('#paylas')?.click(); }, 250);
+      setTimeout(() => { if (k === 'video' && typeof videoSheet === 'function') videoSheet(i); else if (k === 'deko') dekoSheet(i); else if (k === 'deger') git('#/degerle?ilan=' + i.id); else if (k === 'paylas') $('#paylas')?.click(); }, 250);
     }));
   });
 }
@@ -1657,6 +1724,20 @@ EKRAN.favori = () => {
   const l = (ben().favoriler || []).map(ilan).filter(Boolean);
   app.innerHTML = ustBar('Favorilerim') + `<div class="ic">${l.length ? `<div class="ilan-izgara">${l.map((i) => ilanKart(i)).join('')}</div>` : bosDurum('kalp', 'Favorin yok', 'Beğendiğin ilanlarda kalbe dokun; fiyat ve durum değişikliklerini buradan takip et.', '<a class="btn" href="#/">İlanlara göz at</a>')}</div>`;
   navCiz('favori');
+};
+// ---------- Bildirimler (gelen kutusu) ----------
+const okunmamisBildirim = () => (S.bildirimler || []).filter((x) => !x.okundu).length;
+EKRAN.bildirimler = () => {
+  if (girisGerek('Bildirimler için giriş yap')) return;
+  const l = S.bildirimler || [], yeni = l.filter((x) => !x.okundu).map((x) => x.id);
+  const ikon = { onay_bekliyor: 'kalkan', ilan_onay: 'tik', ilan_red: 'uyari', piyasa: 'grafik' };
+  const zaman = (t) => new Date(t).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  app.innerHTML = ustBar('Bildirimler') + `<div class="ic">
+    <a class="kart satir" href="#/kayitli" style="text-decoration:none;color:inherit">${ic('zil', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Kayıtlı aramalarım</b><div class="k soluk">Yeni ilan çıkınca haber veririz</div></div><span class="ok">›</span></a>
+    ${l.length ? `<div class="liste">${l.map((x) => `<a class="oge" href="${kac(x.link || '#/')}" style="text-decoration:none;color:inherit;align-items:flex-start${x.okundu ? '' : ';background:var(--vurgu-acik)'}">${ic(ikon[x.tur] || 'zil', 20)}<div class="ara"><b>${kac(x.baslik)}</b><div class="k soluk" style="line-height:1.45">${kac(x.metin || '')}</div><div class="k soluk" style="font-size:11.5px;margin-top:2px">${zaman(x.olusturma)}</div></div><span class="ok">›</span></a>`).join('')}</div>` : bosDurum('zil', 'Bildirim yok', 'İlanın onaylandığında ya da yeni bir gelişme olduğunda burada görünür.')}
+  </div>`;
+  navCiz();
+  if (yeni.length) { l.forEach((x) => { if (yeni.includes(x.id)) x.okundu = true; }); sb.from('bildirimler').update({ okundu: true }).in('id', yeni).then(() => {}, () => {}); }
 };
 EKRAN.kayitli = () => {
   if (girisGerek('Kayıtlı aramaların için giriş yap')) return;
@@ -1680,15 +1761,42 @@ const WEB_ARACLAR = [
   ['belge', 'DASK poliçe doğrulama', 'Zorunlu deprem sigortası sorgusu', 'https://www.dask.gov.tr/'],
   ['numara', 'GİB emlak vergisi', 'Rayiç ve emlak vergisi sorguları', 'https://www.gib.gov.tr/'],
 ];
+const ARAC_ARACLAR = [
+  ['grafik', 'Kasko değeri (Mülküm360)', 'Marka, model, yıl ve km ile TSB kasko değerine göre fiyat aralığı', '#/degerle?ana=vasita'],
+  ['belge', 'TSB Kasko Değer Listesi', 'Türkiye Sigorta Birliği aylık resmî liste, Excel indir', 'https://www.tsb.org.tr/tr/kasko-deger-listesi'],
+  ['kalkan', 'Trafik cezası sorgulama', 'Plakaya yazılan ceza (e-Devlet)', 'https://www.turkiye.gov.tr/emniyet-arac-plakasina-yazilan-ceza-sorgulama'],
+  ['uyari', 'Hasar kaydı (SBM / TRAMER)', 'Sigorta Bilgi ve Gözetim Merkezi; SMS ile: "HASAR boşluk şasi no" → 5664', 'https://www.sbm.org.tr/'],
+  ['takvim', 'TÜVTÜRK araç muayene', 'Muayene tarihi sorgu ve randevu', 'https://www.tuvturk.com.tr/'],
+  ['numara', 'MTV sorgulama ve ödeme', 'GİB Dijital Vergi Dairesi', 'https://dijital.gib.gov.tr/'],
+  ['kilit', 'Noter araç satışı', 'Türkiye Noterler Birliği portalı', 'https://www.tnb.org.tr/'],
+  ['bina', 'Emniyet Genel Müdürlüğü', 'Trafik tescil duyuruları ve hizmetleri', 'https://www.egm.gov.tr/']
+];
+// Araç ilanı: alıcının almadan önce yapacağı resmî kontroller
+function aracKontrolKarti(i) {
+  const f = i.alanlar || {};
+  const satir = (ik, b, a, url) => `<button class="oge" data-web="${url}">${ic(ik, 20)}<div class="ara"><b>${b}</b><div class="k soluk">${a}</div></div><span class="ok">›</span></button>`;
+  return `<div class="kart"><h3>Almadan Önce Kontrol Et</h3><div class="liste">
+    ${satir('uyari', 'Hasar kaydı (TRAMER)', 'Satıcıdan şasi numarasını iste; SMS ile "HASAR şasi no" yazıp 5664\'e gönder', 'sms:5664?body=HASAR%20')}
+    ${satir('grafik', 'Kasko değeri', `TSB listesine göre ${kac([f.marka, f.model, f.yil].filter(Boolean).join(' ')) || 'bu aracın'} değer aralığı`, '#/degerle?ilan=' + i.id)}
+    ${satir('kalkan', 'Trafik cezası', 'Plakaya yazılmış ceza var mı (e-Devlet)', 'https://www.turkiye.gov.tr/emniyet-arac-plakasina-yazilan-ceza-sorgulama')}
+    ${satir('takvim', 'Muayene durumu', 'TÜVTÜRK muayene tarihi ve geçmişi', 'https://www.tuvturk.com.tr/')}
+    ${satir('kilit', 'Noter satışı', 'Ödemeyi noterde, satışla aynı anda yap', 'https://www.tnb.org.tr/')}
+  </div><div class="k soluk" style="font-size:12px">Ağır hasar, çekme belgesi ve rehin/haciz kaydını satıştan önce mutlaka sorgula.</div></div>`;
+}
 const webAc = async (url) => {
+  if (String(url).startsWith('sms:')) { location.href = url; return; }
+  if (String(url).startsWith('#/')) return git(url);
   kayit('web_ac', String(url).slice(0, 70));
   const B = window.Capacitor?.Plugins?.Browser;
   if (B) { try { await B.open({ url }); return; } catch (_) { } }
   const w = window.open(url, '_blank');
   if (!w) location.href = url;
 };
-const aracBolumu = () => katla('Resmî sorgulamalar', 'kalkan', `<div class="liste">${WEB_ARACLAR.map(([ik, ad, ac, url]) => `<button class="oge" data-web="${url}">${ic(ik, 20)}<div class="ara"><b>${ad}</b><div class="k soluk">${ac}</div></div><span class="ok">›</span></button>`).join('')}</div>`);
-const webBagla = () => app.querySelectorAll('[data-web]').forEach((x) => (x.onclick = () => webAc(x.dataset.web)));
+const aracBolumu = () => katla('Resmî sorgulamalar', 'kalkan', `<div class="segment" role="tablist" id="sorguTur"><button type="button" role="tab" class="secili" aria-selected="true" data-sorgu="emlak">${ic('ev', 16)}Emlak</button><button type="button" role="tab" aria-selected="false" data-sorgu="vasita">${ic('araba', 16)}Motorlu Araçlar</button></div><div class="liste" data-sorgu-l="vasita" hidden>${ARAC_ARACLAR.map(([ik, ad, ac, url]) => `<button class="oge" data-web="${url}">${ic(ik, 20)}<div class="ara"><b>${ad}</b><div class="k soluk">${ac}</div></div><span class="ok">›</span></button>`).join('')}</div><div class="liste" data-sorgu-l="emlak">${WEB_ARACLAR.map(([ik, ad, ac, url]) => `<button class="oge" data-web="${url}">${ic(ik, 20)}<div class="ara"><b>${ad}</b><div class="k soluk">${ac}</div></div><span class="ok">›</span></button>`).join('')}</div>`);
+const webBagla = () => {
+  app.querySelectorAll('[data-web]').forEach((x) => (x.onclick = () => webAc(x.dataset.web)));
+  app.querySelectorAll('[data-sorgu]').forEach((x) => (x.onclick = () => { app.querySelectorAll('[data-sorgu]').forEach((y) => { y.classList.toggle('secili', y === x); y.setAttribute('aria-selected', y === x); }); app.querySelectorAll('[data-sorgu-l]').forEach((l) => (l.hidden = l.dataset.sorguL !== x.dataset.sorgu)); }));
+};
 EKRAN.hesap = () => {
   const b = ben();
   if (!b) {
@@ -1718,7 +1826,7 @@ EKRAN.hesap = () => {
       ${b.ofis ? '' : `<a class="kart satir" href="#/profil" style="text-decoration:none;color:inherit">${ic('kalkan', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Emlak ofisi misin?</b><div class="k soluk">Hesabını ofise çevir; panel, toplu yükleme ve ofis rozeti açılsın</div></div><span class="ok">›</span></a>`}
       ${b.ofis ? katla('Kurumsal hesap', 'ofis', `<div class="liste">
         ${menuSatir('#/panel', 'ofis', 'Ofis paneli')}
-        <button class="oge" id="davet">${ic('paylas', 20)}Emlakçı davet et, ikiniz de 3 kredi kazanın<span class="ok">›</span></button>
+        <button class="oge" id="davet">${ic('paylas', 20)}Davet et, ikiniz de 3 kredi kazanın<span class="ok">›</span></button>
         ${Date.now() - b.olusturma < 7 * 86400000 ? `<button class="oge" id="davetKod">${ic('kredi', 20)}Davet kodum var<span class="ok">›</span></button>` : ''}
         ${b.firma || b.yetkiNo ? '' : menuSatir('#/profil', 'kalkan', 'Kurumsal rozet başvurusu')}
       </div>`) : ''}
@@ -1772,7 +1880,7 @@ EKRAN.hesap = () => {
     try { await profilFotoKaydet(await fotoKucult(f)); toast('Profil fotoğrafın güncellendi'); ciz(); } catch (x) { toast(hataMetni(x)); }
   };
   $('#kvPaylas').onclick = () => paylas(`${b.ad}${b.firma ? ' · ' + b.firma : ''}\nMülküm360'taki ilanlarım: ${S.ilanlar.filter((i) => i.sahip === b.id && i.durum === 'yayinda').length} ilan\nUygulama: https://fatihcalis07-commits.github.io/mulkum360/`);
-  const dk = $('#davetKod'); if (dk) dk.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:800">Davet kodu</h2><div class="k soluk">Seni davet eden emlak ofisinin 8 haneli kodunu yaz; ikinize de 3 kredi yüklenir.</div><label class="alan">Kod<input id="dkKod" maxlength="8" autocapitalize="characters"></label><button class="btn tam" id="dkGonder">Kullan</button>`, (s) => {
+  const dk = $('#davetKod'); if (dk) dk.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:800">Davet kodu</h2><div class="k soluk">Seni davet eden kişinin 8 haneli kodunu yaz; ikinize de 3 kredi yüklenir.</div><label class="alan">Kod<input id="dkKod" maxlength="8" autocapitalize="characters"></label><button class="btn tam" id="dkGonder">Kullan</button>`, (s) => {
     $('#dkGonder', s).onclick = async () => { const k = $('#dkKod', s).value.trim(); if (k.length !== 8) return toast('Kod 8 karakter olmalı.'); if (await davetUygula(k)) { sheetKapat(); ciz(); } };
   });
   const ba = $('#bldAyar'); if (ba) ba.onclick = async () => {
@@ -1843,7 +1951,7 @@ EKRAN.profil = () => {
   if (girisGerek()) return;
   const b = ben();
   app.innerHTML = ustBar('Profil ayarları') + `<form class="ic" id="pf"><div class="kart" style="display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">Bilgilerim</h3>
-      <div class="alan">Hesap türü<div class="secim"><button type="button" class="${b.ofis ? '' : 'secili'}" data-ht="bireysel">Bireysel</button><button type="button" class="${b.ofis ? 'secili' : ''}" data-ht="ofis">Emlak ofisi</button></div><input type="hidden" name="ofis" value="${b.ofis ? '1' : ''}"></div>
+      <div class="alan">Hesap türü<div class="secim">${[['bireysel', 'Bireysel'], ['emlak', 'Emlak ofisi'], ['galeri', 'Oto galeri']].map(([k, ad]) => `<button type="button" class="${(b.ofis ? (b.sektor || 'emlak') : 'bireysel') === k ? 'secili' : ''}" data-ht="${k}">${ad}</button>`).join('')}</div><input type="hidden" name="ht" value="${b.ofis ? (b.sektor || 'emlak') : 'bireysel'}"></div>
       <label class="alan">Ad soyad<input name="ad" value="${kac(b.ad)}"></label>
       <label class="alan">E-posta<input name="eposta" type="email" value="${kac(b.eposta)}" readonly><small>E-posta değişikliği için destekle iletişime geç.</small></label>
       <label class="alan">Cep telefonu<input name="tel" type="tel" value="${kac(b.tel)}"></label>
@@ -1862,14 +1970,14 @@ EKRAN.profil = () => {
       <label class="alan">Mevcut şifre<input name="eski" type="password" autocomplete="current-password"></label>
       <label class="alan">Yeni şifre<input name="yeni" type="password" autocomplete="new-password"><small>En az 8 karakter, bir rakam.</small></label>
       <div class="hata-yazi" id="sh"></div><button class="btn koyu">Şifreyi değiştir</button></div></form>`;
-  app.querySelectorAll('[data-ht]').forEach((x) => (x.onclick = () => { app.querySelectorAll('[data-ht]').forEach((y) => y.classList.toggle('secili', y === x)); $('[name=ofis]').value = x.dataset.ht === 'ofis' ? '1' : ''; }));
+  app.querySelectorAll('[data-ht]').forEach((x) => (x.onclick = () => { app.querySelectorAll('[data-ht]').forEach((y) => y.classList.toggle('secili', y === x)); $('[name=ht]').value = x.dataset.ht; }));
   const oi = $('#ofisIste'); if (oi) oi.onclick = () => dene(() => dogrulamaIste('emlakci'), 'Talebin alındı; yetki belgen kontrol edilince rozetin güncellenecek');
   $('#pf').onsubmit = async (e) => {
     e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)), h = $('#ph'); h.textContent = '';
     const tel = v.tel.replace(/\D/g, '');
     if (v.ad.trim().split(/\s+/).length < 2) return hataGoster(h, 'Adını ve soyadını yaz.');
     if (!/^(90)?0?5\d{9}$/.test(tel)) return hataGoster(h, 'Geçerli bir cep telefonu yaz.');
-    await dene(() => profilKaydet(b, { ad: v.ad.trim().replace(/\s+/g, ' '), tel: '0' + tel.slice(-10), ileti: !!v.ileti, firma: v.firma.trim(), unvan: v.unvan.trim(), hakkinda: v.hakkinda.trim(), slogan: v.slogan.trim(), soyadGizle: !!v.soyadGizle, telGoster: !!v.telGoster, yetkiNo: v.yetkiNo.trim(), ofis: !!v.ofis }), 'Bilgilerin kaydedildi');
+    await dene(() => profilKaydet(b, { ad: v.ad.trim().replace(/\s+/g, ' '), tel: '0' + tel.slice(-10), ileti: !!v.ileti, firma: v.firma.trim(), unvan: v.unvan.trim(), hakkinda: v.hakkinda.trim(), slogan: v.slogan.trim(), soyadGizle: !!v.soyadGizle, telGoster: !!v.telGoster, yetkiNo: v.yetkiNo.trim(), ofis: v.ht !== 'bireysel', sektor: v.ht === 'galeri' ? 'galeri' : 'emlak' }), 'Bilgilerin kaydedildi');
   };
   $('#sf').onsubmit = async (e) => {
     e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)), h = $('#sh'); h.textContent = '';
@@ -1897,7 +2005,7 @@ EKRAN.degerle = () => {
       <div class="izgara3"><label class="alan">Net ㎡<input name="m2net" inputmode="numeric" list="on-m2net" autocomplete="off" value="${kac(d.m2net || '')}"></label><datalist id="on-m2net">${ONERI.m2net.map((o) => `<option value="${o}">`).join('')}</datalist>${sec('oda', 'Oda', ALANLAR.emlak[2][3])}${sec('binaYasi', 'Bina yaşı', YAS_GRUPLARI.includes(String(d.binaYasi ?? '')) || !d.binaYasi ? YAS_GRUPLARI : [String(d.binaYasi), ...YAS_GRUPLARI])}</div>
       ${sec('kat', 'Bulunduğu kat', ONERI.kat.includes(d.kat) || !d.kat ? ONERI.kat : [d.kat, ...ONERI.kat])}
       <div class="kart" id="elEmsalK"></div>`
-      : `<div class="izgara2"><label class="alan">Marka<input name="marka" list="dlm" value="${kac(d.marka || '')}"><datalist id="dlm">${MARKALAR.map((m) => `<option value="${m}">`).join('')}</datalist></label><label class="alan">Model<input name="model" value="${kac(d.model || '')}"></label></div>
+      : `<div class="izgara2">${sec('marka', 'Marka', MARKALAR.includes(d.marka) || !d.marka ? MARKALAR : [d.marka, ...MARKALAR])}<label class="alan">Model<select name="model"><option value="">Seç</option>${d.model ? `<option selected>${kac(d.model)}</option>` : ''}</select></label></div>
       <div class="izgara3"><label class="alan">Yıl<input name="yil" inputmode="numeric" value="${kac(d.yil || '')}"></label><label class="alan">Km<input name="km" inputmode="numeric" value="${kac(d.km || '')}"></label>${sec('hasar', 'Hasar', ALANLAR.vasita[8][3])}</div>`}
       <div class="hata-yazi" id="dh"></div><button class="btn tam">${ic('grafik', 18, '#fff')}Değeri hesapla</button></form>
     <div id="sonuc"></div>
@@ -1920,10 +2028,34 @@ EKRAN.degerle = () => {
     konumSecBagla($('#df [name=il]'), $('#df [name=ilce]'), M, () => { if (M) M.dataset.bos = $('#df [name=ilce]').value ? 'Farketmez' : 'Önce ilçe seç'; });
     $('#df [name=il]').id = 'il'; $('#df [name=ilce]').id = 'ilce'; sokakOneriBagla();
   }
+  aracModelBagla($('#df [name=marka]'), $('#df [name=model]'));
   app.querySelectorAll('[data-ana]').forEach((x) => (x.onclick = () => { sonDegerleme = null; git('#/degerle?ana=' + x.dataset.ana); }));
-  const hesapGoster = (v) => {
+  const hesapGoster = async (v) => {
     const h = hesapla(v), el = $('#sonuc');
     sonDegerleme = { form: v, sonuc: h, zaman: Date.now() };
+    // Vasıta: TSB kasko değeri (km ve hasara göre düzeltilmiş)
+    let ks = null;
+    if (v.ana === 'vasita') {
+      el.innerHTML = '<div class="k soluk">Kasko değeri alınıyor…</div>';
+      const k = await kaskoDegeri(v.marka, v.model, v.yil);
+      if (k) {
+        const beklenen = Math.max(0, new Date().getFullYear() - +v.yil) * 15000;
+        const kmD = v.km ? Math.max(-0.15, Math.min(0.15, ((beklenen - +v.km) / 10000) * 0.01)) : 0;
+        const hsD = ({ 'Boyalı parça var': -0.04, 'Değişen parça var': -0.08, 'Ağır hasar kayıtlı': -0.25 })[v.hasar] || 0;
+        const c = (1 + kmD) * (1 + hsD);
+        ks = { ...k, c, kmD, hsD, ortaD: k.orta * c, altD: k.alt * c, ustD: k.ust * c };
+      }
+      degerlemeKaydet(v, h, ks);
+      const kaskoKutu = (ana) => ks ? `<div class="kart" style="padding:12px"><div class="k" style="font-weight:700">TSB Kasko Değeri · ${kac(v.marka)} ${kac(v.model)} ${kac(v.yil)}</div>
+        <div style="font-size:20px;font-weight:800;margin:4px 0">${tl(ks.altD)} – ${tl(ks.ustD)}</div>
+        <div class="k soluk">Ortası ${tl(ks.ortaD)} · ${ks.tipSayi} paket/motor tipi · liste ortancası ${tl(ks.orta)}${ks.kmD || ks.hsD ? ` · düzeltme: km ${ks.kmD >= 0 ? '+' : '−'}%${Math.abs(Math.round(ks.kmD * 100))}, hasar ${ks.hsD ? '−%' + Math.abs(Math.round(ks.hsD * 100)) : '0'}` : ''}</div>
+        <div class="k soluk" style="font-size:11.5px;margin-top:4px">Kaynak: Türkiye Sigorta Birliği Kasko Değer Listesi (${new Date(ks.donem).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}). Listede km ve hasar ayrımı yok; km ve hasar düzeltmesi Mülküm360 tahminidir.${ana ? '' : ' Sitedeki benzer ilanlar arttıkça ilan fiyatlarıyla birlikte hesaplanır.'}</div></div>` : '';
+      if (!h.yeterli && ks) {
+        el.innerHTML = `<div class="deger-k"><div class="ust-yazi">TAHMİNİ PİYASA DEĞERİ</div><div class="buyuk">${tl(ks.altD)} – ${tl(ks.ustD)}</div><div style="font-size:13px;opacity:.85">Ortası <b>${tl(ks.ortaD)}</b></div><div style="font-size:12px;opacity:.7">Kaynak: TSB kasko değeri · sitede ${h.sayi} benzer ilan</div></div>${kaskoKutu(false)}`;
+        return;
+      }
+      v._kasko = kaskoKutu(true);
+    } else degerlemeKaydet(v, h, null);
     if (!h.yeterli) { el.innerHTML = `<div class="uyari-k">${ic('uyari', 18)}<div><b>Yeterli emsal yok.</b> ${v.ana === 'emlak' ? `Türkiye genelinde bile bu tür ve işlemde ${h.sayi} ilan var; güvenilir bir aralık için en az 3 gerekiyor. Bu kategori yeni; ilanlar arttıkça değerleme açılacak.` : `Bu marka ve modelde (yıl ±2) ${h.sayi} ilan var; en az 3 gerekiyor. Model adını kısaltmayı dene (örn. yalnız “Clio”).`}</div></div>`; return; }
     el.innerHTML = `<div class="deger-k"><div class="ust-yazi">TAHMİNİ ${v.ana === 'emlak' && v.islem === 'Kiralık' ? 'AYLIK KİRA' : 'PİYASA DEĞERİ'}</div><div class="buyuk">${tl(h.alt)} – ${tl(h.ust)}</div>
       <div style="font-size:13px;opacity:.85">Ortası <b>${tl(h.orta)}</b>${v.ana === 'emlak' ? ' · m²: <b>' + tl(h.birimOrta) + '</b>' : ''}</div>
@@ -1934,6 +2066,7 @@ EKRAN.degerle = () => {
       <button class="btn tam" id="raporAl">${ic('belge', 18, '#fff')}MülkümAI PDF raporu · 1 kredi</button>
       <div class="k soluk" style="text-align:center">${ben() ? 'Kredin: ' + (ben().kredi ?? 0) + ' · <a href="#/kredi">Kredi yükle</a>' : 'Yeni üyelere 1 rapor kredisi hediye'}</div>
       ${v.ana === 'emlak' && !v.haric ? `<a class="btn cizgili tam" href="#/ver" id="ilanaCevir">Bu bilgilerle ilan ver</a>` : ''}`;
+    if (v._kasko) { el.querySelector('.deger-k')?.insertAdjacentHTML('afterend', v._kasko); delete v._kasko; }
     $('#raporAl').onclick = async () => {
       if (girisGerek('Rapor oluşturmak için giriş yap')) return;
       const kalan = ben().kredi ?? 0;
@@ -2340,7 +2473,7 @@ function ciz() {
   const p = yol.split('/').filter(Boolean);
   // Karşılama ekranı da aynı bağlamalardan geçmeli (Google düğmesi burada da var)
   if (!S.karsilandi && !ben() && !['giris', 'kayit', 'metin'].includes(p[0])) { EKRAN.karsilama(); app.querySelectorAll('[data-google]').forEach((x) => (x.onclick = () => googleBasla(x))); aiDugme(); document.getElementById('aiFab').hidden = true; return; }
-  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
+  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', bildirimler: 'bildirimler', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
   EKRAN[e](p[1]);
   aiDugme();
   app.querySelectorAll('[data-geri]').forEach((x) => (x.onclick = () => (history.length > 1 ? history.back() : git('#/'))));

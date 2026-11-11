@@ -27,10 +27,10 @@ async function profilleriGetir(idler) {
   idler = [...new Set(idler)].filter((id) => id && !S.kullanicilar.some((k) => k.id === id));
   if (!idler.length) return;
   // Gizlilik sütunları henüz yoksa (veritabanı güncellenmeden) eski alanlarla devam et
-  let r = await sb.from('profiller').select('id,ad,olusturma,soyad_gizle,acik_tel,firma,unvan,hakkinda,yetki_no,dogrulanmis,hesap_turu,foto').in('id', idler);
+  let r = await sb.from('profiller').select('id,ad,olusturma,soyad_gizle,acik_tel,firma,unvan,hakkinda,yetki_no,dogrulanmis,hesap_turu,sektor,foto').in('id', idler);
   if (r.error) r = await sb.from('profiller').select('id,ad,olusturma').in('id', idler);
   const data = await islem(r);
-  data.forEach((p) => S.kullanicilar.push({ id: p.id, ad: p.ad, olusturma: ms(p.olusturma), soyadGizle: !!p.soyad_gizle, acikTel: p.acik_tel || '', firma: p.firma || '', unvan: p.unvan || '', hakkinda: p.hakkinda || '', yetkiNo: p.yetki_no || '', dogrulanmis: !!p.dogrulanmis, ofis: p.hesap_turu === 'ofis', foto: p.foto || '' }));
+  data.forEach((p) => S.kullanicilar.push({ id: p.id, ad: p.ad, olusturma: ms(p.olusturma), soyadGizle: !!p.soyad_gizle, acikTel: p.acik_tel || '', firma: p.firma || '', unvan: p.unvan || '', hakkinda: p.hakkinda || '', yetkiNo: p.yetki_no || '', dogrulanmis: !!p.dogrulanmis, ofis: p.hesap_turu === 'ofis', sektor: p.hesap_turu === 'ofis' ? (p.sektor || 'emlak') : '', foto: p.foto || '' }));
 }
 
 async function veriYukle() {
@@ -66,7 +66,7 @@ async function kisiselYukle(user) {
   S.kullanicilar = S.kullanicilar.filter((k) => k.id !== uid);
   S.kullanicilar.push({
     id: uid, ad: pr?.ad || user.user_metadata?.ad || 'Üye', olusturma: ms(pr?.olusturma || user.created_at), eposta: user.email,
-    firma: pr?.firma || '', unvan: pr?.unvan || '', hakkinda: pr?.hakkinda || '', slogan: pr?.slogan || '', soyadGizle: !!pr?.soyad_gizle, acikTel: pr?.acik_tel || '', yetkiNo: pr?.yetki_no || '', dogrulanmis: !!pr?.dogrulanmis, ofis: pr?.hesap_turu === 'ofis', foto: pr?.foto || '',
+    firma: pr?.firma || '', unvan: pr?.unvan || '', hakkinda: pr?.hakkinda || '', slogan: pr?.slogan || '', soyadGizle: !!pr?.soyad_gizle, acikTel: pr?.acik_tel || '', yetkiNo: pr?.yetki_no || '', dogrulanmis: !!pr?.dogrulanmis, ofis: pr?.hesap_turu === 'ofis', sektor: pr?.hesap_turu === 'ofis' ? (pr?.sektor || 'emlak') : '', foto: pr?.foto || '',
     tel: oz?.tel || '', ileti: !!oz?.ileti, kredi: oz?.kredi ?? 0, favoriler: fav.map((f) => f.ilan),
     raporlar: rap.map((r) => ({ id: r.id, no: r.no, zaman: ms(r.zaman), form: r.form, sonuc: r.sonuc }))
   });
@@ -112,23 +112,27 @@ function canliBaglan() {
   bekleyenBildirimler();
 }
 // Sunucudan gelen üye bildirimleri (ilan onaylandı vb.): telefonda bildirim + uygulama içi uyarı, sonra okundu
+const bildirimGosterildi = (id) => { try { const l = JSON.parse(localStorage.getItem('bildirimGosterilen') || '[]'); if (l.includes(id)) return true; localStorage.setItem('bildirimGosterilen', JSON.stringify([...l, id].slice(-200))); } catch (_) {} return false; };
 async function uyeBildirimi(b) {
   if (!b || b.okundu) return;
-  toast(b.baslik); bildir('uye-' + b.id, b.baslik, b.metin || '', b.link || '#/hesap');
+  if (!(S.bildirimler || []).some((x) => x.id === b.id)) (S.bildirimler = S.bildirimler || []).unshift(b);
+  if (typeof yenileNav === 'function') yenileNav();
+  if (location.hash.startsWith('#/bildirimler')) { ciz(); return; }
+  if (bildirimGosterildi(b.id)) return;
+  toast(b.baslik); bildir('uye-' + b.id, b.baslik, b.metin || '', b.link || '#/bildirimler');
   if (b.tur === 'ilan_onay' && b.link) { const id = b.link.split('/').pop(), i = ilan(id); if (i) i.durum = 'yayinda'; }
-  try { await sb.from('bildirimler').update({ okundu: true }).eq('id', b.id); } catch (_) {}
 }
 // Uygulama kapalıyken gelenler: açılışta okunmamışları göster
 async function bekleyenBildirimler() {
-  try { const { data } = await sb.from('bildirimler').select('*').eq('alici', S.oturum).eq('okundu', false).order('olusturma').limit(10); for (const b of data || []) await uyeBildirimi(b); } catch (_) {}
+  try { const { data } = await sb.from('bildirimler').select('*').eq('alici', S.oturum).order('olusturma', { ascending: false }).limit(50); S.bildirimler = data || []; for (const b of [...S.bildirimler].reverse()) if (!b.okundu) await uyeBildirimi(b); if (typeof yenileNav === 'function') yenileNav(); } catch (_) {}
 }
 function yenileNav() { const a = nav.querySelector('a.aktif'); navCiz(a ? { '#/': 'kesfet', '#/ara': 'ara', '#/mesajlar': 'mesaj', '#/hesap': 'hesap' }[a.getAttribute('href')] : ''); }
 
 // ---------- Üyelik ----------
-async function uyeOl({ ad, eposta, tel, sifre, ileti, ofis = false, firma = '', yetkiNo = '' }) {
+async function uyeOl({ ad, eposta, tel, sifre, ileti, ofis = false, sektor = 'emlak', firma = '', yetkiNo = '' }) {
   const d = await islem(sb.auth.signUp({ email: eposta, password: sifre, options: { data: { ad, tel, ileti } } }));
   if (!d.session) throw new Error('Email not confirmed');
-  if (ofis) await sb.from('profiller').update({ hesap_turu: 'ofis', firma: firma || null, yetki_no: yetkiNo || null }).eq('id', d.user.id);
+  if (ofis) await sb.from('profiller').update({ hesap_turu: 'ofis', sektor, firma: firma || null, yetki_no: yetkiNo || null }).eq('id', d.user.id);
   await veriYukle();
 }
 // Google ile giriş: tarayıcıda Google onayı -> uygulamaya derin bağlantıyla dönüş -> kod oturuma çevrilir
@@ -150,11 +154,11 @@ async function googleDonus(url) {
 }
 async function girisYap(eposta, sifre) { await islem(sb.auth.signInWithPassword({ email: eposta, password: sifre })); await veriYukle(); }
 async function cikisYap() { await sb.auth.signOut(); await veriYukle(); }
-async function profilKaydet(b, { ad, tel, ileti, firma = '', unvan = '', hakkinda = '', slogan = '', soyadGizle = false, telGoster = false, yetkiNo = '', ofis = false }) {
+async function profilKaydet(b, { ad, tel, ileti, firma = '', unvan = '', hakkinda = '', slogan = '', soyadGizle = false, telGoster = false, yetkiNo = '', ofis = false, sektor = '' }) {
   const acikTel = telGoster ? tel : '';
-  await islem(sb.from('profiller').update({ ad, firma: firma || null, unvan: unvan || null, hakkinda: hakkinda || null, slogan: slogan || null, soyad_gizle: soyadGizle, acik_tel: acikTel || null, yetki_no: yetkiNo || null, hesap_turu: ofis ? 'ofis' : 'bireysel' }).eq('id', b.id));
+  await islem(sb.from('profiller').update({ ad, firma: firma || null, unvan: unvan || null, hakkinda: hakkinda || null, slogan: slogan || null, soyad_gizle: soyadGizle, acik_tel: acikTel || null, yetki_no: yetkiNo || null, hesap_turu: ofis ? 'ofis' : 'bireysel', sektor: ofis ? (sektor || 'emlak') : null }).eq('id', b.id));
   await islem(sb.from('profil_ozel').update({ tel, ileti }).eq('id', b.id));
-  Object.assign(b, { ad, tel, ileti, firma, unvan, hakkinda, slogan, soyadGizle, acikTel, yetkiNo, ofis });
+  Object.assign(b, { ad, tel, ileti, firma, unvan, hakkinda, slogan, soyadGizle, acikTel, yetkiNo, ofis, sektor: ofis ? (sektor || 'emlak') : '' });
 }
 async function sifreDegistir(b, eski, yeni) {
   const { error } = await sb.auth.signInWithPassword({ email: b.eposta, password: eski });
@@ -293,7 +297,7 @@ async function aiSorTam(gorev, veri) {
   return data;
 }
 // Hesap türünü tek başına değiştir (Google ile üye olan emlak ofisi için)
-async function hesapTuruYap(ofis) { await islem(sb.from('profiller').update({ hesap_turu: ofis ? 'ofis' : 'bireysel' }).eq('id', S.oturum)); const b = ben(); if (b) b.ofis = ofis; }
+async function hesapTuruYap(ofis, sektor = 'emlak') { await islem(sb.from('profiller').update({ hesap_turu: ofis ? 'ofis' : 'bireysel', sektor: ofis ? sektor : null }).eq('id', S.oturum)); const b = ben(); if (b) { b.ofis = ofis; b.sektor = ofis ? sektor : ''; } }
 
 // ---------- Doğrulama talepleri (emlak ofisi / tapu) ----------
 async function dogrulamaIste(tur, ilanId, notu) { const { error } = await sb.from('dogrulama_talepleri').insert({ tur, ilan: ilanId || null, notu: notu || null }); if (error && error.code === '23505') throw new Error('Bu konuda bekleyen bir talebin zaten var.'); if (error) throw error; }

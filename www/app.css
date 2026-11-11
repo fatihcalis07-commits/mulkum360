@@ -909,3 +909,8 @@ html.koyu .segment button.secili{background:#636366!important}
 .fs-alt{position:sticky;bottom:0;display:grid;grid-template-columns:1fr 2fr;gap:10px;padding:10px 0 2px;background:var(--zemin)}
 /* Filtrele alt çubuğu: altındaki satırlar görünmesin */
 .fs-alt{bottom:calc(-16px - var(--alt,0px));margin-bottom:calc(-16px - var(--alt,0px));padding:10px 0 calc(16px + var(--alt,0px));box-shadow:0 -1px 0 var(--ios-gri2,#E5E5EA);z-index:2}
+
+/* Üyelik hesap türü: 3 seçenek yan yana */
+.tur-sec{grid-template-columns:repeat(3,1fr)!important;gap:8px}
+.tur-sec button{padding:12px 8px}
+.tur-sec small{font-size:11.5px;line-height:1.35}

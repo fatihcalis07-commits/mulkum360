@@ -31,7 +31,7 @@ const ALT = {
 };
 const altlari = (ana) => Object.keys(ALT).filter((k) => ALT[k].ana === ana);
 
-const MARKALAR = ['Alfa Romeo','Audi','BMW','BYD','Chery','Citroën','Dacia','Fiat','Ford','Honda','Hyundai','Jeep','Kia','Land Rover','Mazda','Mercedes-Benz','MG','Mini','Mitsubishi','Nissan','Opel','Peugeot','Porsche','Renault','Seat','Skoda','Suzuki','Tesla','Togg','Toyota','Volkswagen','Volvo','Yamaha','Kawasaki','KTM','Bajaj','Isuzu','Iveco'];
+const MARKALAR = typeof ARAC_MODELLER !== 'undefined' ? [...new Set([...Object.keys(ARAC_MODELLER), 'Jeep', 'Yamaha', 'Kawasaki', 'Bajaj', 'Iveco'])].sort((a, b) => a.localeCompare(b, 'tr')) : ['Volkswagen'];
 
 // Alan tanımı: [anahtar, etiket, tür, seçenekler?, zorunlu?]
 const ALANLAR = {

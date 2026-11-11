@@ -42,9 +42,9 @@ async function belgeOku(tur, dosya, durum) {
   const al = {};
   if (tur === 'ruhsat') {
     const alt = ALT[v.alt] ? v.alt : 'otomobil';
-    const marka = secenekBul(MARKALAR, v.marka || '');
+    const marka = typeof markaBul === 'function' ? markaBul(v.marka) : secenekBul(MARKALAR, v.marka || '');
     if (marka) al.marka = marka; else if (v.marka) al.marka = String(v.marka);
-    if (v.model) al.model = String(v.model).slice(0, 60);
+    if (v.model) al.model = typeof aracModelEsle === 'function' ? aracModelEsle(al.marka, v.model) : String(v.model).slice(0, 60);
     if (+v.yil > 1950) al.yil = String(+v.yil);
     const yak = secenekBul(ALANLAR.vasita.find(([k]) => k === 'yakit')[3], v.yakit || ''); if (yak) al.yakit = yak;
     const kasa = secenekBul(ALANLAR.vasita.find(([k]) => k === 'kasa')[3], v.kasa || ''); if (kasa) al.kasa = kasa;

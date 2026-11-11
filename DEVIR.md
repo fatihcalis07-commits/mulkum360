@@ -475,3 +475,53 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 ## iOS (12.11.2026)
 - @capacitor/ios 8 eklendi, ios/ klasörü oluşturuldu (SPM, CocoaPods yok). Bundle ID com.mulkum360.app, ad Mülküm360. Info.plist: konum, kamera, galeri izin metinleri, ITSAppUsesNonExemptEncryption=false. Simge ve açılış görselleri @capacitor/assets ile üretildi.
 - Eksik: Cordova eklentileri (cordova-plugin-purchase, inappbrowser) SPM ile iOSa girmez; kredi satışı iOSta kapalı görünür (ODEME_YONTEMI=yok). Google ile giriş varsa Apple ile giriş zorunlu (App Store 4.8). Derleme Mac/Xcode veya bulut (Codemagic / GitHub Actions macOS) ister; Apple Developer hesabı gerekir.
+
+## 5.8 (12.11.2026)
+- Araç veri bankası: TSB Kasko Değer Listesi (tsb.org.tr/content/InsuranceExcelFiles/YYYYMMR1.xlsx, herkese açık) 2026-11 → public.arac_kasko (79.781 satır: marka, model, tip, yıl 2012-2026, değer). Çıkarıcı scratchpad kasko.js (+ad.js birleştirme). www/araclar.js: 175 marka / ~1.690 model (ARAC_MODELLER) + ARAC_KASKO_AD (uygulama adı → kasko adı). MARKALAR artık bu listeden.
+- Marka→model seçimi: aracModelBagla() Filtrele, İlan Ver (öneri listesi) ve Değerleme (seçim).
+- Filtre: "Ağır hasar kayıtlı" Evet/Hayır (agirhasar), Boya/değişen ayrı.
+- Değerleme vasıta: kaskoDegeri() tip ortancası + çeyrekler; km (yılda 15 bin km beklentisi, 10 bin km başına %1, ±%15) ve hasar (boyalı -4, değişen -8, ağır -25; tahmin) düzeltmesi. Emsal yoksa sonuç kaskodan, varsa kasko kartı ek bilgi.
+- public.degerleme_kayitlari: her değerleme isteği kimliksiz kaydedilir (anon insert, yalnız yönetici okur).
+- Sonraki: TSB listesi her ay yenileniyor (aylık otomatik çekme kurulmadı).
+
+## 5.9 (12.11.2026)
+- İlan Ver araç/emlak tam ayrımı: araç ilanında Mahalle, Sokak/Cadde, kapı no notu ve 360° tur yok (yalnız il/ilçe); topla() bu alanlar yokken güvenli, araçta mahalle/sokak silinir. İçe aktarmada kategori gelmezse marka/km/vites/yakıt varsa otomobil (önceden hep konut sayılıyordu → araç ilanı emlak formuyla açılıyordu).
+
+## 6.0 (12.11.2026)
+- İlan aktar: şemada marka/model serbest metin (180 markalık liste 40ta kesiliyordu, Volkswagen gibi markalar düşüyordu); tüm ALT kategorileri istemciden; araçta mahalle/sokak yazılmaz; marka markaBul() (VW, Mercedes, Range Rover, Tofaş gibi kısaltmalar), model aracModelEsle() ile seriye eşlenir. Özet satırında marka/model/yıl/km.
+- Ruhsat: marka markaBul, model seriye eşlenir; mulkum-ai belge_oku alt listesine elektrikli/minivan/karavan/klasik eklendi; ice_aktar istemi mahalle/sokak yalnız emlak. mulkum-ai deploy edildi.
+- Tapu akışı kontrol edildi, değişiklik gerekmedi.
+
+## 6.1 (12.11.2026)
+- İlan aktar: üstte Emlak ilanı / Araç ilanı seçimi (iaAna). MülkümAIye yalnız seçilen türün alanları ve kategorileri gider; kategori seçilen türe zorlanır (araç seçildiyse emlak formu açılamaz). mulkum-ai ice_aktar: m² ve işlem notu yalnız emlakta, araçta km/yıl/hasar notu. Deploy edildi.
+
+## 6.2 (12.11.2026)
+- Araç ilanı sayfası ve yayın sonrası: MülkümDeko yok; video "MülkümVideo Araç Tanıtımı"; yeni "Fiyatın piyasaya göre nerede?" (değerleme, kasko) seçeneği; değer kartı "Bu aracın değeri · TSB kasko". rozet(k, ana): araçta "Kurumsal satıcı / Doğrulanmış satıcı".
+
+## 6.3 (12.11.2026)
+- Araç ilanı rozeti: "Galeri ofisi" / "Doğrulanmış galeri".
+
+## 6.4 (12.11.2026)
+- Hesabım > Resmî sorgulamalar: Emlak / Motorlu Araçlar sekmeleri. ARAC_ARACLAR: Mülküm360 kasko değeri (iç bağlantı), TSB kasko listesi, e-Devlet trafik cezası, SBM hasar kaydı (SMS 5664), TÜVTÜRK, GİB Dijital (MTV), TNB, EGM. Adresler curl ile açılıyor diye kontrol edildi; tahmini e-Devlet hizmet adresleri 404 verdiği için kullanılmadı.
+
+## 6.5 (12.11.2026)
+- Araç ilanı sayfası: "Almadan Önce Kontrol Et" kartı (aracKontrolKarti): TRAMER hasar SMS (sms:5664 HASAR), kasko değeri (#/degerle?ilan=), e-Devlet trafik cezası, TÜVTÜRK, TNB; ağır hasar/çekme/rehin uyarısı. webAc sms: ve #/ bağlantılarını açar; EKRAN.ilan araçta webBagla() çağırır.
+
+## 6.6 (12.11.2026)
+- Davet herkese: "Davet et, ikiniz de 3 kredi kazanın"; davet metni ev/arsa/araç sahipleri ve galerileri kapsıyor; üyelikte davet kodu her hesap türünde; davet_kullan() ofis şartı kaldırıldı (migrations/20261112050000_davet_herkes.sql). Üyelik seçeneği "Emlak ofisi" → "Kurumsal (emlak ofisi ya da galeri)".
+
+## 6.7 (12.11.2026)
+- Hesap türleri: Bireysel / Emlak ofisi / Oto galeri (üyelik ve Profil ayarları). DB: profiller.sektor (emlak|galeri), hesap_turu=ofis olanlar için; mevcut ofisler emlak. uyeOl, profilKaydet, hesapTuruYap(ofis, sektor), Google ile üyelikte kayitTuru emlak/galeri. Rozet kurumAd(): sektöre göre "Oto galeri" / "Emlak ofisi" (sektör yoksa ilan türüne göre).
+
+## 6.8 (12.11.2026)
+- EİDS taşıt (manuel faz): ilan_dogrulama.plaka/sasi, tasinmaz_no nullable + belirteç kısıtı; eids_iste_tasit(ilan, yontem, plaka, sasi, yetki) RPC; ilan_eids_kapisi artık emlak + vasita (yalnız insert ve durum yazımında; mevcut 126 yayındaki araç ilanı etkilenmez). İstemci: İlan Ver son adımında araç EİDS alanları (sahibim / eş-akraba / yetkili galeri, plaka zorunlu, şasi isteğe bağlı, yetki belge no), eidsSheet araç sürümü, ilan sayfasında "doğrulama sürüyor" araçta da, yönetim kuyruğunda plaka/şasi. Migration 20261112070000_eids_tasit.sql.
+- Kalıcı çözüm: EİDS resmî entegrasyonu için Ticaret Bakanlığına platform başvurusu (eids@ticaret.gov.tr) kullanıcıya bırakıldı.
+
+## 6.9 (12.11.2026)
+- Onay bildirimleri: ilan_dogrulama tetikleyicisi (dogrulama_bildirimi): talep gelince yöneticiye "Onay Bekleyen İlan" (#/yonetim/dogrulama; yonetici_idler() yönetici e-postasından), red olunca sahibine "İlanın Onaylanmadı" + karar notu. Onay bildirimi (ilan_yayin_bildirimi) zaten vardı.
+- Gelen kutusu: #/bildirimler (zil ikonu; kayıtlı aramalar bağlantısı üstte). Bildirimler okunana kadar listede kalır, telefonda her biri bir kez gösterilir (localStorage bildirimGosterilen), sayfa açılınca okundu.
+- Not: uygulama tamamen kapalıyken anlık bildirim için FCM kurulmadı.
+
+## 7.0 (12.11.2026)
+- Aylık "Konut Trend Analizi" bildirimi: piyasa_bildirimi_gonder() (TCMB KFE TR aylık/yıllık + BIRIMFIYAT TR, 100 m² örneği), dönem başına üye başına bir kez; pg_cron piyasa-bildirimi her ayın 20si 10:30 TSİ. Örnek yalnız yöneticiye gönderildi. Gelen kutusunda piyasa simgesi grafik.
+- İlan sayfası (sahibine): "İlanını güçlendir" altında "Öne Çıkar · Vitrin" kartı (dopingKartiYukle): tür başına en düşük paket fiyatı, açıklama, etkin doping durumu; dokununca dopingAlimSheet.

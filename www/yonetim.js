@@ -132,7 +132,7 @@ YON.dogrulama = async (el) => {
       const eksik = [...new Set(k.map((t) => t.ilan).filter((id) => id && !ilan(id)))];
       if (eksik.length) (await islem(sb.from('ilanlar').select('*').in('id', eksik))).forEach((r) => S.ilanlar.push(ilanEsle(r)));
       eidsHtml = `<div class="bolum-bas"><h2 style="font-size:15px">EİDS doğrulama kuyruğu · ${k.length}</h2></div><div class="liste">${k.map((t) => { const i = ilan(t.ilan), u = kullanici(t.sahip); return `<div class="oge" style="flex-direction:column;align-items:stretch;gap:6px"><div><b>${t.yontem === 'yetkili' ? 'Yetkili işletme ilanı' : t.yontem === 'hisim' ? 'Eş / hısım ilanı' : 'Sahibinden ilan'}</b> · ${kac(u.ad)}${u.firma ? ' · ' + kac(u.firma) : ''}</div>
-        <div class="k soluk">${i ? `<a href="#/ilan/${i.id}">${kac(i.baslik)}</a> · ` : ''}Taşınmaz no: <b>${kac(t.tasinmaz_no)}</b>${t.yetki_belge_no ? ' · Yetki belge: <b>' + kac(t.yetki_belge_no) + '</b>' : ''} · ${tarihSaat(t.olusturma)}</div>
+        <div class="k soluk">${i ? `<a href="#/ilan/${i.id}">${kac(i.baslik)}</a> · ` : ''}${t.plaka ? `Plaka: <b>${kac(t.plaka)}</b>${t.sasi ? ' · Şasi: <b>' + kac(t.sasi) + '</b>' : ''}` : `Taşınmaz no: <b>${kac(t.tasinmaz_no)}</b>`}${t.yetki_belge_no ? ' · Yetki belge: <b>' + kac(t.yetki_belge_no) + '</b>' : ''} · ${tarihSaat(t.olusturma)}</div>
         <div class="izgara2"><button class="btn sade kucuk" data-eidsred="${t.ilan}">Reddet</button><button class="btn guven kucuk" data-eidsonay="${t.ilan}">Onayla ve yayınla</button></div></div>`; }).join('')}</div>`;
     } else eidsHtml = `<div class="bolum-bas"><h2 style="font-size:15px">EİDS doğrulama kuyruğu</h2></div><div class="k soluk">Bekleyen doğrulama yok.</div>`;
   }

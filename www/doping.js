@@ -88,3 +88,20 @@ function dopingAlimSheet(i) {
       })));
   });
 }
+
+// İlan sayfasında (sahibine) görünürlük paketleri: tür başına en düşük fiyat, dokununca alım penceresi
+const DOPING_ACIKLAMA = { guncel: 'İlanın tarihi yenilenir, listede en yeniler arasına çıkar', 'vitrin-anasayfa': 'Ana sayfa vitrininde büyük fotoğrafla görünür', 'vitrin-arama': 'Arama sonuçlarının başındaki vitrinde görünür', 'vitrin-kategori': 'Kategori sayfasının vitrininde görünür', 'ust-sira': 'Aramalarda listenin en üstünde', acil: '"Acil" etiketiyle dikkat çeker' };
+const DOPING_IKON = { guncel: 'takvim', 'vitrin-anasayfa': 'yildiz', 'vitrin-arama': 'yildiz', 'vitrin-kategori': 'yildiz', 'ust-sira': 'grafik', acil: 'uyari' };
+async function dopingKartiYukle(i) {
+  const kap = document.getElementById('dopingK'); if (!kap) return;
+  let pk = [];
+  try { pk = await dopingPaketlerGetir(); } catch (_) {}
+  if (!document.getElementById('dopingK')) return;
+  const ak = dopingBilgi(i), t = (S.DOPING && S.DOPING.turler) || {};
+  const turler = {};
+  pk.forEach((p) => { const f = +p.indirim_orani > 0 && (!p.gecerlilik || new Date(p.gecerlilik) >= new Date(new Date().toDateString())) ? +p.fiyat * (1 - +p.indirim_orani) : +p.fiyat; if (!turler[p.tur] || f < turler[p.tur].f) turler[p.tur] = { f, gun: p.gun }; });
+  const l = Object.entries(turler).sort((x, y) => ((t[x[0]] || {}).sira ?? 9) - ((t[y[0]] || {}).sira ?? 9));
+  kap.innerHTML = `<h3 style="margin:0 0 4px">Öne Çıkar · Vitrin</h3><div class="k soluk" style="margin-bottom:6px">${ak ? `Şu anda <b>${kac((t[ak.tur] || {}).ad || ak.tur)}</b> etkin · bitiş ${new Date(ak.bitis).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}` : 'İlanını daha çok kişiye göster; ilan sayfası ve aramalarda "Sponsorlu" etiketiyle gösterilir.'}</div>
+    ${l.length ? `<div class="liste">${l.map(([k, v]) => `<button class="oge" data-dopal="${k}">${ic(DOPING_IKON[k] || 'yildiz', 20)}<div class="ara" style="text-align:left"><b>${kac((t[k] || {}).ad || k)}</b><div class="k soluk">${kac(DOPING_ACIKLAMA[k] || (t[k] || {}).aciklama || '')}</div></div><span class="k" style="font-weight:700;white-space:nowrap">${v.gun} gün · ${tl(v.f)}'den</span></button>`).join('')}</div>` : '<div class="k soluk">Şu anda satışta paket yok.</div>'}`;
+  kap.querySelectorAll('[data-dopal]').forEach((x) => (x.onclick = () => dopingAlimSheet(i)));
+}
