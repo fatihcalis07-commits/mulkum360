@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '3.6 · 10.11.2026 16:30';
+const SURUM = '3.7 · 11.11.2026 10:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1636,13 +1636,31 @@ EKRAN.kayitli = () => {
 };
 
 // ---------- Hesabım ----------
+const WEB_ARACLAR = [
+  ['arsa', 'TAKBİS parsel sorgulama', 'Ada · parsel · pafta — kadastro haritasında açılır', 'https://parselsorgu.takbis.gsb.gov.tr/'],
+  ['kalkan', 'e-Devlet', 'Tapu, imar ve resmî sorgular için kapı', 'https://www.turkiye.gov.tr/'],
+  ['bina', 'Tapu ve Kadastro (TKGM)', 'Resmî duyuru ve bilgilendirme hizmetleri', 'https://www.tkgm.gov.tr/'],
+  ['belge', 'DASK poliçe doğrulama', 'Zorunlu deprem sigortası sorgusu', 'https://www.dask.gov.tr/'],
+  ['numara', 'GİB emlak vergisi', 'Rayiç ve emlak vergisi sorguları', 'https://www.gib.gov.tr/'],
+];
+const webAc = async (url) => {
+  kayit('web_ac', String(url).slice(0, 70));
+  const B = window.Capacitor?.Plugins?.Browser;
+  if (B) { try { await B.open({ url }); return; } catch (_) { } }
+  const w = window.open(url, '_blank');
+  if (!w) location.href = url;
+};
+const aracBolumu = () => `<div class="bolum-bas"><h2 style="font-size:15px">Emlakçı araçları</h2></div>
+  <div class="liste">${WEB_ARACLAR.map(([ik, ad, ac, url]) => `<button class="oge" data-web="${url}">${ic(ik, 20)}<div class="ara"><b>${ad}</b><div class="k soluk">${ac}</div></div><span class="ok">›</span></button>`).join('')}</div>`;
+const webBagla = () => app.querySelectorAll('[data-web]').forEach((x) => (x.onclick = () => webAc(x.dataset.web)));
 EKRAN.hesap = () => {
   const b = ben();
   if (!b) {
     app.innerHTML = ustBar('Hesabım', '', false) + `<div class="ic">${bosDurum('kisi', 'Mülküm360’a hoş geldin', 'Üyelik ücretsiz, bir dakikada açılır.', '<a class="btn" href="#/kayit">Üye ol</a><a class="btn cizgili" href="#/giris">Giriş yap</a>')}
       <div class="kart"><h3>Üye olunca</h3><div class="liste">${[['ev', 'Ücretsiz ilan ver', 'Linkini yapıştır ya da tapunun fotoğrafını çek, ilanın hazırlansın'], ['grafik', 'Mülkünün değerini öğren', 'Benzer ilanlar ve TCMB endeksiyle PDF değer raporu'], ['kredi', 'Yeni üyeye 1 kredi hediye', 'İlk değer raporun ya da ilk MülkümDeko görselin bizden']].map(([ik, b, a]) => `<div class="oge" style="align-items:flex-start">${ic(ik, 20)}<div class="ara"><b>${b}</b><div class="k soluk">${a}</div></div></div>`).join('')}</div></div>
+      ${aracBolumu()}
       <div class="liste">${menuSatir('#/metin/guvenlik', 'kalkan', 'Yardım ve yasal metinler')}${dilSatiri()}<div class="oge" style="cursor:default">${ic('ayar', 20)}Uygulama sürümü<span class="ok" style="font-weight:600">${SURUM}</span></div><button class="oge" id="tema">${ic('ay', 20)}Koyu tema<span class="ok">${S.tema === 'koyu' ? 'Açık' : 'Kapalı'}</span></button></div></div>`;
-    $('#tema').onclick = temaDegis; { const pb = $('#palet'); if (pb) pb.onclick = paletSecimi; } app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil))); navCiz('hesap'); return;
+    $('#tema').onclick = temaDegis; { const pb = $('#palet'); if (pb) pb.onclick = paletSecimi; } app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil))); webBagla(); navCiz('hesap'); return;
   }
   const benim = S.ilanlar.filter((i) => i.sahip === b.id);
   const sekme = sorgu().s || 'yayinda';
@@ -1668,6 +1686,7 @@ EKRAN.hesap = () => {
         ${Date.now() - b.olusturma < 7 * 86400000 ? `<button class="oge" id="davetKod">${ic('kredi', 20)}Davet kodum var<span class="ok">›</span></button>` : ''}
         ${b.firma || b.yetkiNo ? '' : menuSatir('#/profil', 'kalkan', 'Emlak ofisi rozeti al')}
       </div>
+      ${aracBolumu()}
       <div class="bolum-bas"><h2 style="font-size:15px">Takip ettiklerim</h2></div>
       <div class="liste">
         ${menuSatir('#/mesajlar', 'mesaj', 'Mesajlarım', okunmamis() || '')}
@@ -1691,6 +1710,7 @@ EKRAN.hesap = () => {
       <div class="k soluk" style="text-align:center">Mülküm360 · sürüm ${SURUM}</div>
     </div>`;
   app.querySelectorAll('[data-s]').forEach((x) => (x.onclick = () => git('#/hesap?s=' + x.dataset.s)));
+  webBagla();
   app.querySelectorAll('[data-durum]').forEach((x) => (x.onclick = async () => { const i = ilan(x.dataset.durum); const yeni = i.durum === 'yayinda' ? 'satildi' : 'yayinda'; let fiyat = null; if (yeni === 'satildi') { fiyat = await satisFiyatiSor(i); if (fiyat === undefined) return; } if (await dene(() => ilanDurum(i, yeni, fiyat), yeni === 'satildi' ? 'Hayırlı olsun!' : 'İlan yeniden yayında')) ciz(); }));
   app.querySelectorAll('[data-ilansil]').forEach((x) => (x.onclick = async () => {
     if (!(await onayla('İlan silinsin mi?', 'İlan, fotoğrafları ve ona ait konuşmalar kalıcı olarak silinir.', 'Sil', true))) return;
