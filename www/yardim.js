@@ -64,7 +64,7 @@ const YARDIM_TOPLU = [
 ];
 
 EKRAN.yardim = () => {
-  app.innerHTML = ustBar('Toplu yükleme rehberi') + `<div class="ic">
+  app.innerHTML = ustBar('Toplu aktarım rehberi') + `<div class="ic">
     <div class="k soluk" style="margin-bottom:10px">Emlak ofisleri için adım adım anlatım. Bir başlığa dokun, maddeler açılsın.</div>
     ${YARDIM_TOPLU.map(([baslik, ikon, maddeler], n) => `<details class="kart" style="padding:0" ${n === 0 ? 'open' : ''}>
       <summary style="display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer;font-weight:700;list-style:none">${ic(ikon, 20, 'var(--vurgu-ikon)')}<span style="flex:1">${baslik}</span><span class="soluk">›</span></summary>

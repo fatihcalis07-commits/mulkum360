@@ -39,7 +39,7 @@ async function veriYukle() {
   S.AYARLAR.vitrinler = vitrinAyar();
   const [il] = await Promise.all([
     islem(sb.from('ilanlar').select('*').order('olusturma', { ascending: false }).limit(1000)),
-    dopingYukle()
+    typeof dopingYukle === 'function' ? dopingYukle() : null
   ]);
   S.ilanlar = il.map(ilanEsle);
   S.kullanicilar = [];
@@ -107,7 +107,20 @@ function canliBaglan() {
         bildir('mesaj-' + m.id, gorunenAd(kullanici(m.kimden)) + (i ? ' · ' + i.baslik.slice(0, 30) : ''), metin.slice(0, 140), '#/sohbet/' + s.id);
       }
     })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bildirimler', filter: 'alici=eq.' + S.oturum }, (p) => uyeBildirimi(p.new))
     .subscribe();
+  bekleyenBildirimler();
+}
+// Sunucudan gelen üye bildirimleri (ilan onaylandı vb.): telefonda bildirim + uygulama içi uyarı, sonra okundu
+async function uyeBildirimi(b) {
+  if (!b || b.okundu) return;
+  toast(b.baslik); bildir('uye-' + b.id, b.baslik, b.metin || '', b.link || '#/hesap');
+  if (b.tur === 'ilan_onay' && b.link) { const id = b.link.split('/').pop(), i = ilan(id); if (i) i.durum = 'yayinda'; }
+  try { await sb.from('bildirimler').update({ okundu: true }).eq('id', b.id); } catch (_) {}
+}
+// Uygulama kapalıyken gelenler: açılışta okunmamışları göster
+async function bekleyenBildirimler() {
+  try { const { data } = await sb.from('bildirimler').select('*').eq('alici', S.oturum).eq('okundu', false).order('olusturma').limit(10); for (const b of data || []) await uyeBildirimi(b); } catch (_) {}
 }
 function yenileNav() { const a = nav.querySelector('a.aktif'); navCiz(a ? { '#/': 'kesfet', '#/ara': 'ara', '#/mesajlar': 'mesaj', '#/hesap': 'hesap' }[a.getAttribute('href')] : ''); }
 
@@ -214,7 +227,8 @@ async function ilanDurum(i, durum, satisFiyati) {
 }
 // Resmî bölge göstergeleri (TCMB, TÜİK, AFAD...): her gösterge için ilçe varsa ilçenin, yoksa ilin en son dönemi
 async function gostergeler(il, ilce) {
-  const { data } = await sb.from('bolge_gostergeleri').select('*').eq('il', il).in('ilce', [ilce || '', '']).order('donem', { ascending: false });
+  const { data } = await sb.from('bolge_gostergeleri').select('*').eq('il', il).order('donem', { ascending: false });
+  const _ilceSuz = (l) => (l || []).filter((d) => !d.ilce || (ilce && kucuk(d.ilce) === kucuk(ilce))); if (data) data.splice(0, data.length, ..._ilceSuz(data));
   const sonuc = {};
   (data || []).forEach((d) => { const k = d.gosterge; const ilceli = ilce && kucuk(d.ilce) === kucuk(ilce); if (!sonuc[k] || (ilceli && !sonuc[k].ilceli)) sonuc[k] = { ...d, ilceli }; });
   return Object.values(sonuc);
@@ -316,13 +330,17 @@ async function dekoKaydet(i, liste) {
 
 // ---------- Bölge verileri (TÜİK vb. resmî kaynak) ----------
 async function bolgeVerisi(il, ilce) {
-  const { data } = await sb.from('bolge_verileri').select('*').eq('il', il).in('ilce', [ilce || '', '']).order('yil', { ascending: false });
+  const { data } = await sb.from('bolge_verileri').select('*').eq('il', il).order('yil', { ascending: false });
+  const _ilceSuz = (l) => (l || []).filter((d) => !d.ilce || (ilce && kucuk(d.ilce) === kucuk(ilce))); if (data) data.splice(0, data.length, ..._ilceSuz(data));
   if (!data?.length) return null;
-  return data.find((d) => ilce && kucuk(d.ilce) === kucuk(ilce)) || data.find((d) => !d.ilce) || null;
+  const ilS = data.find((d) => !d.ilce) || null, ilceS = ilce ? data.find((d) => kucuk(d.ilce) === kucuk(ilce)) || null : null;
+  if (!ilS) return ilceS;
+  return ilceS ? { ...ilS, ilceVeri: ilceS } : ilS;
 }
 // Seçim sonuçları: ilçe varsa ilçenin, yoksa ilin en son yılı; türe göre gruplu
 async function secimSonuclari(il, ilce) {
-  const { data } = await sb.from('secim_sonuclari').select('*').eq('il', il).in('ilce', [ilce || '', '']).order('yil', { ascending: false });
+  const { data } = await sb.from('secim_sonuclari').select('*').eq('il', il).order('yil', { ascending: false });
+  const _ilceSuz = (l) => (l || []).filter((d) => !d.ilce || (ilce && kucuk(d.ilce) === kucuk(ilce))); if (data) data.splice(0, data.length, ..._ilceSuz(data));
   if (!data?.length) return null;
   const ilceli = data.filter((d) => ilce && kucuk(d.ilce) === kucuk(ilce));
   const l = ilceli.length ? ilceli : data.filter((d) => !d.ilce);

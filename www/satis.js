@@ -53,7 +53,7 @@ async function bekleyenTalep() {
 EKRAN.kredi = async () => {
   if (girisGerek('Kredilerin için giriş yap')) return;
   const b = ben();
-  app.innerHTML = ustBar('Kredilerim') + `<div class="ic">
+  app.innerHTML = ustBar('Kredi bakiyem') + `<div class="ic">
     <div class="deger-k"><div class="ust-yazi">KREDİN</div><div class="buyuk">${b.kredi ?? 0} kredi</div><div style="font-size:13px;opacity:.85">Krediler süresizdir; rapor, MülkümDeko ve MülkümVideo’da ortak kullanılır</div></div>
     <div class="kart"><h3>Kredi ne alır?</h3><div class="liste">${KREDI_KULLANIM.map(([ik, ad, k]) => `<div class="oge">${ic(ik, 20)}<span class="ara">${ad}</span><span class="ok" style="font-weight:700">${k} kredi</span></div>`).join('')}</div></div>
     <div id="talepK"></div>

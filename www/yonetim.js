@@ -1,7 +1,7 @@
 // Mülküm360 — Yönetim (yalnız yönetici; tüm işlemleri sunucu kuralları da denetler)
 'use strict';
 
-const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Tanımla'], ['vitrin', 'yildiz', 'Ana Sayfa'], ['doping', 'tik', 'Doping'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim'], ['gosterge', 'grafik', 'Göstergeler']];
+const YON_SEKME = [['ozet', 'grafik', 'Özet'], ['uyeler', 'kisi', 'Kullanıcılar'], ['kredi', 'kredi', 'Kredi Yükleme'], ['vitrin', 'yildiz', 'Vitrin'], ['doping', 'tik', 'Öne Çıkarma'], ['sikayet', 'bayrak', 'Şikayetler'], ['dogrulama', 'kalkan', 'Doğrulama'], ['bolge', 'konum', 'Bölge Verisi'], ['secim', 'bayrak', 'Seçim Verileri'], ['gosterge', 'grafik', 'Göstergeler']];
 const YON_GRUP = [['Kullanıcı ve kredi', ['ozet', 'uyeler', 'kredi', 'satis']], ['Denetim', ['sikayet', 'dogrulama']], ['Görünürlük', ['vitrin', 'doping']], ['Veri', ['bolge', 'secim', 'gosterge', 'banka']]];
 let YON_BEKLEYEN = 0; // bekleyen kredi satın alma talebi sayısı (satis.js günceller)
 const HAREKET_IKON ={ kayit: 'kisi', giris: 'kilit', ilan: 'ev', rapor: 'belge', kredi: 'kredi', mesaj: 'mesaj', sikayet: 'bayrak', ai: 'yildiz' };
@@ -64,7 +64,7 @@ EKRAN.yonetimUye = async () => {
   if (girisGerek()) return;
   if (!S.yonetici) { git('#/hesap'); return; }
   const id = sorgu().id;
-  app.innerHTML = ustBar('Üye ayrıntısı') + `<div class="ic" id="uyeIc"><div class="bos">Yükleniyor…</div></div>`;
+  app.innerHTML = ustBar('Üye detayı') + `<div class="ic" id="uyeIc"><div class="bos">Yükleniyor…</div></div>`;
   navCiz('hesap');
   try {
     const [l, h] = await Promise.all([uyeler(''), uyeHareketleri(id)]);

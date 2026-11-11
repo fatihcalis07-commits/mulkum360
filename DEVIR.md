@@ -389,3 +389,89 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - **EİDS başvuru taslağı**: **docs/EIDS-BASVURU.md** — eids@ticaret.gov.tr e-posta metni + belge listesi + 3 KAPALI karar: returnUrl host'u (web host YOK → Cloudflare Pages + alan adı önerisi), Supabase sabit çıkış IPv4 (dedicated IP add-on / röle), GSM OTP. **Gönderilmedi; [KULLANICI] alanları bekliyor.**
 - **GitHub push**: hâlâ KULLANICIDA — `gh` yok, remote tanımsız; komutlar satır 282.
 - Not: `supabase/scratch/` sorgu çöpü commit'lere girmiyor (silinecek).
+
+## v3.8 (11.11) Sade menü ve simgeler
+- Uzun menüler açılır-kapanır: katla(baslik, ikon, icerik, ozet, acik). Yan menü: MülkümAI ve Finans (açık) / Emlak / Vasıta / Yardım ve Dil (kapalı). Hesabım: Ofis ve davet / Resmî kurum araçları / Takip ettiklerim / Ayarlar (kapalı).
+- Renkli (pastel + iOS degrade) simgeler kaldırıldı: tek renk sade dil (--sade-zemin, --sade-ikon = --birincil), app.css sonundaki 3.8 bloğu öncekileri geçersiz kılar.
+- ajanda.js (AI ajanda, 08.11) derlemeye dahil; mulkum-ai ajanda_coz/ajanda_ozet canlı.
+- UYARI: C: diskinde 599 MB boş kaldı, build kırılabilir.
+
+## v3.9 (11.11) İlanı Yönet
+- Hesabım ilan kartında Düzenle/Satıldı/Sil/Fotoğraf ekle yerine tek 'İlanı yönet' düğmesi → seçenek penceresi (Düzenle, Fotoğraf ekle, EİDS, Satıldı/Kiralandı, Görüntüle, Sil). Eski düğmeler gizli duruyor, pencere onları tetikliyor (işleyiciler aynı).
+- Başlık kuralı katı: KUCUK_KAL boş (ve/için/ile de büyük harf). Katla özetleri ve seçenek penceresi başlıkları da kapsamda.
+
+## Disk temizliği (11.11, kullanıcı onaylı)
+- Silindi: Temp (2 günden eski), NVIDIA DXCache, Chrome Cache/Code Cache, CapCut önbelleği, .cache\codex-runtimes, 'DeepSeek Harness.new-{4812E517…}' güncelleme kalıntısı (çalışan sürüm ana klasörde, aynı 0.2.1-rc.5). Windows Update indirmeleri yönetici izni olmadığı için atlandı.
+- Gradle önbelleği D:\gradle-home'a taşındı; kullanıcı ortam değişkeni GRADLE_USER_HOME=D:\gradle-home. assembleRelease bu ayarla çalıştı (exit 0).
+- C: boş alan 0,67 GB → 9,1 GB. Daha fazlası için seçenek: hazırda bekletmeyi kapatmak (hiberfil.sys 6,3 GB, yönetici: powercfg -h off).
+
+## v4.0 (11.11)
+- Resmî kurum araçları: TAKBİS bağlantısı yanlış alan adına (parselsorgu.takbis.gsb.gov.tr, DNS yok) gidiyordu → https://parselsorgu.tkgm.gov.tr/ (200). Web Tapu eklendi: https://webtapu.tkgm.gov.tr/ (200).
+
+## v4.1 (11.11) Emlak haberleri
+- Keşfet 'Günün ipucu' kaldırıldı → 'Emlak Haberleri' kartı (5 başlık, kaynak + ne zaman; dokununca haber sitesinde açılır).
+- Yeni edge: supabase/functions/haberler — yayıncıların kendi RSS'i: Emlak Kulisi (tamamı), AA ve TRT Haber ekonomi (emlak anahtar kelimeleriyle süzülür). Yalnız başlık+bağlantı, 30 dk önbellek, kaynak başına en çok 5. Google Haberler RSS bilerek kullanılmadı (ticari kullanım yasak).
+
+## v4.2 (11.11) Piyasa gündemi + profesyonel menü adları + açılış yarışı
+- Haberler: edge `haberler` artık {kategoriler:{emlak,otomobil,ekonomi}}. Otomobil: Motor1 Türkiye, Autoshow RSS. Ekonomi: AA + TRT Haber ekonomi. Keşfet kartı "Piyasa gündemi" + 3 sekme.
+- Menü adları (adlar.js ile, yalnız ustBar/menuSatir/katla/sekme bağlamı): Değer hesapla→Değerleme, Değer raporlarım→Değerleme raporlarım, Banka kredisi hesapla→Kredi hesaplama, Haritada ara→Harita görünümü, Kredilerim→Kredi bakiyem, Profil ve şifre→Profil ayarları, Satış ve kiralama performansım→Performans raporu, Toplu ilan yükle→Toplu ilan aktarımı, Asistana sor→MülkümAI asistan, Ofisim paneli→Ofis paneli, Güvenli alışveriş rehberi→Güvenli alım satım rehberi, Emlak ofisi rozeti al→Kurumsal rozet başvurusu, Yardım ve yasal metinler→Yardım merkezi; katlar: Akıllı araçlar, Kurumsal hesap, Resmî sorgulamalar, Takip listem, Destek ve dil; Ofisim: Müşteriler, Toplu aktarım; Yönetim: Kredi Yükleme, Vitrin, Öne Çıkarma, Seçim Verileri; Ayarlar: Renk paleti, Bildirimler, Yardım merkezi, Yasal bilgiler.
+- HATA DÜZELTİLDİ: basla() app.js sonunda eşzamanlı çağrılıyordu; await yukle() hızlı dönünce veriYukle, doping.js parse edilmeden çalışıp "dopingYukle is not defined" → "Bağlantı kurulamadı" veriyordu (aralıklı). Artık DOMContentLoaded'da başlıyor + sb.js'de typeof koruması.
+
+## v4.3 (11.11) Mülküm360 Endeks Bankası (emlak + otomobil, 2016+)
+- DeepSeek'in bıraktığı yer: ingestion_logs + veri_kaynaklari (08.11), kfe (TCMB KFE bölgesel, 4.020 satır), bolge_gostergeleri (TÜİK satış vb. 41.284), yatırım endeksi (yatirim.js). Otomobil verisi YOKTU, il bazlı m² fiyat/kira serisi YOKTU.
+- Yeni: migration 20261111150000_endeks_bankasi.sql → endeks_seri (19 seri) + endeks_veri (kod, bolge, donem, deger) + endeks_ilan_ozeti() (kendi ilanlarımızın aylık m²/fiyat ortancası, test ilanları hariç, ≥3 ilan) + cron: endeks-topla her ayın 23'ü 06:45, endeks-ilan-ozeti her ayın 1'i ve 15'i.
+- Edge endeks-topla (--no-verify-jwt; ?tani=1 kuru çalışma): EVDS aylık (frequency=5, avg) KFE/YKFE/YOKFE TR, TÜFE kira 04110, konut satış adedi, TÜFE 07111 sıfır motorlu taşıt, 071, 0722 yakıt, 0723 bakım, 07211 lastik, 07244 kiralama, TÜFE genel, USD/EUR; çeyreklik (frequency=6) bie_birimfiyat ve bie_bk il serileri (76 il + TR; Ardahan, Bayburt, Gümüşhane, Hakkari, Tunceli TCMB'de yok). İlk yükleme 7.430 satır.
+- Ekran: www/endeksler.js, #/endeksler "Piyasa Endeksleri" (yan menü > Akıllı Araçlar). Emlak: Mülküm360 Konut Endeksi (nominal/reel/dolar, 2016=100), il seçimli m² fiyat + kira + brüt kira getirisi, yeni/ikinci el/kira, satış adedi. Otomobil: Mülküm360 Otomobil Endeksi (07111 nominal/reel/dolar) + akaryakıt/bakım/lastik/kiralama. SVG grafik, kütüphanesiz.
+
+## v4.4 (11.11) Yayınlanmış raporlar + değerleme hatası
+- Değerleme (EKRAN.degerle): ilandan "Bu mülkün değer raporu" ile gelince önceki başka mülkün hesabı (sonDegerleme) kalıyordu → kaynak ilan farklıysa sonDegerleme sıfırlanıyor. Önizlemede 2 farklı ilanla doğrulandı.
+- Migration 20261111160000_endeks_raporlar.sql: BETAM.SATILIK.M2, BETAM.KIRALIK.M2, ENDEKSA.M2 serileri; Emlakjet & Endeksa Konut Değer Raporu basın rakamları (TR 2026-05..09, 6 il 2026-07); ilan özeti cron'u haftalık (pazartesi 03:20).
+- Betam/sahibindex raporları: Betam WordPress medya API'sinden (kamuya açık docx) indirildi, scratchpad/betam2.mjs ile "ülke genelinde/İstanbul'da/Ankara'da/İzmir'de X TL" çekildi → veri/betam_endeks_2026_11.sql (247 satır: satılık 2021-12→2026-09, kiralık 2024-01→2026-09; 2021 öncesi raporlar medya listesinde yok/farklı biçim). Rakip ilan sitelerinden scraping BİLEREK yapılmadı (ToS/robots/Cloudflare/KVKK).
+- Ekran: Piyasa Endeksleri > "Piyasa Raporları Karşılaştırması" (TCMB değerleme / sahibindex ilan / Emlakjet&Endeksa; seçili il ya da Türkiye) + "Mülküm360 İlan Verisi" kartı (gerçek ilan sayısı, İlan Ver / Toplu Aktarım).
+
+## v4.5 (11.11) Antalya
+- Betam docx raporlarında il tabloları YOK (yalnız TR + 3 büyükşehir metni; grafikler resim). bolge_gostergeleri içindeki sahibindex il değerleri (25 il, 2025-12..2026-09) endeks_veri BETAM.* serilerine kopyalandı. ENDEKSA.M2 Antalya 2026-05 = 54.541 (basın). Karşılaştırma kartı artık seçili ilin TCMB/Endeksa/Betam verisi varsa o ili gösteriyor (önce yalnız Betam varsa).
+
+## v4.6 (11.11) Betam il tabloları
+- Betam docx raporlarında il tablosu VAR (w:tbl; il | geçen yıl m² | bu yıl m² | yıllık %, her ay en çok/en az artan 10 il). scratchpad/betam3.mjs ilk "Türkiye Ortalaması" tablosunu okur, bu yıl → veri ayı, geçen yıl → 12 ay önce. veri/betam_il_2026_11.sql: 1.235 satır; BETAM.SATILIK.M2 30 il (865), BETAM.KIRALIK.M2 29 il (481). Örn. Antalya satılık 2020-12 → 2025-08 neredeyse aylık.
+
+## v4.7 (11.11) 81 il kapsamı
+- TCMB bie_birimfiyat/bie_bk Ardahan, Bayburt, Gümüşhane, Hakkari, Tunceli serileri tanımlı ama BOŞ (EVDS veri dönmüyor). endeksler.js bolgeYedekHtml: bu illerde KFE_BOLGE (endeks.js) ile bölge bulunur; bölgedeki diğer illerin son TCMB m² fiyat/kira ortalaması + bölgesel KFE grafiği (nominal/reel), "bölge ortalaması" etiketiyle.
+
+## v4.8 (11.11) iOS tarzı kontroller
+- Kök neden: .segment taban stili koyu hero için (açık gri yazı, #ffffff12 zemin) → açık sayfalarda soluk. app.css sonu 4.8 bloğu: --ios-* değişkenleri; segment gri ray + beyaz seçili kapsül (class secili VE aria-selected), hero istisnası; çipler hafif tonlu mavi seçili; .btn iOS mavisi, .sade gri dolgu; simgeler iOS gri kare + sistem mavisi. Eski renkli kurallar yüksek özgüllükle (.segment.segment.segment, .kisayol.kisayol) eziliyor.
+
+## v4.9 (11.11)
+- Harita filtreleri: 3 sıra çip yerine tek sıra açılır seçici (Mesafe / İşlem / Sıralama, .filtre-sec) + Konumum / İl-ilçe düğmeleri; seçenekler alt pencerede (HARP_SECIM, harpSecimAc).
+- Kat önerilerine "Giriş katı" eklendi (ONERI.kat).
+
+## 5.0 (11.11.2026)
+- Ara > Filtrele penceresi iOS gruplu liste: Konum, Fiyat, Emlak, Özellikler, Vasıta grupları; etiket solda, değer sağda; aktif filtre sayısı; sabit alt düğmeler.
+
+## 5.1 (11.11.2026)
+- Değerlemede Bulunduğu kat: katEtki() katsayısı (bodrum 0,85, giriş/zemin 0,92, bahçe/çatı 0,95, yüksek giriş 0,96, 1. kat 0,98, 2-5 = 1, 6+ 1,02, villa katı 1,05). Emsaller kendi katına göre eşitlenir, sonuçta kat etkisi yazar. İlan endeks kartında kata göre beklenen m².
+
+## 5.2 (11.11.2026)
+- Filtrele: Emlak grubuna Bulunduğu kat. Vasıta: Araç (marka, model, kasa), Model yılı ve Kilometre aralıkları, Teknik ve durum (yakıt, vites, boya/değişen, renk, takas, kimden). Alt düğme çubuğu altındaki satırları örtüyor.
+
+## 5.3 (11.11.2026)
+- Bina yaşı sahibinden gibi seçim: 0,1,2,3,4 tek tek, sonra 5-10, 11-15, 16-20, 21-25, 26-30, 31 ve üzeri (İlan Ver, Değerleme, Filtrele aynı liste). yasSayi() grup ortasını sayıya çevirir (rapor yönetmelik dönemi, öneri metni). Eski sayısal yaşlar korunur ve doğru gruba düşer.
+
+## 5.4 (11.11.2026)
+- bildirimler tablosu + ilanlar_yayin_bildirimi tetikleyicisi: ilan onayda/kaldırıldı → yayında geçince sahibine "İlanın Onaylandı ve Yayında". İstemci canliBaglan içinde dinler, açılışta okunmamışları gösterir (uyeBildirimi, bekleyenBildirimler). Not: FCM push yok; bildirim uygulama açıkken/arka plandayken ya da sonraki açılışta düşer.
+
+## 5.5 (12.11.2026)
+- Demografi: TÜİK databrowser2 küpleri (DF_ADNKS_T16 il×cinsiyet×5li yaş, DF_ULUSAL_EGITIM_ISTATISTIK_BED_NUFUS il×eğitim 15+, DF_ADNKS_T10 il×medeni 15+), 2025, 81 il → bolge_verileri yeni sütunlar erkek_sayisi, kadin_sayisi, yas_dagilim, egitim_dagilim, medeni_dagilim, demografi_kaynak; universite_orani, okuryazar_orani, yaş grupları dolduruldu. Çıkarıcı: scratchpad demografi.js, SQL migrations/20261111240000_demografi_detay.sql.
+- Rapor: demografik/sosyal tablo genişledi; yeni "Nüfus Yapısı" sayfası (10luk yaş grupları, cinsiyet, eğitim, medeni durum).
+- HATA DÜZELTME: bolgeVerisi/gostergeler/secimSonuclari .in(ilce, ["",""]) boş ilçeyi eşleştirmiyordu → raporlara demografi ve il göstergeleri hiç gelmiyordu. Artık il bazında çekip ilçeyi JSte süzüyor.
+
+## 5.6 (12.11.2026)
+- İlçe verisi (973 ilçe, TÜİK 2025): nüfus, yıllık artış (binde), merkez/köy, doğum, ölüm, evlenme, boşanma, yabancılara konut satışı son 12 ay + önceki 12 ay. Çıkarıcı scratchpad ilce.js → migrations/20261112010000_ilce_verileri.sql. bolgeVerisi artık il satırını döndürür, ilçe satırı .ilceVeri içinde. Raporda "<İlçe> İlçesi" kartı (3 kutu), altında il geneli tablolar.
+- Not: ilk yüklemede il adı önekli 100 fazla ilçe satırı oluştu (ör. "Adıyaman Merkez"); uygulama bunları eşleştirmez, zararsız. Silmek kullanıcı onayı ister.
+
+## 5.7 (12.11.2026)
+- Toplu taşıma boş geliyordu. Sebep: overpass-api.de tarayıcı/WebView User-Agentını 406 ile reddediyor; diğer aynalar yoğun. Çözüm: telefonda CapacitorHttp GET + User-Agent "Mulkum360/1.0" (overpassYaris), maps.mail.ru aynası eklendi, okuma süresi 60 sn, overpass() bir kez 4 sn sonra yeniden dener. Taşıma sorgusu ayrı ve hafif (ağır hastane/havalimanı sorgusundan ayrıldı). Eksik sonuç önbelleğe yazılmaz (s.eksik), önbellek anahtarı v2: (eski boş kayıtlar okunmaz). Veri alınamazsa raporda sıfırlar yerine açıklama.
+
+## iOS (12.11.2026)
+- @capacitor/ios 8 eklendi, ios/ klasörü oluşturuldu (SPM, CocoaPods yok). Bundle ID com.mulkum360.app, ad Mülküm360. Info.plist: konum, kamera, galeri izin metinleri, ITSAppUsesNonExemptEncryption=false. Simge ve açılış görselleri @capacitor/assets ile üretildi.
+- Eksik: Cordova eklentileri (cordova-plugin-purchase, inappbrowser) SPM ile iOSa girmez; kredi satışı iOSta kapalı görünür (ODEME_YONTEMI=yok). Google ile giriş varsa Apple ile giriş zorunlu (App Store 4.8). Derleme Mac/Xcode veya bulut (Codemagic / GitHub Actions macOS) ister; Apple Developer hesabı gerekir.

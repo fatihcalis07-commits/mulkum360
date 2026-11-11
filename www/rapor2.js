@@ -24,7 +24,9 @@ const CEVRE = [
 ];
 
 async function overpass(sorgu) {
-  return overpassYaris('data=' + encodeURIComponent(sorgu));
+  // Sunucular yoğunsa (502/zaman aşımı) bir kez 4 sn bekleyip yeniden dene
+  const g = 'data=' + encodeURIComponent(sorgu);
+  return (await overpassYaris(g)) || (await new Promise((r) => setTimeout(r, 4000)), await overpassYaris(g));
 }
 // Öğenin konuma en yakın noktası (çizgi/alan geometrisi varsa köşelerden)
 function enYakinMesafe(lat, lon, e) {
@@ -41,23 +43,26 @@ async function osrmSure(a, b) {
 // Önbellekli: aynı ~100 m'lik nokta (3 ondalık) için 30 gün içindeki sonuç sunucudan gelir
 async function cevreVerisi(k, f) {
   if (!k) return null;
-  const anahtar = `${(+k.lat).toFixed(3)},${(+k.lon).toFixed(3)}`;
+  const anahtar = `v2:${(+k.lat).toFixed(3)},${(+k.lon).toFixed(3)}`;
   try {
     const { data } = await sb.from('cevre_onbellek').select('veri, olusturma').eq('anahtar', anahtar).maybeSingle();
     if (data && Date.now() - new Date(data.olusturma) < 30 * 864e5) return { ...data.veri, onbellek: data.olusturma };
   } catch (_) {}
   const s = await cevreVerisiCanli(k, f);
-  if (s && !s.hata) sb.from('cevre_onbellek').upsert({ anahtar, veri: s, olusturma: new Date().toISOString() }).then(() => {}, () => {});
+  if (s && !s.hata && !s.eksik) sb.from('cevre_onbellek').upsert({ anahtar, veri: s, olusturma: new Date().toISOString() }).then(() => {}, () => {});
   return s;
 }
 async function cevreVerisiCanli(k, f) {
   const { lat, lon } = k, s = {};
-  const [cizgi, nokta] = await Promise.all([
+  const [cizgi, nokta, tasimaJ] = await Promise.all([
     overpass(`[out:json][timeout:25];(way(around:5000,${lat},${lon})["natural"~"^(coastline|beach)$"];way(around:1000,${lat},${lon})["leisure"~"^(park|garden|nature_reserve)$"];way(around:1000,${lat},${lon})["landuse"~"^(forest|recreation_ground)$"];way(around:1500,${lat},${lon})["highway"~"^(motorway|trunk)$"];way(around:1500,${lat},${lon})["railway"="rail"];way(around:1500,${lat},${lon})["landuse"~"^(industrial|landfill)$"];way(around:800,${lat},${lon})["power"="line"];);out geom;`),
-    overpass(`[out:json][timeout:25];(nwr(around:1500,${lat},${lon})["railway"~"^(station|halt|tram_stop|subway_entrance)$"];nwr(around:1500,${lat},${lon})["public_transport"="station"];nwr(around:2500,${lat},${lon})["amenity"="ferry_terminal"];node(around:600,${lat},${lon})["highway"="bus_stop"];nwr(around:5000,${lat},${lon})["amenity"="bus_station"];nwr(around:1500,${lat},${lon})["amenity"~"^(waste_disposal|waste_transfer_station)$"];nwr(around:800,${lat},${lon})["power"="substation"];node(around:500,${lat},${lon})["man_made"~"^(mast|tower)$"];nwr(around:10000,${lat},${lon})["amenity"="hospital"];nwr(around:150000,${lat},${lon})["aeroway"="aerodrome"]["iata"];);out center tags;`)
+    overpass(`[out:json][timeout:25];(nwr(around:1500,${lat},${lon})["amenity"~"^(waste_disposal|waste_transfer_station)$"];nwr(around:1500,${lat},${lon})["amenity"~"^(waste_disposal|waste_transfer_station)$"];nwr(around:800,${lat},${lon})["power"="substation"];node(around:500,${lat},${lon})["man_made"~"^(mast|tower)$"];nwr(around:10000,${lat},${lon})["amenity"="hospital"];nwr(around:150000,${lat},${lon})["aeroway"="aerodrome"]["iata"];);out center tags;`),
+    overpass(`[out:json][timeout:25];(nwr(around:1500,${lat},${lon})["railway"~"^(station|halt|tram_stop|subway_entrance)$"];nwr(around:1500,${lat},${lon})["public_transport"="station"];nwr(around:2500,${lat},${lon})["amenity"="ferry_terminal"];node(around:600,${lat},${lon})["highway"="bus_stop"];nwr(around:5000,${lat},${lon})["amenity"="bus_station"];);out center tags;`)
   ]);
-  if (!cizgi && !nokta) return { hata: true };
-  const hepsi = [...(cizgi?.elements || []), ...(nokta?.elements || [])].map((e) => ({ e, t: e.tags || {}, m: enYakinMesafe(lat, lon, e) })).filter((x) => isFinite(x.m));
+  if (!cizgi && !nokta && !tasimaJ) return { hata: true };
+  s.eksik = !cizgi || !nokta || !tasimaJ; // eksikse önbelleğe yazılmaz, sonraki raporda yeniden denenir
+  s.tasimaYok = !tasimaJ;
+  const hepsi = [...(cizgi?.elements || []), ...(nokta?.elements || []), ...(tasimaJ?.elements || [])].map((e) => ({ e, t: e.tags || {}, m: enYakinMesafe(lat, lon, e) })).filter((x) => isFinite(x.m));
   // Toplu taşıma: türe göre en yakın + sayı
   s.tasima = TASIMA.map(([ad, fn]) => {
     const l = hepsi.filter((x) => fn(x.t)).sort((a, b) => a.m - b.m);
@@ -97,8 +102,9 @@ async function depremVerisi(k) {
 }
 // Yapım yılına göre yürürlükteki deprem yönetmeliği (bina yaşından yaklaşık yıl)
 function yonetmelikDonemi(binaYasi) {
-  if (binaYasi === '' || binaYasi == null || isNaN(+binaYasi)) return null;
-  const yil = new Date().getFullYear() - +binaYasi;
+  const ys = typeof yasSayi === 'function' ? yasSayi(binaYasi) : +binaYasi;
+  if (binaYasi === '' || binaYasi == null || isNaN(ys)) return null;
+  const yil = Math.round(new Date().getFullYear() - ys);
   if (yil >= 2019) return { yil, ad: '2018 Türkiye Bina Deprem Yönetmeliği (TBDY)', not: 'Yürürlükteki en güncel yönetmelik (1 Ocak 2019’dan itibaren). Zemine ve konuma özel tasarım esastır.', seviye: 'Güncel' };
   if (yil >= 2007) return { yil, ad: '2007 Deprem Bölgelerinde Yapılacak Binalar Hakkında Yönetmelik', not: 'Performansa dayalı değerlendirme getiren yönetmelik; denetimli yapılarda iyi düzey beklenir.', seviye: 'İyi' };
   if (yil >= 1999) return { yil, ad: '1998 Afet Bölgelerinde Yapılacak Yapılar Hakkında Yönetmelik', not: '1999 sonrası yapı denetimi (4708 sayılı Kanun, 2001) ile birlikte uygulanmaya başladı; proje ve denetim belgeleri kontrol edilmeli.', seviye: 'Orta' };
@@ -157,7 +163,7 @@ function raporSayfalari2(f, h) {
   // A · Toplu taşıma ve ulaşım
   if (emlak && c && !c.hata) {
     sayfalar.push(`${rBaslik('Toplu Taşıma')}
-      <table class="r-tablo bolge"><tr><th>Tür</th><th>Sayı</th><th>En yakın</th><th>Yürüyüş</th><th>Durak / istasyon</th></tr>
+      ${c.tasimaYok ? '<div class="r-not">Toplu taşıma verisi rapor hazırlanırken harita servisinden alınamadı (OpenStreetMap yoğun). Raporu yeniden oluşturunca eklenir.</div>' : ''}<table class="r-tablo bolge" ${c.tasimaYok ? 'style="display:none"' : ''}><tr><th>Tür</th><th>Sayı</th><th>En yakın</th><th>Yürüyüş</th><th>Durak / istasyon</th></tr>
       ${c.tasima.map((x) => `<tr><th>${x.ad}</th><td>${x.sayi}</td><td>${rMesafe(x.enYakin)}</td><td>${x.yuruyus ? x.yuruyus + ' dk' : '—'}</td><td>${kac(x.isim || '—')}</td></tr>`).join('')}</table>
       <div class="r-not">Arama yarıçapı: raylı sistem 1,5 km, vapur 2,5 km, otobüs durağı 600 m, terminal 5 km. Yürüyüş süresi 80 m/dk kabulüyle kuş uçuşu mesafeden hesaplanır.</div>
       ${c.sureler?.length ? `${rBaslik('Ulaşım Süreleri (araçla)')}<table class="r-tablo bolge"><tr><th>Hedef</th><th>Süre</th><th>Mesafe</th></tr>${c.sureler.map((s) => `<tr><th>${kac(s.ad)}</th><td>${s.dk} dk</td><td>${String(s.km).replace('.', ',')} km</td></tr>`).join('')}</table><div class="r-not">Trafik içermeyen yol ağı süresidir (OSRM, OpenStreetMap).</div>` : ''}

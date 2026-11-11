@@ -1,0 +1,62 @@
+# Mülküm360 iOS derlemeleri (Codemagic, macOS bulut makinesi)
+# 1) ios-deneme: Apple hesabı GEREKMEZ. İmzasız derler; kodun iOS'ta derlendiğini doğrular, simülatör paketi üretir.
+# 2) ios-testflight: Apple Developer hesabı açılınca. App Store Connect API anahtarı Codemagic'e
+#    "Mulkum360 ASC" adıyla eklenir; imza otomatik alınır, TestFlight'a yüklenir.
+workflows:
+  ios-deneme:
+    name: iOS deneme (imzasız)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 22
+      xcode: latest
+    triggering:
+      events: [push]
+      branch_patterns:
+        - pattern: main
+    scripts:
+      - name: Bağımlılıklar
+        script: npm ci
+      - name: Capacitor eşitleme
+        script: npx cap sync ios
+      - name: Simülatör derlemesi (imzasız)
+        script: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+          cd build/Build/Products/Release-iphonesimulator && zip -qr ../../../../Mulkum360-simulator.zip App.app
+    artifacts:
+      - Mulkum360-simulator.zip
+      - build/**/*.log
+
+  ios-testflight:
+    name: iOS TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Mulkum360 ASC
+    environment:
+      node: 22
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.mulkum360.app
+    scripts:
+      - name: Bağımlılıklar
+        script: npm ci
+      - name: Capacitor eşitleme
+        script: npx cap sync ios
+      - name: İmza profilleri
+        script: xcode-project use-profiles --project ios/App/App.xcodeproj
+      - name: Sürüm numarası
+        script: |
+          cd ios/App
+          agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number com.mulkum360.app || echo 0) + 1))
+      - name: IPA
+        script: xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

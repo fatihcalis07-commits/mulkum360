@@ -7,7 +7,7 @@ try { Object.assign(perfAyar, JSON.parse(localStorage.getItem('perfAyar') || '{}
 EKRAN.performans = async () => {
   if (girisGerek('Performansını görmek için giriş yap')) return;
   const b = ben();
-  app.innerHTML = ustBar('Satış ve kiralama performansım') + `<div class="ic">${bosDurum('grafik', 'Yükleniyor…', '')}</div>`;
+  app.innerHTML = ustBar('Performans raporu') + `<div class="ic">${bosDurum('grafik', 'Yükleniyor…', '')}</div>`;
   navCiz('hesap');
   let ilanlar;
   try { ilanlar = (await islem(sb.from('ilanlar').select('*').eq('sahip', b.id).order('olusturma', { ascending: false }))).map(ilanEsle); }

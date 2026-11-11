@@ -77,7 +77,7 @@ async function krediHesaplayiciCiz(kap, { tur = 'konut', fiyat = 0, turSec = tru
 }
 
 EKRAN.bankakredi = async (tur) => {
-  app.innerHTML = ustBar('Banka kredisi hesapla') + `<div class="ic"><div class="k soluk" style="margin-bottom:8px">Tutarı ve vadeyi gir; bankaların teklifleri aylık taksite göre sıralansın.</div><div id="bkKap"></div></div>`;
+  app.innerHTML = ustBar('Kredi hesaplama') + `<div class="ic"><div class="k soluk" style="margin-bottom:8px">Tutarı ve vadeyi gir; bankaların teklifleri aylık taksite göre sıralansın.</div><div id="bkKap"></div></div>`;
   await krediHesaplayiciCiz($('#bkKap'), { tur: KREDI_TUR.some(([k]) => k === tur) ? tur : 'konut' });
 };
 

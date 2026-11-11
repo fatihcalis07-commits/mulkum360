@@ -55,8 +55,14 @@ const mesafe = (a, b, c, d) => { const R = 6371000, r = Math.PI / 180, x = (c - 
 // Zaman sınırlı istek: yavaş ya da erişilemeyen servis raporu bekletmesin
 function sureliFetch(url, se, ms = 9000) { const a = new AbortController(); const t = setTimeout(() => a.abort(), ms); return fetch(url, { ...(se || {}), signal: a.signal }).finally(() => clearTimeout(t)); }
 // Overpass sunucuları yoğunken 20–30 sn sürebiliyor: aynalar aynı anda denenir, ilk başarılı cevap alınır.
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 function overpassYaris(govde) {
+  const H = window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.CapacitorHttp;
+  if (H) return Promise.any(OVERPASS.map(async (uc) => {
+    const r = await H.request({ url: uc + '?' + govde, method: 'GET', headers: { 'User-Agent': 'Mulkum360/1.0', Accept: 'application/json' }, connectTimeout: 15000, readTimeout: 60000 });
+    if (r.status < 200 || r.status >= 300) throw new Error(uc + ' ' + r.status);
+    return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+  })).catch(() => null);
   return Promise.any(OVERPASS.map(async (uc) => {
     const r = await sureliFetch(uc, { method: 'POST', body: govde, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 45000);
     if (!r.ok) throw new Error(uc + ' ' + r.status);
@@ -267,8 +273,11 @@ EKRAN.rapor = (id) => {
   }
   // 6 · Bölge: fiyat analizleri + demografi + sosyal (+ yaş grupları grafiği)
   if (emlak) {
-    const dm = h.demografi, yas = dm ? [['0–19 yaş (Z kuşağı)', dm.yas_0_19], ['20–39 yaş (Y kuşağı)', dm.yas_20_39], ['40–59 yaş (X kuşağı)', dm.yas_40_59], ['60 yaş ve üstü', dm.yas_60]].filter(([, x]) => x != null) : [];
-    sayfalar.push(`${raporEkBolumler(f, h)}${yas.length ? `${rBaslik('Yaş Grupları')}<div class="r-kutu">${cubukSvg(yas.map(([ad, x]) => ({ ad, deger: +x })))}</div>` : ''}`);
+    const dm = h.demografi, yd = dm?.yas_dagilim, on = (a, b2) => Math.round(Object.entries(yd || {}).filter(([k]) => { const n = parseInt(k, 10); return n >= a && n <= b2; }).reduce((t, [, x]) => t + +x, 0) * 10) / 10;
+    const yas = yd ? [['0–9 yaş', on(0, 9)], ['10–19 yaş', on(10, 19)], ['20–29 yaş', on(20, 29)], ['30–39 yaş', on(30, 39)], ['40–49 yaş', on(40, 49)], ['50–59 yaş', on(50, 59)], ['60–69 yaş', on(60, 69)], ['70–79 yaş', on(70, 79)], ['80 yaş ve üstü', on(80, 200)]] : dm ? [['0–19 yaş (Z kuşağı)', dm.yas_0_19], ['20–39 yaş (Y kuşağı)', dm.yas_20_39], ['40–59 yaş (X kuşağı)', dm.yas_40_59], ['60 yaş ve üstü', dm.yas_60]].filter(([, x]) => x != null) : [];
+    sayfalar.push(raporEkBolumler(f, h));
+    const dg = typeof demografiGrafikleri === 'function' ? demografiGrafikleri(dm, rBaslik) : '';
+    if (yas.length || dg) sayfalar.push(`${yas.length ? `${rBaslik('Yaş Grupları')}<div class="r-kutu">${cubukSvg(yas.map(([ad, x]) => ({ ad, deger: +x })))}</div>` : ''}${dg}${dm ? `<div class="r-not">Kaynak: ${kac(dm.demografi_kaynak || dm.kaynak || 'TÜİK')}. İl geneli verisidir; mahalle ve ilçe yapısı farklı olabilir.</div>` : ''}`);
   }
   // 7 · Seçim sonuçları (YSK, girilmişse)
   if (emlak && h.secim) sayfalar.push(secimSayfasi(h.secim));
@@ -284,7 +293,7 @@ EKRAN.rapor = (id) => {
 
   const toplam = sayfalar.length + 1;
   const html = kapak + sayfalar.map((s, n) => sayfa(s, d, n + 2, toplam)).join('');
-  app.innerHTML = ustBar('Değer raporu') + `<div class="ic">
+  app.innerHTML = ustBar('Değerleme raporu') + `<div class="ic">
     <div class="rapor-kap" id="kap"><div class="rapor-olcek" id="olcek"><div id="raporSayfa">${html}</div></div></div>
     <button class="btn tam" id="pdf">${ic('indir', 18)}PDF olarak kaydet / paylaş (${toplam} sayfa)</button>
     <button class="btn sade tam" id="sil" style="color:var(--hata)">Raporu sil</button></div>`;

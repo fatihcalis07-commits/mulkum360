@@ -66,6 +66,7 @@ async function endeksKartiYukle(i) {
     kap.innerHTML = `<h3>${kac(ad)} konut endeksi</h3>
       <div class="k soluk" style="margin:-4px 0 10px">${[i.ilce, i.il].filter(Boolean).map(kac).join(', ')} · fiyat değişimi TCMB endeksi, ${son.t.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</div>
       ${mh ? `<div class="satir" style="gap:12px;background:var(--vurgu-acik);border-radius:14px;padding:12px 14px;margin-bottom:10px"><div class="ara"><div class="k" style="font-weight:600">${kac(mh.ad)} ortalama m²</div><div class="k soluk" style="font-size:12px">${mh.n} ilanın ortancası${mh.tur !== 'mahalle' ? ` · mahallede yeterli ilan yok, ${mh.tur} geneli` : ''}</div></div><b style="font-size:20px">${tl(mh.deger)}</b></div>` : ''}
+      ${mh && f0.kat && typeof katEtki === 'function' && katEtki(f0.kat) !== 1 ? `<div class="k soluk" style="margin:-4px 0 10px">${kac(f0.kat)} için kat etkisi ${katYuzde(f0.kat)} · bu kat için beklenen m² <b>${tl(mh.deger * katEtki(f0.kat))}</b></div>` : ''}
       <div class="perf-izgara" style="grid-template-columns:repeat(3,1fr);margin:0 0 10px">
         ${[[1, 'Son 1 yıl'], [5, 'Son 5 yıl'], [10, 'Son 10 yıl']].map(([y, a]) => { const k = kat(y), d = degisim(y);
           // %200'ü aşan artış "kat" olarak (kutuya sığsın, daha anlaşılır olsun), yüzde alt satırda

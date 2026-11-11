@@ -803,3 +803,109 @@ html.koyu .aj-ai{background:linear-gradient(135deg,#1C2740,#2A2140)}
 html.koyu .aj-saat{background:#16243A}
 .aj-saat.gec{color:#FF3B30;background:#FFECEB}
 .aj-plan{border:1px solid #D9D3FF}
+/* 3.8: SADE simge dili — tek renk, açık zemin, ince çizgi. Önceki renkli/degrade simgelerin hepsini geçersiz kılar. */
+:root{--sade-zemin:#F1F4F8;--sade-ikon:var(--birincil,#1064BC)}
+html.koyu{--sade-zemin:#1E2633;--sade-ikon:#8FB8EA}
+.kat-ikon,.ayar-d svg,.ai-eylem span,.kisayol span,.kat span,.yon-k span,.liste a>svg:first-child,.liste button.oge>svg:first-child,.liste div.oge>svg:first-child,
+[class*="kat-k"] .kat-ikon,.kisayollar.renkli .kisayol span{
+  background:var(--sade-zemin)!important;color:var(--sade-ikon)!important;stroke:var(--sade-ikon)!important;box-shadow:none!important;border-radius:12px!important}
+.kat-ikon svg,.kat span svg,.ai-eylem span svg,.kisayol span svg,.yon-k span svg,.kisayollar.renkli .kisayol span svg{stroke:currentColor!important}
+.liste a>svg:first-child,.liste button.oge>svg:first-child,.liste div.oge>svg:first-child{width:34px!important;height:34px!important;padding:8px!important;stroke-width:1.7}
+.kisayollar.renkli .kisayol{background:var(--yuzey)!important;color:var(--murekkep)!important;border:1px solid var(--cizgi)!important;box-shadow:none!important}
+.ozellik-k.turuncu{background:var(--yuzey)!important;border:1px solid var(--cizgi)!important}
+.ozellik-k.turuncu b{color:var(--murekkep)!important}
+.ozellik-k.turuncu .oz-ikon{background:var(--sade-zemin)!important;color:var(--sade-ikon)!important}
+.ozellik-k.koyu{background:linear-gradient(140deg,#22324A,#1F4E86)!important}
+.yon-k span{background:var(--sade-zemin)!important;color:var(--sade-ikon)!important}
+.aj-saat{color:var(--sade-ikon);background:var(--sade-zemin)}
+/* Açılır-kapanır bölümler */
+details.katla{background:var(--yuzey);border:1px solid var(--cizgi);border-radius:16px;overflow:hidden}
+details.katla+details.katla{margin-top:10px}
+details.katla>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;font-weight:700;font-size:15px;color:var(--murekkep)}
+details.katla>summary::-webkit-details-marker{display:none}
+details.katla>summary>svg:first-child{width:34px;height:34px;padding:8px;border-radius:12px;background:var(--sade-zemin);color:var(--sade-ikon);box-sizing:border-box;flex-shrink:0}
+details.katla>summary small{font-size:12px;font-weight:600;color:var(--soluk);white-space:nowrap}
+details.katla>summary>svg:last-child{color:var(--soluk);transition:transform .2s;flex-shrink:0}
+details.katla[open]>summary>svg:last-child{transform:rotate(180deg)}
+details.katla[open]>summary{border-bottom:1px solid var(--cizgi)}
+.katla-ic{padding:6px 10px 10px}
+.katla-ic .liste{box-shadow:none;border:0;background:transparent}
+.katla-ic .ayar-izgara{padding-top:4px}
+.katla-tumu{display:block;padding:8px 6px;font-size:13px;font-weight:700;color:var(--sade-ikon);text-decoration:none}
+/* Emlak haberleri (Keşfet) */
+.haber-k{display:flex;flex-direction:column;gap:8px}
+.haber-bas{display:flex;align-items:center;gap:8px}
+.haber-bas svg{width:30px;height:30px;padding:6px;border-radius:10px;background:var(--sade-zemin);color:var(--sade-ikon);box-sizing:border-box}
+.haber-liste{display:flex;flex-direction:column}
+.haber-satir{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 0;border:0;border-top:1px solid var(--cizgi);background:none;text-align:left;font:inherit;color:var(--murekkep);cursor:pointer}
+.haber-satir:first-child{border-top:0}
+.haber-satir span{font-size:14px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.haber-satir small{font-size:12px;color:var(--soluk)}
+.segment.haber-sekme{display:grid;grid-template-columns:repeat(3,1fr);background:var(--yuzey2);padding:4px;border-radius:12px}.segment.haber-sekme button{color:var(--murekkep)!important;font-weight:600;padding:7px 4px}.segment.haber-sekme button.secili{background:var(--birincil,#1064BC)!important;color:#fff!important}
+/* Piyasa endeksleri */
+.segment.endeks-sekme{display:grid;grid-template-columns:1fr 1fr;background:var(--yuzey2);padding:4px;border-radius:12px}
+.segment.endeks-sekme button{color:var(--murekkep)!important;font-weight:600}.segment.endeks-sekme button.secili{background:var(--birincil,#1064BC)!important;color:#fff!important}
+.endeks-kutular{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.endeks-kutu{display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:12px;background:var(--sade-zemin,#F1F4F8);min-width:0}
+.endeks-kutu b{font-size:17px;font-weight:800;color:var(--murekkep)}.endeks-kutu span{font-size:12px;font-weight:600;color:var(--murekkep)}.endeks-kutu small{font-size:11px;color:var(--soluk)}
+.endeks-grafik{width:100%;height:auto;display:block;margin-top:6px}
+.eg-izgara{stroke:var(--cizgi);stroke-width:1}.eg-yazi{font-size:9px;fill:var(--soluk)}
+.eg-lejant{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--soluk);margin:4px 0}.eg-lejant i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.endeks-sec{height:36px;border-radius:10px;border:1px solid var(--cizgi);background:var(--yuzey);color:var(--murekkep);font:inherit;padding:0 8px;max-width:45%}
+.endeks-tablo .oge{min-height:44px}
+/* 4.8: iOS tarzı profesyonel kontroller — tüm sayfalarda tek dil */
+:root{--ios-gri:#F2F2F7;--ios-gri2:#E5E5EA;--ios-mavi:#007AFF;--ios-yazi:#1C1C1E;--ios-ikincil:#6E6E73}
+html.koyu{--ios-gri:#1C1C1E;--ios-gri2:#2C2C2E;--ios-mavi:#0A84FF;--ios-yazi:#F2F2F7;--ios-ikincil:#98989D}
+/* Segment (Emlak/Vasıta, Portföy/Ajanda, haber sekmeleri…): gri ray + beyaz seçili kapsül */
+.segment,.segment.dort,.segment.yon-grup,.segment.haber-sekme,.segment.endeks-sekme{background:var(--ios-gri2)!important;border-radius:10px!important;padding:2px!important;gap:2px!important}
+.segment button{height:34px!important;border-radius:8px!important;color:var(--ios-yazi)!important;opacity:1!important;font-weight:600!important;font-size:13.5px!important;background:transparent!important;box-shadow:none!important}
+.segment button svg{stroke:currentColor}
+.segment button.secili{background:var(--yuzey)!important;color:var(--ios-yazi)!important;box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)!important}
+html.koyu .segment button.secili{background:#636366!important}
+/* Koyu ana sayfa başlığındaki segment kendi görünümünü korur */
+.hero .segment{background:rgba(255,255,255,.12)!important}
+.hero .segment button{color:rgba(255,255,255,.85)!important}
+.hero .segment button.secili{background:#fff!important;color:#1C1C1E!important}
+/* Çipler: sade, seçili olan dolgulu mavi değil hafif tonlu */
+.cip{height:34px!important;border-radius:17px!important;background:var(--yuzey)!important;border:1px solid var(--ios-gri2)!important;color:var(--ios-yazi)!important;font-weight:500!important}
+.cip.secili{background:rgba(0,122,255,.12)!important;border-color:rgba(0,122,255,.35)!important;color:var(--ios-mavi)!important;font-weight:600!important}
+.hero .cip,.cip.cip-koyu{background:rgba(255,255,255,.12)!important;border-color:rgba(255,255,255,.18)!important;color:#fff!important}
+/* Ana düğme iOS mavisi, ikincil düğmeler gri dolgu */
+.btn{border-radius:12px}
+.btn:not(.sade):not(.cizgili):not(.tehlike):not(.koyu):not(.guven){background:var(--ios-mavi)}
+.btn.sade{background:var(--ios-gri)!important;color:var(--ios-mavi)!important;border:0!important}
+.btn.cizgili{background:transparent;border:1px solid var(--ios-gri2);color:var(--ios-mavi)}
+/* Simgeler: iOS Ayarlar tarzı yumuşak kare, sistem mavisi, ince çizgi */
+:root{--sade-zemin:var(--ios-gri);--sade-ikon:var(--ios-mavi)}
+.kat-ikon,.ayar-d svg,.ai-eylem span,.kisayol span,.kat span,.yon-k span,.liste a>svg:first-child,.liste button.oge>svg:first-child,.liste div.oge>svg:first-child,details.katla>summary>svg:first-child,.haber-bas svg{border-radius:9px!important;stroke-width:1.6!important}
+.segment button[aria-selected="true"]{background:var(--yuzey)!important;color:var(--ios-yazi)!important;box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)!important}.hero .segment button[aria-selected="true"]{background:#fff!important;color:#1C1C1E!important}
+/* 4.8 öncelik düzeltmesi: eski mavi segment ve renkli kısayol kurallarını ez */
+.segment.segment.segment button{background:transparent!important;color:var(--ios-yazi)!important;box-shadow:none!important}
+.segment.segment.segment button.secili,.segment.segment.segment button[aria-selected="true"]{background:var(--yuzey)!important;color:var(--ios-yazi)!important;box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)!important}
+.hero .segment.segment.segment button{color:rgba(255,255,255,.85)!important}
+.hero .segment.segment.segment button.secili,.hero .segment.segment.segment button[aria-selected="true"]{background:#fff!important;color:#1C1C1E!important}
+.kisayollar.kisayollar.renkli .kisayol.kisayol span,.kat-k.kat-k .kat-ikon,.kat.kat span,.ayar-d.ayar-d svg,.ai-eylem.ai-eylem span,.kisayol.kisayol span,.liste.liste>*>svg:first-child{background:var(--ios-gri)!important;color:var(--ios-mavi)!important;stroke:var(--ios-mavi)!important;box-shadow:none!important}
+.kisayollar.kisayollar.renkli .kisayol.kisayol span svg,.kat-k.kat-k .kat-ikon svg,.kat.kat span svg,.kisayol.kisayol span svg,.ai-eylem.ai-eylem span svg{stroke:var(--ios-mavi)!important}
+/* Filtre çubuğu: tek sıra açılır seçiciler */
+.filtre-cubuk{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}
+.filtre-sec{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;align-items:center;column-gap:4px;text-align:left;padding:7px 10px;border-radius:12px;border:1px solid var(--ios-gri2,#E5E5EA);background:var(--yuzey);color:var(--ios-yazi,#1C1C1E);font:inherit;cursor:pointer;min-width:0}
+.filtre-sec small{grid-column:1;font-size:11px;color:var(--ios-ikincil,#6E6E73);font-weight:500}
+.filtre-sec b{grid-column:1;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.filtre-sec svg{grid-column:2;grid-row:1/3;color:var(--ios-ikincil,#6E6E73)}
+/* Filtrele penceresi: iOS gruplu liste */
+.fs-ust{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.fs-say{font-size:13px;font-weight:600;color:var(--ios-mavi,#007AFF);background:rgba(0,122,255,.1);padding:4px 10px;border-radius:999px}
+.fs-form{display:flex;flex-direction:column;gap:16px;padding-bottom:4px}
+.fs-baslik{font-size:12.5px;font-weight:600;color:var(--ios-ikincil,#6E6E73);text-transform:uppercase;letter-spacing:.4px;margin:0 4px 6px}
+.fs-liste{background:var(--yuzey);border-radius:12px;overflow:hidden;border:1px solid var(--ios-gri2,#E5E5EA)}
+.fs-satir{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-bottom:1px solid var(--ios-gri2,#E5E5EA)}
+.fs-satir:last-child{border-bottom:0}
+.fs-satir>span{flex:1;font-size:15px;color:var(--ios-yazi,#1C1C1E);white-space:nowrap}
+.fs-satir select,.fs-satir input{border:0!important;background:transparent!important;box-shadow:none!important;font:inherit;font-size:15px;color:var(--ios-ikincil,#6E6E73);text-align:right;text-align-last:right;padding:10px 0;outline:0;min-width:0;max-width:58%}
+.fs-satir select{-webkit-appearance:none;appearance:none;padding-right:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C7C7CC' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M9 6l6 6-6 6'/%3E%3C/svg%3E") no-repeat right center!important}
+.fs-satir input::placeholder{color:var(--ios-ikincil,#6E6E73);opacity:.7}
+.fs-ikili input{flex:1;max-width:none;text-align:center;text-align-last:center;background:var(--ios-gri,#F2F2F7)!important;border-radius:9px;margin:7px 0}
+.fs-ikili i{color:var(--ios-ikincil,#6E6E73);font-style:normal}
+.fs-alt{position:sticky;bottom:0;display:grid;grid-template-columns:1fr 2fr;gap:10px;padding:10px 0 2px;background:var(--zemin)}
+/* Filtrele alt çubuğu: altındaki satırlar görünmesin */
+.fs-alt{bottom:calc(-16px - var(--alt,0px));margin-bottom:calc(-16px - var(--alt,0px));padding:10px 0 calc(16px + var(--alt,0px));box-shadow:0 -1px 0 var(--ios-gri2,#E5E5EA);z-index:2}

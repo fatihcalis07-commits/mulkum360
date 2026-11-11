@@ -93,6 +93,17 @@ async function haritaIlceGit(il, ilce) {
   } catch (_) { toast('Photon servisine ulaşılamadı'); }
 }
 
+const HARP_SECIM = [
+  ['r', 'Mesafe', [[0, 'Her yer'], [250, '250 m'], [500, '500 m'], [1000, '1 km'], [2000, '2 km'], [5000, '5 km']]],
+  ['i', 'İşlem', [['', 'Hepsi'], ['Satılık', 'Satılık'], ['Kiralık', 'Kiralık']]],
+  ['s', 'Sıralama', [['fiyat', 'En yeni'], ['mesafe', 'Yakına göre'], ['ucuz', 'En ucuz']]]
+];
+function harpSecimAc(k) {
+  const [, et, l] = HARP_SECIM.find(([x]) => x === k), v = k === 'r' ? HARP.r : k === 'i' ? HARP.islem : HARP.sirala;
+  sheetAc(`<h2 style="font-size:18px;font-weight:800">${et}</h2><div class="liste">${l.map(([x, ad]) => `<button class="oge" data-hc="${k}${x}">${ad}<span class="ok">${String(x) === String(v) ? ic('tik', 20, 'var(--ios-mavi,#007AFF)') : ''}</span></button>`).join('')}</div>`, (s) => {
+    s.querySelectorAll('[data-hc]').forEach((b) => (b.onclick = () => { const z = b.dataset.hc; if (z[0] === 'r') HARP.r = +z.slice(1); else if (z[0] === 'i') HARP.islem = z.slice(1); else HARP.sirala = z.slice(1); sheetKapat(); ciz(); }));
+  });
+}
 EKRAN.harita = () => {
   const s = sorgu();
   if (s.ana && ANA[s.ana]) HARP.ana = s.ana;
@@ -100,19 +111,18 @@ EKRAN.harita = () => {
   if (+mz[0] && +mz[1]) { HARP.lat = +mz[0]; HARP.lon = +mz[1]; HARP.kaynak = 'ilan'; HARP.z = 14; }
   else if (HARP.kaynak !== 'sen') { const b = ben(); if (b?.il) { HARP.kaynak = 'secim'; HARP.ad = [b.ilce, b.il].filter(Boolean).join(' '); HARP.z = b.ilce ? 13 : 8; haritaIlceGit(b.il, b.ilce); } }
   const chip = (ad, v, aktif, js) => `<button class="cip ${aktif ? 'secili' : ''}" data-hc="${js}">${ad}</button>`;
-  app.innerHTML = ustBar('Haritada ara') + `<div class="ic">
+  app.innerHTML = ustBar('Harita görünümü') + `<div class="ic">
     <div class="segment" role="tablist">${Object.entries(ANA).map(([k, a]) => `<button role="tab" aria-selected="${k === HARP.ana}" data-hana="${k}">${ic(a.ikon, 16)}${a.ad}</button>`).join('')}</div>
-    <div class="ciplar" style="margin-top:8px">
-      ${[[0, 'Her yer'], [250, '250 m'], [500, '500 m'], [1000, '1 km'], [2000, '2 km'], [5000, '5 km']].map(([r, ad]) => chip(ad, r, HARP.r === r, 'r' + r)).join('')}
+    <div class="filtre-cubuk">
+      ${HARP_SECIM.filter(([k]) => k !== 'i' || HARP.ana === 'emlak').map(([k, et, l]) => { const v = k === 'r' ? HARP.r : k === 'i' ? HARP.islem : HARP.sirala, s = l.find(([x]) => String(x) === String(v)) || l[0]; return `<button class="filtre-sec" data-hsec="${k}"><small>${et}</small><b>${s[1]}</b>${ic('asagi', 14)}</button>`; }).join('')}
     </div>
-    ${HARP.ana === 'emlak' ? `<div class="ciplar">${[['', 'Hepsi'], ['Satılık', 'Satılık'], ['Kiralık', 'Kiralık']].map(([v, ad]) => chip(ad, v, HARP.islem === v, 'i' + v)).join('')}</div>` : ''}
-    <div class="ciplar">${[['mesafe', 'Yakına göre'], ['fiyat', 'En yeni'], ['ucuz', 'En ucuz']].map(([v, ad]) => chip(ad, v, HARP.sirala === v, 's' + v)).join('')}<button class="btn sade kucuk" id="hkonum">${ic('konum', 15)} Konumum</button><button class="btn sade kucuk" id="hilce">İl / ilçe</button></div>
+    <div class="satir" style="gap:8px"><button class="btn sade kucuk" id="hkonum" style="flex:1">${ic('konum', 15)} Konumum</button><button class="btn sade kucuk" id="hilce" style="flex:1">${ic('pusula', 15)} İl / ilçe seç</button></div>
     <div id="harp" style="position:relative;height:52vh;min-height:340px;overflow:hidden;border-radius:16px;background:#dfe7ee;touch-action:none;user-select:none"></div>
     <div class="k soluk" style="font-size:12px;margin:6px 2px 10px" id="harpBilgi"></div>
     <div style="display:flex;flex-direction:column;gap:10px" id="harpListe"></div>
     <div class="k soluk" style="font-size:12px;margin:10px 2px">Konumlar OpenStreetMap/TKGM'den çözülür; yakın konumlu ilanlar yaklaşıncaya kadar tek etikette toplanır. Kaydırmak için haritayı sürükle.</div></div>`;
   app.querySelectorAll('[data-hana]').forEach((x) => (x.onclick = () => { HARP.ana = x.dataset.hana; HARP.islem = ''; ciz(); }));
-  app.querySelectorAll('[data-hc]').forEach((x) => (x.onclick = () => { const v = x.dataset.hc; if (v[0] === 'r') HARP.r = +v.slice(1); else if (v[0] === 'i') HARP.islem = v.slice(1); else HARP.sirala = v.slice(1); ciz(); }));
+  app.querySelectorAll('[data-hsec]').forEach((x) => (x.onclick = () => harpSecimAc(x.dataset.hsec)));
   document.getElementById('hkonum').onclick = haritaKonum;
   document.getElementById('hilce').onclick = () => sheetAc(`<h2 style="font-size:17px;font-weight:800">İl / ilçe</h2>
     <label class="alan">İl<select id="hIl" data-bos="Seç">${ILLER.map((x) => `<option ${x === ben()?.il ? 'selected' : ''}>${x}</option>`).join('')}</select></label>

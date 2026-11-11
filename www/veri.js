@@ -42,7 +42,7 @@ const ALANLAR = {
     ['m2net', 'Net ㎡', 'sayi', null, true],
     ['m2brut', 'Brüt ㎡', 'sayi'],
     ['kat', 'Bulunduğu kat', 'metin'],
-    ['binaYasi', 'Bina yaşı', 'sayi'],
+    ['binaYasi', 'Bina yaşı', 'sec', ['0', '1', '2', '3', '4', '5-10', '11-15', '16-20', '21-25', '26-30', '31 ve üzeri']],
     ['isitma', 'Isıtma', 'sec', ['Doğalgaz (kombi)', 'Merkezi', 'Yerden ısıtma', 'Klima', 'Soba', 'Yok']],
     ['esya', 'Eşya', 'sec', ['Eşyasız', 'Eşyalı']],
     ['tapu', 'Tapu durumu', 'sec', ['Kat mülkiyeti', 'Kat irtifakı', 'Hisseli', 'Müstakil tapu', 'Bilinmiyor']],
