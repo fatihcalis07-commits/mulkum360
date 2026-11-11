@@ -260,17 +260,14 @@ function raporSayfalari2(f, h) {
   if (h.saha?.length) sayfalar.push(`${rBaslik('Saha ve Dron Görüntüleri')}<div class="r-galeri r-galeri-${Math.min(h.saha.length, 4)}">${h.saha.map((u) => `<img src="${u}" crossorigin="anonymous" alt="">`).join('')}</div><div class="r-not">Görüntüler rapor sahibi tarafından eklenmiştir.</div>`);
   // C · Kullanıcı beyanı ve kredi
   const k = h.beyan;
-  if (k && ['cephe', 'kat', 'manzara', 'otopark', 'site', 'tadilat', 'iskan', 'aidat', 'faiz', 'vade'].some((x) => k[x])) {
+  if (k && k.faiz && k.vade) {
     const tutar = h.orta, kr = k.faiz && k.vade && !/Kiralık/.test(f.islem || '') ? krediHesabi(tutar, +k.faiz, +k.vade, +k.pesinat || 0) : null;
-    sayfalar.push(`${rBaslik('Mülk Sahibinin Beyanı')}
-      <table class="r-tablo iki">${[['Cephe', k.cephe], ['Bulunduğu kat', k.kat], ['Manzara', k.manzara], ['Otopark', k.otopark], ['Site içinde', k.site], ['Tadilat durumu', k.tadilat], ['Tapu / iskân', k.iskan], ['Aylık aidat', k.aidat ? tl(+k.aidat) : '']].filter(([, x]) => x).map(([a, x]) => `<tr><th>${a}</th><td>${kac(x)}</td></tr>`).join('')}</table>
-      <div class="r-not">Bu bilgiler kullanıcı beyanıdır, doğrulanmamıştır; değer hesabına sayısal olarak eklenmez, alıcının değerlendirmesi için sunulur.</div>
-      ${kr ? `${rBaslik('Konut Kredisi Hesabı')}<div class="r-satir3">
+    if (kr) sayfalar.push(`${rBaslik('Konut Kredisi Hesabı')}<div class="r-satir3">
         <div class="r-kutu"><b>${tl(kr.taksit)}</b><small>Aylık taksit (${k.vade} ay, aylık %${String(k.faiz).replace('.', ',')})</small></div>
         <div class="r-kutu"><b>${tl(kr.pesinat)}</b><small>Peşinat (%${k.pesinat || 0})</small></div>
         <div class="r-kutu"><b>${tl(kr.toplam)}</b><small>Toplam geri ödeme · faiz ${tl(kr.faizToplam)}</small></div></div>
         ${k.aidat ? `<div class="r-not">Aylık toplam konut gideri (taksit + aidat): <b>${tl(kr.taksit + +k.aidat)}</b>.</div>` : ''}
-        <div class="r-not">Hesap tahmini piyasa değeri (${tl(tutar)}) üzerinden, eşit taksitli kredi formülüyle yapılmıştır; banka masrafları ve vergiler dahil değildir.</div>` : ''}`);
+        <div class="r-not">Hesap tahmini piyasa değeri (${tl(tutar)}) üzerinden, eşit taksitli kredi formülüyle yapılmıştır; banka masrafları ve vergiler dahil değildir.</div>`);
   }
   return sayfalar;
 }

@@ -577,3 +577,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 8.3 (12.11.2026)
 - Emsal, bölge analizi ve oda tablosu ilçe seçiliyse yalnız o ilçe (sokak → mahalle → ilçe; il geneline çıkmaz). İlçede ilan yetersizse rapor bölge kartı piyasaRef (ilçe/mahalle piyasa m², Endeksa yayınları) gösterir. Endeksa sitesinden otomatik çekme yapılmaz (kullanım şartları); veri piyasa_m2 tablosundan.
+
+## 8.4 (12.11.2026)
+- Rapor: "Mülk Sahibinin Beyanı" tablosu kaldırıldı (kredi hesabı girildiyse "Konut Kredisi Hesabı" sayfası kalır). Taşınmaz bilgilerinde "Net alan · kat" (ör. 58 m² · Bodrum kat; sayı ise "3. kat").
