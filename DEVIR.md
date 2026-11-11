@@ -525,3 +525,6 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 ## 7.0 (12.11.2026)
 - Aylık "Konut Trend Analizi" bildirimi: piyasa_bildirimi_gonder() (TCMB KFE TR aylık/yıllık + BIRIMFIYAT TR, 100 m² örneği), dönem başına üye başına bir kez; pg_cron piyasa-bildirimi her ayın 20si 10:30 TSİ. Örnek yalnız yöneticiye gönderildi. Gelen kutusunda piyasa simgesi grafik.
 - İlan sayfası (sahibine): "İlanını güçlendir" altında "Öne Çıkar · Vitrin" kartı (dopingKartiYukle): tür başına en düşük paket fiyatı, açıklama, etkin doping durumu; dokununca dopingAlimSheet.
+
+## 7.1 (12.11.2026)
+- Anlık bildirim (FCM): Firebase projesi mulkum360-27818 (Gemini ve Analytics kapalı), Android uygulaması com.mulkum360.app, android/app/google-services.json (gitignore). @capacitor/push-notifications 8; www/push.js PUSH_ACIK=true: girişte izin, "genel" kanalı, jeton public.push_jetonlari. bildirimler INSERT → pg_net → push-gonder (FCM HTTP v1, --no-verify-jwt). EKSİK: FCM_SA secret (Firebase hizmet hesabı JSON) — kullanıcı oluşturup `supabase secrets set FCM_SA=...` ile eklemeli; yokken fonksiyon sessizce geçer.

@@ -110,6 +110,7 @@ function canliBaglan() {
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bildirimler', filter: 'alici=eq.' + S.oturum }, (p) => uyeBildirimi(p.new))
     .subscribe();
   bekleyenBildirimler();
+  if (typeof pushKur === 'function') pushKur();
 }
 // Sunucudan gelen üye bildirimleri (ilan onaylandı vb.): telefonda bildirim + uygulama içi uyarı, sonra okundu
 const bildirimGosterildi = (id) => { try { const l = JSON.parse(localStorage.getItem('bildirimGosterilen') || '[]'); if (l.includes(id)) return true; localStorage.setItem('bildirimGosterilen', JSON.stringify([...l, id].slice(-200))); } catch (_) {} return false; };
@@ -119,7 +120,7 @@ async function uyeBildirimi(b) {
   if (typeof yenileNav === 'function') yenileNav();
   if (location.hash.startsWith('#/bildirimler')) { ciz(); return; }
   if (bildirimGosterildi(b.id)) return;
-  toast(b.baslik); bildir('uye-' + b.id, b.baslik, b.metin || '', b.link || '#/bildirimler');
+  toast(b.baslik); if (!(typeof pushKurulu !== 'undefined' && pushKurulu)) bildir('uye-' + b.id, b.baslik, b.metin || '', b.link || '#/bildirimler');
   if (b.tur === 'ilan_onay' && b.link) { const id = b.link.split('/').pop(), i = ilan(id); if (i) i.durum = 'yayinda'; }
 }
 // Uygulama kapalıyken gelenler: açılışta okunmamışları göster
