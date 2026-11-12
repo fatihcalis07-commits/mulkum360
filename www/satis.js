@@ -57,9 +57,9 @@ EKRAN.kredi = async () => {
     <div class="deger-k"><div class="ust-yazi">KREDİN</div><div class="buyuk">${b.kredi ?? 0} kredi</div><div style="font-size:13px;opacity:.85">Krediler süresizdir; rapor, MülkümDeko ve MülkümVideo’da ortak kullanılır</div></div>
     <div class="kart"><h3>Kredi ne alır?</h3><div class="liste">${KREDI_KULLANIM.map(([ik, ad, k]) => `<div class="oge">${ic(ik, 20)}<span class="ara">${ad}</span><span class="ok" style="font-weight:700">${k} kredi</span></div>`).join('')}</div></div>
     <div id="talepK"></div>
-    <div class="bolum-bas"><h2>Kredi paketleri</h2></div><div id="paketler"><div class="bos">Yükleniyor…</div></div>
+    <div class="bolum-bas"><h2>Kredi paketleri</h2></div><div id="paketler"><div class="iskelet"><i></i><i></i><i></i></div></div>
     <div class="k soluk" style="line-height:1.5">Fiyatlara KDV dahildir. Video veya görsel oluşturulamazsa kullanılan kredi otomatik iade edilir. Ödeme Google Play ile alınır; <a href="#/metin/satis">Satış ve iade koşulları</a>.</div>
-    <div class="bolum-bas"><h2>Hareketler</h2></div><div class="liste" id="hareket"><div class="bos">Yükleniyor…</div></div></div>`;
+    <div class="bolum-bas"><h2>Hareketler</h2></div><div class="liste" id="hareket"><div class="iskelet"><i></i><i></i><i></i></div></div></div>`;
   navCiz('hesap');
   let paketler = [], talep = null, yukHata = '';
   try { [paketler, talep] = await Promise.all([krediPaketleri(), bekleyenTalep()]); } catch (x) { yukHata = hataMetni(x); }

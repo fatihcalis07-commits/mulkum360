@@ -37,7 +37,7 @@ EKRAN.endeksler = async () => {
   const st = ENDEKS_DURUM;
   app.innerHTML = ustBar('Piyasa endeksleri') + `<div class="ic">
     <div class="segment endeks-sekme">${[['emlak', 'Emlak'], ['otomobil', 'Otomobil']].map(([k, a]) => `<button class="${st.sekme === k ? 'secili' : ''}" data-es="${k}">${a}</button>`).join('')}</div>
-    <div id="endeksIc"><div class="bos">Yükleniyor…</div></div>
+    <div id="endeksIc"><div class="iskelet"><i></i><i></i><i></i></div></div>
     <div class="k soluk" style="line-height:1.5">Mülküm360 Endeks Bankası · 2016 = 100. Kaynak: TCMB EVDS (konut fiyat endeksleri, değerleme raporlarına dayalı il birim fiyat ve kiraları, TÜİK tüketici fiyatları, döviz kurları) ve Mülküm360 ilanları. Aylık güncellenir.</div></div>`;
   navCiz();
   app.querySelectorAll('[data-es]').forEach((b) => (b.onclick = () => { st.sekme = b.dataset.es; EKRAN.endeksler(); }));

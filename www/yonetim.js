@@ -18,7 +18,7 @@ EKRAN.yonetim = async (sekme) => {
   app.innerHTML = ustBar('Yönetim') + `<div class="ic">
     <div class="segment yon-grup">${YON_GRUP.map(([ad, l]) => `<button class="${ad === grup[0] ? 'secili' : ''}" data-yg="${l[0]}">${ad}</button>`).join('')}</div>
     <div class="ciplar">${grup[1].filter(sek).map((k) => { const [, ik, ad] = sek(k); return `<a class="cip ${k === sekme ? 'secili' : ''}" href="#/yonetim/${k}">${ic(ik, 16)}${ad}${k === 'satis' && YON_BEKLEYEN ? ` <span class="rozet" style="position:static">${YON_BEKLEYEN}</span>` : ''}</a>`; }).join('')}</div>
-    <div id="yonIc"><div class="bos">Yükleniyor…</div></div></div>`;
+    <div id="yonIc"><div class="iskelet"><i></i><i></i><i></i></div></div></div>`;
   navCiz('hesap');
   app.querySelectorAll('[data-yg]').forEach((b) => (b.onclick = () => git('#/yonetim/' + b.dataset.yg)));
   const el = $('#yonIc');
@@ -56,7 +56,7 @@ YON.uyeler = async (el) => {
     const l = await uyeler(q);
     $('#uyeListe').innerHTML = `<div class="k soluk" style="margin:4px 0 8px">${l.length} üye${q ? ` · “${kac(q)}”` : ''}</div><div class="liste">${l.map(uyeSatir).join('') || '<div class="bos">Sonuç yok</div>'}</div>`;
   };
-  el.innerHTML = `<form id="uf" class="satir"><label class="arama-kutu">${ic('ara', 18, 'var(--soluk)')}<input name="q" placeholder="E-posta veya isim ara" aria-label="Üye ara"></label></form><div id="uyeListe"><div class="bos">Yükleniyor…</div></div>`;
+  el.innerHTML = `<form id="uf" class="satir"><label class="arama-kutu">${ic('ara', 18, 'var(--soluk)')}<input name="q" placeholder="E-posta veya isim ara" aria-label="Üye ara"></label></form><div id="uyeListe"><div class="iskelet"><i></i><i></i><i></i></div></div>`;
   $('#uf').onsubmit = (e) => { e.preventDefault(); ciz2(e.target.q.value.trim()); };
   await ciz2('');
 };
@@ -65,7 +65,7 @@ EKRAN.yonetimUye = async () => {
   if (girisGerek()) return;
   if (!S.yonetici) { git('#/hesap'); return; }
   const id = sorgu().id;
-  app.innerHTML = ustBar('Üye detayı') + `<div class="ic" id="uyeIc"><div class="bos">Yükleniyor…</div></div>`;
+  app.innerHTML = ustBar('Üye detayı') + `<div class="ic" id="uyeIc"><div class="iskelet"><i></i><i></i><i></i></div></div>`;
   navCiz('hesap');
   try {
     const [l, h] = await Promise.all([uyeler(''), uyeHareketleri(id)]);

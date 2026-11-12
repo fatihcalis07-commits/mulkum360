@@ -47,6 +47,8 @@ async function veriYukle() {
   if (S.oturum) await kisiselYukle(session.user);
   else { S.sohbetler = []; S.kayitliAramalar = []; S.yonetici = false; }
   sonYukleme = Date.now();
+  // Bir sonraki açılış için son veri (cihazda kalır; çıkışta silinir)
+  setTimeout(() => { try { kvYaz('onbellek', { surum: 1, zaman: Date.now(), oturum: S.oturum, ilanlar: S.ilanlar, kullanicilar: S.kullanicilar, sohbetler: S.sohbetler, kayitliAramalar: S.kayitliAramalar, favSayilari: S.favSayilari, yonetici: !!S.yonetici, bildirimler: S.bildirimler || [] }); } catch (_) {} }, 1500);
   canliBaglan();
 }
 
@@ -189,6 +191,15 @@ async function fotoYukle(dataUrl) {
   return sb.storage.from('ilan-fotolari').getPublicUrl(yol).data.publicUrl;
 }
 function depoYolu(url) { const k = '/ilan-fotolari/'; const i = String(url).indexOf(k); return i >= 0 ? decodeURIComponent(url.slice(i + k.length)) : null; }
+// Listelerde kullanılan küçük kapak (uzun kenar 480 px): tam boy fotoğraf yerine iner
+async function kapakUret(url) {
+  const bmp = await createImageBitmap(await (await fetch(url)).blob());
+  const o = Math.min(1, 480 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * o); c.height = Math.round(bmp.height * o); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const kb = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.74)), yol = S.oturum + '/k-' + yeniId() + '.jpg';
+  await islem(sb.storage.from('ilan-fotolari').upload(yol, kb, { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' }));
+  return sb.storage.from('ilan-fotolari').getPublicUrl(yol).data.publicUrl;
+}
 async function ilanKaydet(t, ilerleme) {
   const fotolar = [];
   for (let n = 0; n < t.fotolar.length; n++) {
@@ -196,6 +207,12 @@ async function ilanKaydet(t, ilerleme) {
     fotolar.push(t.fotolar[n].startsWith('data:') ? await fotoYukle(t.fotolar[n]) : t.fotolar[n]);
   }
   const satir = { ana: ALT[t.alt].ana, alt: t.alt, baslik: t.baslik, aciklama: t.aciklama || null, fiyat: t.fiyat, il: t.il, ilce: t.ilce || null, alanlar: t.alanlar, fotolar };
+  // Kapak değiştiyse küçük sürümü yeniden üret; üretilemezse ilan tam boy kapakla kaydedilir
+  try {
+    const eskiK = satir.alanlar?.kapakK;
+    if (fotolar[0] && satir.alanlar?.kapakKk !== fotolar[0]) { ilerleme && ilerleme('Kapak hazırlanıyor…'); const k = await kapakUret(fotolar[0]); satir.alanlar = { ...satir.alanlar, kapakK: k, kapakKk: fotolar[0] }; if (eskiK && depoYolu(eskiK)) sb.storage.from('ilan-fotolari').remove([depoYolu(eskiK)]); }
+    else if (!fotolar[0] && eskiK) { const { kapakK, kapakKk, ...r } = satir.alanlar; satir.alanlar = r; if (depoYolu(eskiK)) sb.storage.from('ilan-fotolari').remove([depoYolu(eskiK)]); }
+  } catch (_) {}
   if (t.id) {
     const eski = ilan(t.id);
     // Fiyat indirilince önceki fiyat saklanır ("Fiyat düştü" etiketi); artınca etiket kalkar

@@ -213,3 +213,56 @@ header.kartvizit .kv-sayi span{font-size:10px;font-weight:650;letter-spacing:.09
 header.kartvizit .kv-sayi{grid-template-columns:1fr 1fr 1.42fr 1fr}
 header.kartvizit .kv-sayi span{letter-spacing:.07em}
 header.kartvizit .kv-unvan{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+
+/* ---------- Yuklenirken iskelet ---------- */
+.iskelet{display:flex;flex-direction:column;gap:12px;padding:6px 0}
+.iskelet i{display:block;height:74px;border-radius:18px;background:linear-gradient(100deg,var(--yuzey2) 30%,color-mix(in srgb,var(--yuzey2) 55%,var(--yuzey)) 50%,var(--yuzey2) 70%);background-size:220% 100%;animation:pIsk 1.2s ease-in-out infinite}
+.iskelet i:nth-child(2){height:54px;width:82%}
+.iskelet i:nth-child(3){height:54px;width:64%}
+@keyframes pIsk{from{background-position:120% 0}to{background-position:-100% 0}}
+
+/* ---------- Fotografsiz ilan yer tutucusu ---------- */
+.ilan-k .foto:not([style*="background-image"]):not([data-bg]),.ilan-satir .foto:not([style*="background-image"]):not([data-bg]),.galeri>div:first-child:not(.seritler){background:radial-gradient(120% 120% at 0% 0%,color-mix(in srgb,var(--birincil) 12%,var(--yuzey)) 0%,var(--yuzey2) 70%)}
+.foto-yok{opacity:.5;color:var(--birincil)}
+.foto-yok svg{stroke:var(--birincil)}
+
+/* ---------- Degerlendirme ---------- */
+.yildizlar{color:#E0A100;letter-spacing:1px;white-space:nowrap}
+.yildizlar i{font-style:normal;color:var(--cizgi)}
+.yildiz-sec{display:flex;justify-content:center;gap:6px;padding:6px 0}
+.yildiz-sec button{width:52px;height:52px;border:0;background:none;font-size:38px;line-height:1;color:var(--cizgi);cursor:pointer;transition:transform .14s var(--p-yay),color .15s}
+.yildiz-sec button.dolu{color:#E0A100}
+.yildiz-sec button:active{transform:scale(.88)}
+.deg-liste{display:flex;flex-direction:column;margin-top:10px}
+.deg-liste>div{padding:12px 0;border-top:1px solid var(--p-ince);display:flex;flex-direction:column;gap:4px}
+
+/* ---------- Karsilastirma ---------- */
+.kiyas{background:var(--yuzey);border:1px solid var(--p-ince);border-radius:var(--p-r);box-shadow:var(--golge);overflow:hidden}
+.kiyas-bas,.kiyas-satir{display:grid;grid-template-columns:84px repeat(var(--n),minmax(0,1fr));gap:0}
+.kiyas-bas{padding:12px 10px 10px;gap:8px;border-bottom:1px solid var(--p-ince)}
+.kiyas-bas a{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--murekkep);min-width:0}
+.kiyas-bas .foto{aspect-ratio:4/3;border-radius:12px;background:var(--yuzey2) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.kiyas-bas b{font-size:12px;font-weight:650;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.kiyas-satir{border-bottom:1px solid var(--p-ince);font-size:13px}
+.kiyas-satir:last-child{border-bottom:0}
+.kiyas-satir:nth-child(odd){background:color-mix(in srgb,var(--yuzey2) 45%,transparent)}
+.kiyas-satir>span{padding:11px 10px;font-size:11.5px;font-weight:650;color:var(--soluk)}
+.kiyas-satir>div{padding:11px 8px;font-weight:550;overflow-wrap:anywhere;border-left:1px solid var(--p-ince)}
+.kiyas-satir b.iyi{color:var(--guven)}
+
+/* ---------- Ilan sayfasi ust blogu ---------- */
+.galeri+.ic>div:first-child>div:first-child,.galeri+.ic>.uyari-k+div>div:first-child{letter-spacing:-.03em}
+#ilanBaslik{font-size:17.5px;font-weight:650;line-height:1.35;letter-spacing:-.012em;margin-top:2px}
+.galeri+.ic .konum-yol{margin-top:4px}
+[data-sozet]:empty{display:none}
+
+/* ---------- Diger temalarda kartvizit ---------- */
+html[data-tema] header.kartvizit{background:radial-gradient(90% 120% at 100% 0%,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 58%),var(--baslik-zemin)!important;box-shadow:0 18px 40px -20px rgba(9,16,28,.55),inset 0 -1px 0 rgba(255,255,255,.3)!important}
+html[data-tema] header.kartvizit .kv-avatar{box-shadow:0 0 0 2.5px rgba(0,0,0,.25),0 0 0 4.5px #fff,0 12px 24px -8px rgba(0,0,0,.5)}
+html[data-tema] header.kartvizit .kv-rozet{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+html[data-tema] header.kartvizit .kv-rozet svg{stroke:#fff}
+html[data-tema] header.ust:not(.ust-hero){background-image:radial-gradient(120% 140% at 100% 0%,rgba(255,255,255,.2) 0%,rgba(255,255,255,0) 60%)!important}
+.kiyas-bas,.kiyas-satir{grid-template-columns:70px repeat(var(--n),minmax(0,1fr))}
+.kiyas-satir>div{overflow-wrap:break-word}
+.kiyas-satir b{white-space:nowrap;font-size:12.5px;letter-spacing:-.03em}
+.sheet .yildiz-sec button.dolu{color:#E0A100!important}
