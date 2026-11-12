@@ -13,8 +13,8 @@
 | Kategori | **Ev ve Yaşam** (House & Home) — ikinci: Finans DEĞİL, çünkü kredi/banka hizmeti yok |
 | İçerik türü | Uygulama (oyun değil) · Reklam: **Yok** · Uygulama içi satın alma: **Var** |
 | Hedef kitle | **18+** (gayrimenkul işlemi; çocuk hedeflenmiyor) |
-| Gizlilik politikası | https://mulkum360.com/gizlilik.html (sertifika çıkana kadar: https://fatihcalis07-commits.github.io/mulkum360/gizlilik.html) |
-| Web sitesi | https://mulkum360.com |
+| Gizlilik politikası | **https://mulkum360.app/gizlilik.html** (CANLI — TLS doğrulamalı 200, 12.11) · yedek: github.io/mulkum360/gizlilik.html · `.com` forumda çözülünce tercih sana |
+| Web sitesi | https://mulkum360.app (`.com` sertifika bekliyor) |
 | İletişim e-postası | fatihcalis07@gmail.com (ileride destek@mulkum360.com yönlendirmesi önerilir) |
 
 ### Ad adayları (30 kr sınırı)
