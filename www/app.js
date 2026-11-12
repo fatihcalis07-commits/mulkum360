@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.0 · 13.11.2026 01:00';
+const SURUM = '13.1 · 13.11.2026 01:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2359,7 +2359,7 @@ EKRAN.hesap = () => {
         <a class="ayar-d" href="#/metin/guvenlik">${ic('yardim', 22)}<span>Yardım merkezi</span></a>
         <a class="ayar-d" href="#/metin/kosullar">${ic('yasal', 22)}<span>Yasal bilgiler</span></a>
       </div>`, DILLER.find(([k]) => k === DIL)[1])}
-      ${S.yonetici ? `<a class="yon-giris" href="#/yonetim"><span class="yg-ikon">${ic('pano', 22)}</span><div class="ara"><b>Yönetim Paneli</b><div class="k soluk">Kullanıcılar, kredi satışları, şikayetler, veriler</div></div><span class="rozet" id="yonBekleyen" style="position:static" hidden></span><span class="soluk">›</span></a>` : ''}
+      ${S.yonetici ? `<a class="yon-giris" href="#/yonetim"><span class="yg-ikon">${ic('pano', 22)}</span><div class="ara"><b>Yönetim Paneli</b><div class="k soluk">Kullanıcılar, Kredi Satışları, Şikayetler, Veriler</div></div><span class="rozet" id="yonBekleyen" style="position:static" hidden></span><span class="yg-ok">${ic('ok', 18)}</span></a>` : ''}
       <div id="eidsKart"></div>
       <button class="btn sade tam" id="cikis">${ic('cikis', 18)}Çıkış yap</button>
       <button class="btn tehlike tam" id="hesapSil">Hesabımı sil</button>

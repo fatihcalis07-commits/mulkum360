@@ -795,3 +795,25 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .eids-adim>span{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:var(--yuzey2);color:var(--soluk);flex-shrink:0}
 .eids-adim>span.ok{background:#0F9D58;color:#fff}
 .eids-adim .btn{margin-left:auto}
+
+/* Yönetim Paneli + EİDS kartı düzeni */
+.yon-giris{padding:16px 16px 16px 14px!important;gap:14px!important;margin-bottom:2px}
+.yon-giris .ara{flex:1;min-width:0}
+.yon-giris .k.soluk{font-size:12.5px;margin-top:2px;line-height:1.4}
+.yon-giris .yg-ok{flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12)}
+.yon-giris .yg-ok svg{stroke:#fff;width:16px;height:16px;padding:0!important;background:none!important}
+.eids-kart{padding:16px!important}
+.eids-bas{gap:14px;margin-bottom:6px}
+.eb-yazi{display:flex;flex-direction:column;gap:3px;min-width:0}
+.eb-yazi b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.eb-yazi small{font-size:12.5px;line-height:1.4;color:var(--soluk)}
+.eids-adim{gap:12px;padding:12px 0;border-top:1px solid var(--p-ince)}
+.eids-adim .ea-no{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;background:var(--yuzey2);color:var(--soluk);flex-shrink:0}
+.eids-adim.tamam .ea-no{background:#0F9D58;color:#fff}
+.ea-yazi{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ea-yazi b{font-size:14.5px;font-weight:700}
+.ea-yazi small{font-size:12px;color:var(--soluk);font-weight:500}
+.eids-adim .ea-btn{margin-left:0;flex-shrink:0;min-height:38px;padding:0 18px;white-space:nowrap;font-size:14px}
+.ea-durum{flex-shrink:0;font-size:12px;font-weight:800;color:#0F7A45;background:color-mix(in srgb,#0F9D58 12%,var(--yuzey));padding:5px 10px;border-radius:999px}
+.eids-not{display:flex;align-items:center;gap:8px;margin-top:4px;padding:10px 12px;border-radius:12px;background:var(--yuzey2);font-size:12px;color:var(--soluk);font-weight:600}
+.eids-not svg{stroke:var(--soluk);flex-shrink:0}

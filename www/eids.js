@@ -130,10 +130,12 @@ async function eidsHesapKarti() {
   if (!eidsCanli() && !S.yonetici) return;
   const [u, t] = await Promise.all([eidsUyeDurum(), telefonDurum()]);
   const tarih = u.zaman ? new Date(u.zaman).toLocaleDateString('tr-TR') : '';
-  yer.innerHTML = '<div class="kart eids-kart"><div class="eids-bas"><span class="eids-ikon' + (u.dogrulandi ? ' tamam' : '') + '">' + ic('kalkan', 22) + '</span><div><b>Kimlik doğrulama (EİDS)</b><div class="k soluk">' + (u.dogrulandi ? 'e-Devlet ile doğrulandı · ' + tarih : 'İlan vermek için e-Devlet ile bir kez doğrulaman gerekir') + '</div></div></div>'
-    + '<div class="eids-adim"><span class="' + (t.onayli ? 'ok' : '') + '">' + (t.onayli ? '✓' : '1') + '</span>Telefon SMS doğrulaması' + (t.onayli ? '' : ' <button class="btn sade kucuk" id="eidsTel">Doğrula</button>') + '</div>'
-    + '<div class="eids-adim"><span class="' + (u.dogrulandi ? 'ok' : '') + '">' + (u.dogrulandi ? '✓' : '2') + '</span>e-Devlet kimlik doğrulaması' + (u.dogrulandi ? '' : ' <button class="btn kucuk" id="eidsBas">e-Devlet ile doğrula</button>') + '</div>'
-    + (eidsCanli() ? '' : '<div class="k soluk" style="margin-top:6px">Faz: ' + kac(S.eidsFaz || 'kapali') + ' · bu kart şimdilik yalnız yöneticiye görünür.</div>') + '</div>';
+  const adim = (tamam, no, ad, alt, dugme) => '<div class="eids-adim' + (tamam ? ' tamam' : '') + '"><span class="ea-no">' + (tamam ? '✓' : no) + '</span><div class="ea-yazi"><b>' + ad + '</b><small>' + alt + '</small></div>' + (tamam ? '<span class="ea-durum">Tamam</span>' : dugme) + '</div>';
+  yer.innerHTML = '<div class="kart eids-kart"><div class="eids-bas"><span class="eids-ikon' + (u.dogrulandi ? ' tamam' : '') + '">' + ic('kalkan', 22) + '</span><div class="eb-yazi"><b>Kimlik Doğrulama (EİDS)</b><small>' + (u.dogrulandi ? 'E-Devlet İle Doğrulandı · ' + tarih : 'İlan Vermek İçin E-Devlet İle Bir Kez Doğrulaman Gerekir') + '</small></div></div>'
+    + adim(t.onayli, 1, 'Telefon SMS Doğrulaması', 'Cep Telefonuna Gelen Kodla', '<button class="btn sade kucuk ea-btn" id="eidsTel">Doğrula</button>')
+    + adim(u.dogrulandi, 2, 'E-Devlet Kimlik Doğrulaması', 'Ticaret Bakanlığı EİDS Üzerinden', '<button class="btn kucuk ea-btn" id="eidsBas">Doğrula</button>')
+    + (eidsCanli() ? '' : '<div class="eids-not">' + ic('goz', 14) + '<span>Faz: ' + kac({ kapali: 'Kapalı', manuel: 'Manuel', canli: 'Canlı' }[S.eidsFaz] || 'Kapalı') + ' · Bu Kart Şimdilik Yalnız Yöneticiye Görünür</span></div>') + '</div>';
   const a = document.getElementById('eidsTel'); if (a) a.onclick = () => telefonDogrulaSheet(() => eidsHesapKarti());
   const b2 = document.getElementById('eidsBas'); if (b2) b2.onclick = () => eidsKimlikBaslat();
 }
+
