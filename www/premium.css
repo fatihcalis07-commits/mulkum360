@@ -413,3 +413,5 @@ html[data-tema] .btn:not(.sade):not(.cizgili):not(.tehlike):not(.google):not(.gu
 html[data-tema] .btn:not(.sade):not(.cizgili):not(.tehlike):not(.google):not(.guven):not(.koyu):not(.wa-btn):not([class*="iletisim"]) svg{stroke:var(--birincil-yazi)!important}
 html[data-tema] .bolum-bas a,html[data-tema] .katla-tumu{color:var(--vurgu-koyu)}
 html[data-tema] #aiFab svg{stroke:#fff!important}
+
+body.ilk-cizim #app>*,body.ilk-cizim .nav{animation:none!important}

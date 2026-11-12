@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.3 · 13.11.2026 09:30';
+const SURUM = '10.4 · 13.11.2026 10:15';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2672,7 +2672,7 @@ async function basla() {
   await yukle();
   const uTema = new URLSearchParams(location.search).get('tema'); if (PALETLER.some(([k]) => k === uTema)) S.palet = uTema; // test/derin bağlantı: ?tema=vitrin
   temaUygula();
-  app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak ve Vasıtada Yapay Zekâ</div><div class="acilis-cipler"><span>Değer Raporu</span><span>MülkümDeko</span><span>MülkümVideo</span></div></div>
+  if (!app.querySelector('.acilis')) app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak ve Vasıtada Yapay Zekâ</div><div class="acilis-cipler"><span>Değer Raporu</span><span>MülkümDeko</span><span>MülkümVideo</span></div></div>
     <div class="acilis-alt"><div class="acilis-cubuk"><span></span></div><div class="acilis-not">Hayalindekine bir adım</div></div></div>`;
   // Açılış ekranı en az 1,4 sn görünür (veri hazır olsa da bir anda kaybolmasın)
   const acilisT = Date.now(), acilisBekle = () => new Promise((r) => setTimeout(r, Math.max(0, 1400 - (Date.now() - acilisT))));
@@ -2703,7 +2703,7 @@ async function basla() {
         sonYukleme = Date.now();
         const imza = () => S.ilanlar.length + '|' + S.ilanlar.reduce((m, i) => Math.max(m, i.guncelleme || i.olusturma || 0), 0) + '|' + (ben()?.kredi ?? '') + '|' + (S.oturum && ben() ? okunmamis() : 0) + '|' + Object.keys(S.DOPING?.aktif || {}).length + '|' + (S.bildirimler || []).filter((x) => !x.okundu).length;
         const once = imza(), yenile = veriYukle();
-        await acilisBekle(); ciz();
+        await acilisBekle(); document.body.classList.add('ilk-cizim'); ciz(); setTimeout(() => document.body.classList.remove('ilk-cizim'), 600);
         yenile.then(() => { if (imza() !== once && !/^#\/(ver|sohbet|giris|kayit|profil|degerle|ai|toplu|karsilastir)/.test(location.hash) && sheetEl.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) ciz(); aramaBildir(); if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {}); }, () => {});
         return;
       }
@@ -2716,7 +2716,7 @@ async function basla() {
     app.innerHTML = bosDurum('uyari', 'Bağlantı kurulamadı', hataMetni(x), '<button class="btn" id="tekrar">Tekrar dene</button>');
     $('#tekrar').onclick = basla; return;
   }
-  ciz();
+  document.body.classList.add('ilk-cizim'); ciz(); setTimeout(() => document.body.classList.remove('ilk-cizim'), 600);
   setTimeout(aramaBildir, 3000);
   if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {});
 }
