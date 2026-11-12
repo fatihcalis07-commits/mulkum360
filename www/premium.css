@@ -774,3 +774,14 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .fr-baslik{font-size:13.5px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
 .fr-not{margin-top:auto;align-self:flex-start;font-size:12px;font-weight:700;color:#0F7A45;background:color-mix(in srgb,#0F9D58 10%,var(--yuzey));padding:3px 8px;border-radius:999px}
 .fr-not.acil{color:var(--soluk);background:var(--yuzey2);font-weight:600}
+
+/* Fiyat geçmişi */
+.fg-liste{display:flex;flex-direction:column;margin-top:4px}
+.fg-satir{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--p-ince);font-size:13.5px}
+.fg-satir:last-child{border-bottom:0}
+.fg-satir i{width:9px;height:9px;border-radius:50%;background:var(--cizgi);flex-shrink:0}
+.fg-satir i.dus{background:#0F9D58}.fg-satir i.art{background:#C8553D}
+.fg-satir span{flex:1;color:var(--soluk)}
+.fg-satir b{font-weight:750}
+.fg-satir em{font-style:normal;font-size:11.5px;font-weight:700;min-width:58px;text-align:right;color:var(--soluk)}
+.fg-satir em.dus{color:#0F7A45}.fg-satir em.art{color:#B4432E}

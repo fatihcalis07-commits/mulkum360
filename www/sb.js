@@ -216,8 +216,7 @@ async function ilanKaydet(t, ilerleme) {
   if (t.id) {
     const eski = ilan(t.id);
     // Fiyat indirilince önceki fiyat saklanır ("Fiyat düştü" etiketi); artınca etiket kalkar
-    if (eski && t.fiyat < eski.fiyat) satir.alanlar = { ...satir.alanlar, oncekiFiyat: Math.max(eski.fiyat, +eski.alanlar?.oncekiFiyat || 0) };
-    else if (eski && t.fiyat > eski.fiyat && satir.alanlar?.oncekiFiyat) { const { oncekiFiyat, ...r } = satir.alanlar; satir.alanlar = r; }
+    // "Önceki fiyat" (indirim referansı) sunucuda hesaplanır: son 30 günün en düşük fiyatı (ilan_fiyat_once tetikleyicisi)
     // Adres değişmediyse çözülmüş koordinatlar korunur; değişirse eski konum geçersizdir, silinir ve yeniden çözülür
     if (eski?.alanlar?.enlem && satir.alanlar) {
       const adresAyni = satir.il === eski.il && satir.ilce === eski.ilce && ['mahalle', 'sokak', 'ada', 'parsel'].every((k) => String(satir.alanlar[k] || '') === String(eski.alanlar[k] || ''));

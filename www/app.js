@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '12.7 · 14.11.2026 15:30';
+const SURUM = '12.8 · 14.11.2026 16:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -912,6 +912,7 @@ EKRAN.ilan = (id) => {
         <div class="fiyat-cubuk"><div class="bant" style="left:${e.bantSol * 100}%;width:${(e.bantSag - e.bantSol) * 100}%"></div><div class="nokta" style="left:${e.konum * 100}%"></div></div>
         <div class="k soluk">${e.sayi} benzer ilanın ortalaması: ${i.ana === 'emlak' ? tl(e.birimOrta) + '/m²' : tl(e.birimOrta)}. Uygulamadaki ilanlarla hesaplanır.</div></div>` : ''}
       ${[['video', 'Videoyu izle', 'Satıcının eklediği tanıtım videosu'], ['tur360', '360° sanal tur', 'Evi sanal olarak gez']].filter(([k]) => /^https:\/\//.test(f[k] || '')).map(([k, b, a]) => `<a class="kart satir" href="${kac(f[k])}" target="_blank" rel="noopener nofollow" style="text-decoration:none;color:inherit">${ic(k === 'video' ? 'foto' : 'pusula', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>${b}</b><div class="k soluk">${a} · dış bağlantı</div></div><span class="ok">›</span></a>`).join('')}
+      <div id="fiyatGecmis"></div>
       ${i.ana === 'emlak' && f.islem === 'Satılık' ? `<div class="kart" id="krediK"><h3>Kredi hesabı</h3><div class="izgara3"><label class="alan">Peşinat %<input id="kPes" inputmode="numeric" value="20"></label><label class="alan">Vade (ay)<input id="kVade" inputmode="numeric" value="120" list="kVadeOn"><datalist id="kVadeOn"><option value="60"><option value="120"><option value="180"></datalist></label><label class="alan">Aylık faiz %<input id="kFaiz" inputmode="decimal" placeholder="bankanınki"></label></div><div id="kSonuc" class="k soluk">Bankanın güncel aylık faiz oranını yaz; taksit hesaplansın.</div></div>` : ''}
       ${sahip ? `<div class="bolum-bas"><h2>İlanını güçlendir</h2><a href="#/kredi">${b.kredi ?? 0} kredi · Kredi al</a></div><div class="kart" id="dopingK"><div class="k soluk">Görünürlük paketleri yükleniyor…</div></div>` : ''}
       ${(sahip && fotolar.length) || (f.videolar || []).length ? '<div class="kart" id="videoK"><div class="k soluk">Videolar yükleniyor…</div></div>' : ''}
@@ -934,6 +935,7 @@ EKRAN.ilan = (id) => {
       : satildi ? `<a class="btn sade" href="#/ara?alt=${i.alt}">Benzer ilanları gör</a>`
       : `<div class="iletisim-bar${s.acikTel ? '' : ' telsiz'}">${s.acikTel ? `<a class="il-d il-ara" href="tel:${kac(telTemiz(s.acikTel))}"><span>${ic('telefon', 20)}</span>Ara</a><a class="il-d il-wa" href="${waBaglanti(s.acikTel, i)}" target="_blank" rel="noopener"><span>${WA_SVG}</span>WhatsApp</a>` : ''}<button class="il-d il-teklif" id="teklif"><span>${ic('kredi', 20)}</span>Teklif</button><button class="il-d il-mesaj" id="mesaj"><span>${ic('mesaj', 20)}</span>Mesaj</button></div>`}</div></div>`;
   if (typeof endeksKartiYukle === 'function') endeksKartiYukle(i);
+  fiyatGecmisiYukle(i);
   const oc = $('#oneCikar'); if (oc) oc.onclick = () => { if (!girisGerek()) dopingAlimSheet(i); };
   if ($('#dopingK') && typeof dopingKartiYukle === 'function') dopingKartiYukle(i);
   if (typeof sekmeBagla === 'function') sekmeBagla(i);
@@ -1026,6 +1028,19 @@ function ilanPaylasSheet(i) {
     $('#plKopya', s).onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Bağlantı kopyalandı'); } catch (_) { paylas(metin + '\n' + url); } };
     $('#plDiger', s).onclick = () => { sheetKapat(); paylas(metin + '\nİlan no: ' + (i.no || i.id.slice(-6).toUpperCase()) + '\n' + url); };
   });
+}
+// Fiyat geçmişi: sunucudaki değişiklik kayıtları (en az bir değişiklik olduysa gösterilir)
+async function fiyatGecmisiYukle(i) {
+  let l = [];
+  try { l = (await sb.from('ilan_fiyat_gecmisi').select('fiyat,zaman').eq('ilan', i.id).order('zaman', { ascending: true }).limit(50)).data || []; } catch (_) { return; }
+  // Aynı fiyatın ardışık tekrarları tek kayıt sayılır
+  l = l.filter((x, n) => !n || +x.fiyat !== +l[n - 1].fiyat);
+  const el = document.getElementById('fiyatGecmis'); if (!el || l.length < 2) return;
+  const tarih = (t) => new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  el.innerHTML = '<div class="kart fg-kart"><h3>Fiyat geçmişi</h3><div class="fg-liste">' + l.slice().reverse().map((x, n, a) => {
+    const once = a[n + 1], fark = once ? (+x.fiyat - +once.fiyat) / +once.fiyat : 0;
+    return '<div class="fg-satir"><i class="' + (fark < 0 ? 'dus' : fark > 0 ? 'art' : '') + '"></i><span>' + tarih(x.zaman) + (n === 0 ? ' · güncel' : '') + '</span><b>' + tl(+x.fiyat) + '</b>' + (once ? '<em class="' + (fark < 0 ? 'dus' : 'art') + '">' + (fark < 0 ? '↓ %' : '↑ %') + Math.abs(Math.round(fark * 1000) / 10).toString().replace('.', ',') + '</em>' : '<em>ilk fiyat</em>') + '</div>';
+  }).join('') + '</div><div class="k soluk" style="font-size:11.5px;margin-top:6px">Fiyat değişiklikleri Mülküm360 sunucusunda kaydedilir. İndirim, son 30 günün en düşük fiyatına göre hesaplanır.</div></div>';
 }
 // Tam ekran fotoğraf: kaydırarak gez, dokununca kapanır
 function fotoGoster(l, bas = 0) {
