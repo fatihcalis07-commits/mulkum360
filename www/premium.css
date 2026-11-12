@@ -666,3 +666,35 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .fs-ciplar button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--cizgi);background:var(--yuzey);font:inherit;font-size:13px;font-weight:600;color:var(--murekkep);cursor:pointer}
 .fs-ciplar button.secili{background:color-mix(in srgb,var(--birincil) 12%,var(--yuzey));border-color:var(--birincil);color:var(--vurgu-koyu,var(--birincil))}
 .fs-ipucu{font-size:12.5px;color:var(--soluk);padding:10px 14px}
+
+/* ============ Keşfet (alışılmış ana sayfa düzeni) ============ */
+.hero-sade{gap:12px;padding-bottom:18px}
+.hero-sade .ai-arama input::placeholder{font-size:13.5px}
+.hizli{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hizli a{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:16px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);color:#fff;text-decoration:none;font-size:11.5px;font-weight:650;text-align:center}
+.hizli a span{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+.hizli a svg{stroke:#fff}
+.kat-liste{display:flex;flex-direction:column;background:var(--yuzey);border:1px solid var(--p-ince);border-radius:var(--p-r);box-shadow:var(--golge);overflow:hidden}
+.kat-blok{border-bottom:1px solid var(--p-ince);padding:4px 0 10px}
+.kat-blok:last-child{border-bottom:0}
+.kat-ana{display:flex;align-items:center;gap:12px;padding:10px 14px 6px;text-decoration:none;color:var(--murekkep)}
+.kat-ana b{flex:1;font-size:17px;font-weight:800;letter-spacing:-.015em}
+.kat-ana small{font-size:12.5px;color:var(--soluk);font-weight:600}
+.kat-ana>svg:last-child{stroke:var(--soluk)}
+.kat-alt{display:flex;flex-wrap:wrap;gap:2px 0;padding:0 14px 0 64px}
+.kat-alt a{font-size:13.5px;font-weight:600;color:var(--vurgu-koyu,#1064BC);text-decoration:none;padding:4px 0}
+.kat-alt a:not(:last-child)::after{content:"·";color:var(--soluk);margin:0 7px}
+.kat-alt small{color:var(--soluk);font-weight:500;font-size:12px}
+.vitrin-izgara{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.vitrin-k{display:flex;flex-direction:column;gap:3px;text-decoration:none;color:var(--murekkep);background:var(--yuzey);border:1px solid var(--p-ince);border-radius:14px;overflow:hidden;box-shadow:var(--golge);padding-bottom:8px}
+.vitrin-k .foto{aspect-ratio:1/1;background:var(--yuzey2) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.vitrin-k span{font-size:11.5px;font-weight:600;line-height:1.3;padding:0 8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:30px}
+.vitrin-k b{font-size:12.5px;font-weight:800;padding:0 8px;letter-spacing:-.02em}
+.son-liste{display:flex;flex-direction:column;gap:10px}
+/* ============ Ara: sekmeler ve belirgin başlıklar ============ */
+.ara-sekme{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:5px;background:var(--yuzey);border:1px solid var(--p-ince);border-radius:18px;box-shadow:var(--golge)}
+.ara-sekme button{display:flex;align-items:center;justify-content:center;gap:7px;height:46px;border:0;border-radius:14px;background:none;font:inherit;font-size:15px;font-weight:750;color:var(--soluk);cursor:pointer;transition:background .15s,color .15s}
+.ara-sekme button svg{stroke:currentColor}
+.ara-sekme button.secili{background:var(--birincil);color:var(--birincil-yazi);box-shadow:0 8px 18px -10px color-mix(in srgb,var(--birincil) 80%,transparent)}
+.ara-bas{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--murekkep);margin-top:4px}
+.ara-yol{font-size:13.5px}

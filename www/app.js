@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '12.0 · 14.11.2026 11:00';
+const SURUM = '12.1 · 14.11.2026 12:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -565,32 +565,29 @@ EKRAN.kesfet = () => {
       <button class="ikon-btn" data-dilac aria-label="Dil" style="font-weight:800;font-size:12px;letter-spacing:.5px">${DIL.toUpperCase()}</button>
       ${b ? `<a class="kredi-hap" href="#/kredi" aria-label="Kredin ${b.kredi ?? 0}, kredi al">${ic('kredi', 15)}${b.kredi ?? 0}<span class="hap-arti">+</span></a>` : `<a class="kredi-hap" href="#/giris">Giriş</a>`}
       <a class="ikon-btn" href="#/mesajlar" aria-label="Mesajlar">${ic('mesaj')}${okunmamis() ? `<span class="rozet">${okunmamis()}</span>` : ''}</a><a class="ikon-btn" href="#/bildirimler" aria-label="Bildirimler">${ic('zil')}${yeniKayitli + okunmamisBildirim() ? `<span class="rozet">${yeniKayitli + okunmamisBildirim()}</span>` : ''}</a></header>
-    <section class="hero">
+    <section class="hero hero-sade">
       <div class="hero-selam">${selam}${b ? ', ' + kac(b.ad.split(' ')[0]) : ''}</div>
-      <h1 class="hero-baslik">Hayalindekine<br><b>bir adım.</b></h1>
-      <div class="segment" role="tablist">${Object.entries(ANA).map(([k, a]) => `<button role="tab" aria-selected="${k === ana}" class="${k === ana ? 'secili' : ''}" data-ana="${k}">${ic(a.ikon, 16)}${a.ad}</button>`).join('')}</div>
-      <form id="araF" role="search" class="ai-arama"><span class="ai-isaret">${ic('yildiz', 16)}</span><input name="q" aria-label="MülkümAI ile ara" placeholder="${ana === 'emlak' ? 'örn. 3+1 satılık, metroya yakın' : 'örn. 2019 otomatik dizel'}" enterkeyhint="search"><button class="btn kucuk" aria-label="Ara">${ic('ara', 18, '#fff')}</button></form>
-      <div class="ciplar">${ornek.map((o) => `<button class="cip cip-koyu" data-ornek="${kac(o)}">${kac(o)}</button>`).join('')}</div>
+      <form id="araF" role="search" class="ai-arama"><span class="ai-isaret">${ic('ara', 18)}</span><input name="q" aria-label="Ara" placeholder="Kelime, ilan no ya da “3+1 satılık Kadıköy”" enterkeyhint="search"><button class="btn kucuk" aria-label="Ara">${ic('ara', 18, '#fff')}</button></form>
+      <div class="hizli">${[['#/harita', 'konum', 'Haritada ara'], ['#/degerle', 'grafik', 'Değerleme'], ['#/ai', 'yildiz', 'MülkümAI'], ['#/ara?dusen=1', 'simsek', 'Fırsatlar']].map(([h, ik, ad]) => `<a href="${h}"><span>${ic(ik, 20)}</span>${ad}</a>`).join('')}</div>
     </section>
     <div class="ic">
-      <div class="kat-serit">${ana === 'emlak' ? kisayol('#/harita?ana=emlak', 'konum', 'Haritada ara', 'yarıçap · il/ilçe') + kisayol('#/ara?ana=emlak&islem=Satılık', 'ev', 'Satın al', 'satılık ilanlar') + kisayol('#/ara?ana=emlak&islem=Kiralık', 'kiralik', 'Kiralayın', 'kiralık ilanlar') + kisayol('#/ara?ana=emlak&islem=Sezonluk', 'deniz', 'Sezonluk', 'yazlık, sezonluk') + kisayol('#/ara?ana=emlak&dusen=1', 'simsek', 'Fırsatlar', 'fiyatı düşenler') + (projeler().length ? kisayol('#/proje', 'proje', 'Projeler', 'yeni konut') : '') + kisayol('#/danisman', 'kisi', 'Danışman bulun', 'doğrulanmış ofisler') + kisayol('#/ai', 'yildiz', 'MülkümAI ile ara', 'doğal dille') + kisayol('#/degerle', 'grafik', 'Konut değerleme', 'değer raporu')
-        : kisayol('#/harita?ana=vasita', 'konum', 'Haritada ara', 'yarıçap · il/ilçe') + kisayol('#/ara?ana=vasita&islem=Satılık', 'araba', 'Satın al', 'satılık araçlar') + kisayol('#/ara?ana=vasita&islem=Kiralık', 'kiralik', 'Kiralayın', 'kiralık araçlar') + kisayol('#/ara?ana=vasita&dusen=1', 'simsek', 'Fırsatlar', 'fiyatı düşenler') + kisayol('#/ara?ana=vasita', 'vasita', 'Tüm vasıtalar', 'sıfır ve ikinci el') + kisayol('#/ai', 'yildiz', 'MülkümAI ile ara', 'doğal dille') + kisayol('#/degerle', 'grafik', 'Araç değerleme', 'değer raporu')}</div>
-      ${vsira.map((k) => VITRINLER[k]()).join('')}
-      <div class="kat-serit">${altlari(ana).map((x) => [x, yayinda().filter((i) => i.alt === x).length]).sort((p, q) => (q[1] > 0) - (p[1] > 0)).map(([x, n]) => `<a class="kat-k" href="${n ? '#/ara?alt=' + x : '#/ver'}"><span class="kat-ikon ${ana}">${ic(ALT[x].ikon, 22)}</span><b>${ALT[x].ad}</b><small>${n ? n + ' ilan' : 'İlk ilanı ver'}</small></a>`).join('')}</div>
+      <div class="bolum-bas"><h2>Kategoriler</h2></div>
+      <div class="kat-liste">${Object.entries(ANA).map(([k, a]) => { const n = yayinda().filter((i) => i.ana === k).length, alt = altlari(k).map((x) => [x, yayinda().filter((i) => i.alt === x).length]).filter(([, m]) => m); return `<div class="kat-blok"><a class="kat-ana" href="#/ara?ana=${k}"><span class="kat-ikon ${k}">${ic(a.ikon, 22)}</span><b>${a.ad}</b><small>${sayiBicim(n)} ilan</small>${ic('ok', 16)}</a>${alt.length ? `<div class="kat-alt">${alt.map(([x, m]) => `<a href="#/ara?ana=${k}&alt=${x}">${ALT[x].ad} <small>(${sayiBicim(m)})</small></a>`).join('')}</div>` : ''}</div>`; }).join('')}</div>
+      ${(() => { const v = [...yayinda().filter((i) => dopingBilgi(i)), ...yayinda().filter((i) => !dopingBilgi(i) && i.dogrulanmis), ...yayinda().filter((i) => !dopingBilgi(i) && !i.dogrulanmis && (i.fotolar || []).length >= 5)].filter((i, n, l) => l.indexOf(i) === n).slice(0, 12); return v.length >= 3 ? `<div class="bolum-bas"><h2>Anasayfa vitrini</h2><a href="#/ara">Tümü</a></div><div class="vitrin-izgara">${v.map((i) => `<a href="#/ilan/${i.id}" class="vitrin-k"><div class="foto"${kapak(i) ? ` data-bg="${kac(kapak(i))}"` : ''}>${fotoKutu(i, 24)}</div><span>${kac(i.baslik)}</span><b>${tl(i.fiyat)}</b></a>`).join('')}</div>` : ''; })()}
+      ${(() => { const d = yayinda().filter((i) => indirim(i) > 0).sort((x, y) => indirim(y) - indirim(x)).slice(0, 8); return d.length >= 3 ? `<div class="bolum-bas"><h2>Fiyatı düşenler</h2><a href="#/ara?dusen=1">Tümü</a></div><div class="ciplar" style="gap:10px">${d.map((i) => `<div style="width:156px;flex-shrink:0">${ilanKart(i)}</div>`).join('')}</div>` : ''; })()}
+      ${yeniKayitli ? `<a class="kart satir" href="#/kayitli" style="text-decoration:none;color:inherit">${ic('zil', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Kayıtlı aramalarına ${yeniKayitli} yeni ilan</b><div class="k soluk">Görmek için dokun</div></div>${ic('ok', 16, 'var(--soluk)')}</a>` : ''}
+      ${gorulen.length ? `<div class="bolum-bas"><h2>Son baktıkların</h2></div><div class="ciplar" style="gap:10px">${gorulen.map((i) => `<div style="width:156px;flex-shrink:0">${ilanKart(i)}</div>`).join('')}</div>` : ''}
+      <div class="bolum-bas"><h2>Son eklenen ilanlar</h2>${l.length ? `<a href="#/ara">Tümünü gör</a>` : ''}</div>
+      ${l.length ? `<div class="son-liste">${l.slice(0, 10).map((i) => ilanSatir(i)).join('')}</div><a class="btn sade tam" href="#/ara">${ic('ara', 18)}Tüm ilanları gör</a>`
+        : bosDurum('ev', 'Henüz ilan yok', 'Mülküm360 yeni açıldı. İlk ilanı sen ver, binlerce kişiye ulaşsın.', `<a class="btn" href="#/ver">${ic('arti', 18, '#fff')}İlan ver</a>`)}
       <div class="ikili">
         <a class="ozellik-k koyu" href="#/ai"><span class="oz-ikon">${ic('yildiz', 20)}</span><b>MülkümAI asistan</b><small>Sor, karşılaştır, açıklama yazdır</small></a>
         <a class="ozellik-k turuncu" href="#/degerle"><span class="oz-ikon">${ic('grafik', 20)}</span><b>Ne kadar eder?</b><small>Değer aralığı ve PDF rapor</small></a>
       </div>
       <div class="kart haber-k" id="haberK"><div class="haber-bas">${ic('belge', 18)}<b>Piyasa gündemi</b></div><div class="k soluk">Yükleniyor…</div></div>
-      ${yeniKayitli ? `<a class="kart satir" href="#/kayitli" style="text-decoration:none;color:inherit">${ic('zil', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Kayıtlı aramalarına ${yeniKayitli} yeni ilan</b><div class="k soluk">Görmek için dokun</div></div>${ic('geri', 18, 'var(--soluk)')}</a>` : ''}
-      ${gorulen.length ? `<div class="bolum-bas"><h2>Son baktıkların</h2></div><div class="ciplar" style="gap:10px">${gorulen.map((i) => `<div style="width:160px;flex-shrink:0">${ilanKart(i)}</div>`).join('')}</div>` : ''}
-      <div class="bolum-bas"><h2>Yeni ${ANA[ana].ad.toLocaleLowerCase('tr-TR')} ilanları</h2>${l.length ? `<a href="#/ara?ana=${ana}">Tümünü gör</a>` : ''}</div>
-      ${(l = l.filter((i) => i.ana === ana)).length ? `<div class="ilan-izgara">${l.slice(0, 20).map(ilanKart).join('')}</div>`
-        : bosDurum('ev', 'Henüz ilan yok', 'Mülküm360 yeni açıldı. İlk ilanı sen ver, binlerce kişiye ulaşsın.', `<a class="btn" href="#/ver">${ic('arti', 18, '#fff')}İlan ver</a>`)}
     </div>`;
-  $('#araF').onsubmit = (e) => { e.preventDefault(); const q = e.target.q.value.trim(); q ? akilliAra(q, { ana }) : git('#/ara?ana=' + ana); };
+  $('#araF').onsubmit = (e) => { e.preventDefault(); const q = e.target.q.value.trim(); q ? akilliAra(q, {}) : git('#/ara'); };
   app.querySelectorAll('[data-ornek]').forEach((x) => (x.onclick = () => akilliAra(x.dataset.ornek, { ana })));
-  app.querySelectorAll('[data-ana]').forEach((x) => (x.onclick = () => { S.kesfetAna = x.dataset.ana; ciz(); }));
   $('#menuBtn').onclick = menuAc;
   haberleriYukle();
   if (Date.now() - sonYukleme > 60000) sessizTazele();
@@ -704,6 +701,10 @@ function aramaYap(q) {
   return gercekOnce(dopingSirala(l));
 }
 
+function araSekmeHtml(seciliAna) {
+  const s2 = [['', 'Tümü', 'ara'], ['emlak', 'Emlak', ANA.emlak.ikon], ['vasita', 'Vasıta', ANA.vasita.ikon]];
+  return '<div class="ara-sekme" role="tablist">' + s2.map(([k, ad, ik]) => '<button role="tab" aria-selected="' + (seciliAna === k) + '" class="' + (seciliAna === k ? 'secili' : '') + '" data-q=\'' + kac(JSON.stringify({ ana: k, alt: '', islem: '' })) + '\'>' + ic(ik, 18) + ad + '</button>').join('') + '</div>';
+}
 function araYolHtml(o, seciliAna, altlar) {
   const say = (q) => aramaYap({ ...o, ...q, sirala: '' }).length;
   const yol = [['Tümü', { ana: '', alt: '', islem: '' }]];
@@ -712,7 +713,7 @@ function araYolHtml(o, seciliAna, altlar) {
   if (o.islem) yol.push([o.islem, {}]);
   const sonraki = !seciliAna ? Object.entries(ANA).map(([k, a]) => [a.ad, { ana: k, alt: '' }]) : !o.alt ? altlar.map(([k, a]) => [a.ad, { alt: k, ana: a.ana }]) : seciliAna === 'emlak' && !o.islem ? alanSecenek('emlak', 'islem').map((x) => [x, { islem: x }]) : [];
   const dq = (q) => " data-q='" + kac(JSON.stringify(q)) + "'";
-  return '<div class="ara-yol">' + yol.map(([ad, q], n) => (n < yol.length - 1 ? '<button' + dq(q) + '>' + kac(ad) + '</button>' + ic('ok', 12) : '<b>' + kac(ad) + '</b>')).join('') + '</div>'
+  return (sonraki.length ? '<div class="ara-bas">' + (!seciliAna ? 'Kategori seç' : !o.alt ? ANA[seciliAna].ad + ' kategorileri' : 'İşlem türü') + '</div>' : '') + '<div class="ara-yol">' + yol.map(([ad, q], n) => (n < yol.length - 1 ? '<button' + dq(q) + '>' + kac(ad) + '</button>' + ic('ok', 12) : '<b>' + kac(ad) + '</b>')).join('') + '</div>'
     + (sonraki.length ? '<div class="ara-kat">' + sonraki.map(([ad, q]) => { const n = say(q); return n ? '<button' + dq(q) + '><span>' + kac(ad) + '</span><small>' + sayiBicim(n) + '</small>' + ic('ok', 14) + '</button>' : ''; }).join('') + '</div>' : '');
 }
 function araCubukHtml(o, filtreSay) {
@@ -745,11 +746,13 @@ EKRAN.ara = () => {
       <form id="araF" class="arama-kutu" role="search" style="height:44px">${ic('ara', 18, 'var(--soluk)')}<input name="q" aria-label="Ara" value="${kac(o.q || '')}" placeholder="Ne arıyorsun?" enterkeyhint="search"></form>
     </header>
     <div class="ic" style="padding-top:12px">
+      ${araSekmeHtml(seciliAna)}
       ${araHaritaAcik() ? `<div class="ara-harita-sar"><div id="harp" class="ara-harita"></div><button class="ara-harita-buyut" id="haritaBuyut">${ic('pusula', 15)}Tam ekran</button></div>` : ''}
       ${araYolHtml(o, seciliAna, altlar)}
       ${o.ai ? `<div class="bilgi-k" style="align-items:center">${ic('yildiz', 18)}<div><b>MülkümAI anladı:</b> ${o.ai.split('|').map(kac).join(' · ')}${o.q ? ` · “${kac(o.q)}”` : ''}</div></div>` : ''}
       ${araCubukHtml(o, filtreSay)}
       ${araEtiketHtml(o)}
+      <div class="ara-bas">Sonuçlar</div>
       <div class="ara-sonuc"><b>${sayiBicim(l.length)}</b> ilan</div>
       ${l.length ? l.slice(0, ilkAdet).map((i) => ilanSatir(i)).join('') + (l.length > ilkAdet ? (acik ? '<div id="dahaFazla" style="height:1px"></div>' : '<button class="btn sade tam ara-tumu" id="tumunuGoster">' + sayiBicim(l.length - ilkAdet) + ' ilan daha · Tümünü göster</button>') : '') : bosDurum('ara', 'Sonuç bulunamadı', 'Filtreleri azaltmayı ya da farklı kelimeler denemeyi dene. Aramayı kaydedersen yeni ilan gelince haber veririz.')}
     </div>`;
