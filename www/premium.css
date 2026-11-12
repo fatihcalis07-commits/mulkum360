@@ -817,3 +817,5 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ea-durum{flex-shrink:0;font-size:12px;font-weight:800;color:#0F7A45;background:color-mix(in srgb,#0F9D58 12%,var(--yuzey));padding:5px 10px;border-radius:999px}
 .eids-not{display:flex;align-items:center;gap:8px;margin-top:4px;padding:10px 12px;border-radius:12px;background:var(--yuzey2);font-size:12px;color:var(--soluk);font-weight:600}
 .eids-not svg{stroke:var(--soluk);flex-shrink:0}
+.ea-kilit{opacity:.6;gap:6px}
+.ea-kilit svg{stroke:currentColor}
