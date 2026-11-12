@@ -7,7 +7,8 @@ const pxDon = (x, y, z) => { const n = 2 ** z * 256, t = Math.PI * (1 - (2 * y) 
 const fiyatKisa = (n) => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace('.', ',') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + ' B' : String(Math.round(n));
 
 const haritaAday = () => {
-  const ham = yayinda().filter((i) => i.ana === HARP.ana && +i.alanlar?.enlem > 0 && +i.alanlar?.boylam > 0 && (!HARP.islem || i.alanlar?.islem === HARP.islem));
+  // Arama sayfasında harita, o aramanın sonuçlarını gösterir (HARP.liste)
+  const ham = HARP.liste ? HARP.liste.filter((i) => +i.alanlar?.enlem > 0 && +i.alanlar?.boylam > 0) : yayinda().filter((i) => i.ana === HARP.ana && +i.alanlar?.enlem > 0 && +i.alanlar?.boylam > 0 && (!HARP.islem || i.alanlar?.islem === HARP.islem));
   let l = ham.map((i) => ({ i, m: Math.round(mesafe(HARP.lat, HARP.lon, +i.alanlar.enlem, +i.alanlar.boylam)) }));
   if (HARP.r) l = l.filter((x) => x.m <= HARP.r);
   l.sort((a, b) => HARP.sirala === 'mesafe' ? a.m - b.m : HARP.sirala === 'ucuz' ? a.i.fiyat - b.i.fiyat : b.i.olusturma - a.i.olusturma);
@@ -135,7 +136,23 @@ function harpSecimAc(k) {
     s.querySelectorAll('[data-hc]').forEach((b) => (b.onclick = () => { const z = b.dataset.hc; if (z[0] === 'r') HARP.r = +z.slice(1); else if (z[0] === 'i') HARP.islem = z.slice(1); else HARP.sirala = z.slice(1); sheetKapat(); ciz(); }));
   });
 }
+// Haritayı parmakla kaydırma ve tekerlekle yakınlaştırma (harita ve arama sayfası ortak)
+function harpBagla(kap) {
+  if (!kap || kap.dataset.bagli) return; kap.dataset.bagli = '1';
+  let tut = null;
+  kap.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; tut = { x: e.clientX, y: e.clientY }; kap.setPointerCapture(e.pointerId); });
+  kap.addEventListener('pointermove', (e) => { if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; kap.querySelectorAll('.harp-kaydir').forEach((el) => (el.style.transform = `translate(${dx}px,${dy}px)`)); });
+  kap.addEventListener('pointerup', (e) => {
+    if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; tut = null;
+    if (Math.abs(dx) + Math.abs(dy) < 6) return harpCiz();
+    const p = dunyaPx(HARP.lat, HARP.lon, HARP.z), q = pxDon(p.x - dx, p.y - dy, HARP.z);
+    HARP.lat = Math.max(-85, Math.min(85, q.lat)); HARP.lon = ((q.lon + 540) % 360) - 180; harpCiz();
+  });
+  kap.addEventListener('pointercancel', () => { tut = null; harpCiz(); });
+  kap.addEventListener('wheel', (e) => { e.preventDefault(); HARP.z = Math.max(4, Math.min(18, HARP.z + (e.deltaY > 0 ? -1 : 1))); harpCiz(); }, { passive: false });
+}
 EKRAN.harita = () => {
+  HARP.liste = null;
   const s = sorgu();
   if (s.ana && ANA[s.ana]) HARP.ana = s.ana;
   if (s.islem !== undefined) HARP.islem = s.islem;
@@ -166,18 +183,7 @@ EKRAN.harita = () => {
     konumSecBagla($('#hIl', s), $('#hIlce', s), null);
     $('#hGit', s).onclick = async () => { const il = $('#hIl', s).value, ilce = $('#hIlce', s).value; if (!il) return toast('Önce il seç'); sheetKapat(); await haritaIlceGit(il, ilce); };
   });
-  const kap = document.getElementById('harp');
-  let tut = null;
-  kap.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; tut = { x: e.clientX, y: e.clientY }; kap.setPointerCapture(e.pointerId); });
-  kap.addEventListener('pointermove', (e) => { if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; kap.querySelectorAll('.harp-kaydir').forEach((el) => (el.style.transform = `translate(${dx}px,${dy}px)`)); });
-  kap.addEventListener('pointerup', (e) => {
-    if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; tut = null;
-    if (Math.abs(dx) + Math.abs(dy) < 6) return harpCiz();
-    const p = dunyaPx(HARP.lat, HARP.lon, HARP.z), q = pxDon(p.x - dx, p.y - dy, HARP.z);
-    HARP.lat = Math.max(-85, Math.min(85, q.lat)); HARP.lon = ((q.lon + 540) % 360) - 180; harpCiz();
-  });
-  kap.addEventListener('pointercancel', () => { tut = null; harpCiz(); });
-  kap.addEventListener('wheel', (e) => { e.preventDefault(); HARP.z = Math.max(4, Math.min(18, HARP.z + (e.deltaY > 0 ? -1 : 1))); harpCiz(); }, { passive: false });
+  harpBagla(document.getElementById('harp'));
   harpCiz();
   navCiz('ara');
 };

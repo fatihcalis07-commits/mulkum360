@@ -499,3 +499,37 @@ html[data-tema] .yon-ozet{background:radial-gradient(90% 120% at 100% 0%,var(--t
 .alt-bar:has(.iletisim-bar){padding-top:10px;padding-bottom:calc(10px + var(--alt))}
 .il-mesaj{white-space:nowrap;font-size:13.5px}
 .il-d{white-space:nowrap}
+
+/* ============ 11.3: arama haritası, araç şeması, profil, yönetim girişi ============ */
+.ara-harita-sar{position:relative}
+.ara-harita{position:relative;height:250px;border-radius:20px;overflow:hidden;background:#dfe7ee;touch-action:none;user-select:none;border:1px solid var(--p-ince);box-shadow:var(--golge)}
+.ara-harita-buyut{position:absolute;left:10px;top:10px;z-index:7;height:34px;padding:0 12px;border:0;border-radius:999px;background:var(--yuzey);color:var(--murekkep);font:inherit;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px -4px rgba(9,16,28,.45);cursor:pointer}
+.ara-harita .harp-alt a{min-height:92px}
+.ara-harita .harp-alt .foto{width:96px}
+.yon-giris{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--p-r);background:var(--yuzey);border:1px solid var(--p-ince);box-shadow:var(--golge);text-decoration:none;color:var(--murekkep)}
+.yon-giris>svg:first-child{width:34px;height:34px;padding:8px;border-radius:9px;background:var(--ios-gri);stroke:var(--ios-mavi);flex-shrink:0;box-sizing:border-box}
+.yon-giris b{font-size:15px;font-weight:650}
+header.kartvizit a.kv-foto{display:block;text-decoration:none}
+.profil-foto{gap:14px;align-items:center}
+.pf-avatar{width:72px!important;height:72px!important;border-radius:50%!important;object-fit:cover;flex-shrink:0;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--yuzey),0 0 0 4.5px var(--cizgi)}
+.bolum-bas h2 svg{vertical-align:-3px}
+.hasar-k{display:flex;flex-direction:column;gap:10px}
+.hasar-govde{display:flex;gap:14px;align-items:center}
+.arac-sema{width:150px;flex-shrink:0;height:auto}
+.arac-sema.dokun rect[data-parca]{cursor:pointer}
+.hasar-yan{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5}
+.hasar-lejant{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:600}
+.hasar-lejant span{display:flex;align-items:center;gap:8px}
+.hasar-lejant i{width:16px;height:16px;border-radius:5px;flex-shrink:0;box-sizing:border-box}
+
+/* Rapor: özet şeridi ve değer analizi */
+.r-ozet{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid #E3E6EC;border-radius:12px;background:#FDFDFE;overflow:hidden}
+.r-ozet div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 6px;border-left:1px solid #EEF0F4}
+.r-ozet div:first-child{border-left:0}
+.r-ozet b{font-size:15px;font-weight:700;color:#0B1B33;letter-spacing:-.01em}
+.r-ozet span{font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6B7280}
+.r-serit{background:linear-gradient(90deg,#2E9E6B 0%,#FFC72C 50%,#C8553D 100%);letter-spacing:.08em;font-size:12.5px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.r-vade{background:#fff}
+.r-vade-fiyat{letter-spacing:-.02em}
+.r-vade-ek{font-size:10.5px;color:#5B5F68}
+.r-vade-sure{white-space:nowrap;font-size:10.5px}

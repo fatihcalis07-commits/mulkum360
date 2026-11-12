@@ -67,13 +67,18 @@ const ALANLAR = {
   vasita: [
     ['marka', 'Marka', 'liste', MARKALAR, true],
     ['model', 'Model / seri', 'metin', null, true],
+    ['paket', 'Paket / motor seçeneği', 'metin'],
     ['yil', 'Model yılı', 'sayi', null, true],
     ['km', 'Kilometre', 'sayi', null, true],
     ['yakit', 'Yakıt', 'sec', ['Benzin', 'Dizel', 'LPG & Benzin', 'Hibrit', 'Elektrik'], true],
     ['vites', 'Vites', 'sec', ['Manuel', 'Otomatik', 'Yarı otomatik'], true],
+    ['motor', 'Motor hacmi', 'metin'],
+    ['tuketim', 'Ortalama tüketim (L/100 km)', 'metin'],
     ['kasa', 'Kasa tipi', 'sec', ['Sedan', 'Hatchback', 'Station wagon', 'Coupe', 'Cabrio', 'SUV', 'Pick-up', 'Panelvan', 'Minivan', 'Motosiklet']],
     ['renk', 'Renk', 'metin'],
     ['hasar', 'Boya / değişen', 'sec', ['Hatasız', 'Boyalı parça var', 'Değişen parça var', 'Ağır hasar kayıtlı'], true],
+    ['tramer', 'Tramer kaydı (TL)', 'sayi'],
+    ['muayene', 'Muayene geçerlilik (TÜVTÜRK)', 'tarih'],
     ['takas', 'Takas', 'sec', ['Takasa açık', 'Takas yok']],
     ['kimden', 'Kimden', 'sec', ['Sahibinden', 'Galeriden']]
   ]
