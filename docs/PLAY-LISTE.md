@@ -13,8 +13,8 @@
 | Kategori | **Ev ve Yaşam** (House & Home) — ikinci: Finans DEĞİL, çünkü kredi/banka hizmeti yok |
 | İçerik türü | Uygulama (oyun değil) · Reklam: **Yok** · Uygulama içi satın alma: **Var** |
 | Hedef kitle | **18+** (gayrimenkul işlemi; çocuk hedeflenmiyor) |
-| Gizlilik politikası | **https://mulkum360.app/gizlilik.html** (CANLI — TLS doğrulamalı 200, 12.11) · yedek: github.io/mulkum360/gizlilik.html · `.com` forumda çözülünce tercih sana |
-| Web sitesi | https://mulkum360.app (`.com` sertifika bekliyor) |
+| Gizlilik politikası | **https://www.mulkum360.com/gizlilik.html** (CANLI — TLS doğrulamalı 200, 12.11) · yedek: https://mulkum360.app/gizlilik.html |
+| Web sitesi | https://www.mulkum360.com (aynı içerik mulkum360.app'de de var) |
 | İletişim e-postası | fatihcalis07@gmail.com (ileride destek@mulkum360.com yönlendirmesi önerilir) |
 
 ### Ad adayları (30 kr sınırı)
@@ -28,7 +28,7 @@
 3. `Ev, arsa, işyeri, araç: ilan ver, haritada keşfet, değerini raporda gör.` (72 kr)
 
 ## 3) Tam açıklama (4000 kr) — doğrudan yapıştır
-Toplam: **1990 karakter** ✔
+Toplam: **1985 karakter** ✔
 
 ```text
 Mülküm360; konut, işyeri, arsa ve vasıta alım–satım–kiralama ilanlarını tek uygulamada toplayan bir emlak ve vasıta pazarıdır. İlan ver, haritada keşfet, mesajlaş ve kararını verilerle ver.
@@ -61,7 +61,7 @@ Uygulama ve ilan vermek ücretsizdir. Değer raporu gibi AI özellikleri kredi i
 ⚖️ ŞEFFAFLIK VE GÜVENLİK
 Gerçek olmayan ilanlara karşı inceleme süreci, ilan ve profilleri şikâyet etme, uygulama içinden hesap ve verilerini silme imkânı.
 
-📬 İletişim: +90 542 689 19 82 · mulkum360.app
+📬 İletişim: +90 542 689 19 82 · mulkum360.com
 ```
 
 ## 4) Uygulama içi satın almalar (aynı sekmeden tanıtılacak)

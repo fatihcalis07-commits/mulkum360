@@ -43,7 +43,7 @@ Uygulama ve ilan vermek ücretsizdir. Değer raporu gibi AI özellikleri kredi i
 ⚖️ ŞEFFAFLIK VE GÜVENLİK
 Gerçek olmayan ilanlara karşı inceleme süreci, ilan ve profilleri şikâyet etme, uygulama içinden hesap ve verilerini silme imkânı.
 
-📬 İletişim: fatihcalis07@gmail.com · mulkum360.com`;
+📬 İletişim: +90 542 689 19 82 · mulkum360.com`;
 
 const MAX = { ad: 30, kisa: 80, uzun: 4000 };
 const sat = (s) => s.split('\n').map((x) => `${x.length.toString().padStart(4)}  ${x}`).join('\n');
@@ -67,8 +67,8 @@ const md = `# Google Play Mağaza Listesi — Doldurmaya Hazır Metinler
 | Kategori | **Ev ve Yaşam** (House & Home) — ikinci: Finans DEĞİL, çünkü kredi/banka hizmeti yok |
 | İçerik türü | Uygulama (oyun değil) · Reklam: **Yok** · Uygulama içi satın alma: **Var** |
 | Hedef kitle | **18+** (gayrimenkul işlemi; çocuk hedeflenmiyor) |
-| Gizlilik politikası | https://mulkum360.com/gizlilik.html (sertifika çıkana kadar: https://fatihcalis07-commits.github.io/mulkum360/gizlilik.html) |
-| Web sitesi | https://mulkum360.com |
+| Gizlilik politikası | **https://www.mulkum360.com/gizlilik.html** (CANLI — TLS doğrulamalı 200, 12.11) · yedek: https://mulkum360.app/gizlilik.html |
+| Web sitesi | https://www.mulkum360.com (aynı içerik mulkum360.app'de de var) |
 | İletişim e-postası | fatihcalis07@gmail.com (ileride destek@mulkum360.com yönlendirmesi önerilir) |
 
 ### Ad adayları (30 kr sınırı)
