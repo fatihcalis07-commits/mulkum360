@@ -452,3 +452,19 @@ html[data-tema] .yon-ozet{background:radial-gradient(90% 120% at 100% 0%,var(--t
 .yon-liste .yon-s b:empty{display:none}
 .yon-liste .yon-s.p2 b{background:var(--ios-gri);color:var(--soluk)}
 .yon-ozet+.yon-uyari,.yon-ozet+.yon-temiz{margin-top:2px}
+
+/* ============ Harita iğneleri ============ */
+.harp-pin{--pr:var(--murekkep);background:var(--yuzey);color:var(--murekkep);border:2px solid var(--pr);box-shadow:0 4px 12px -4px rgba(9,16,28,.45);padding:4px 10px;font-size:12px;font-weight:800;letter-spacing:-.01em}
+.harp-pin:after{border-top-color:var(--pr)!important;filter:none!important;bottom:-7px;border-width:6px}
+.harp-pin.yaklasik{border-style:dashed}
+.harp-pin.secili{background:var(--pr);color:#fff;z-index:6;transform:translate(-50%,-100%) scale(1.12)}
+.harp-k{--pr:#5B8DEF}
+.harp-kume{background:linear-gradient(140deg,#14202F,#1F3556);box-shadow:0 0 0 4px rgba(20,32,47,.18),0 6px 14px -4px rgba(9,16,28,.6)}
+.harp-alt{position:absolute;left:10px;right:10px;bottom:10px;z-index:8;background:var(--yuzey);border-radius:18px;box-shadow:0 18px 36px -12px rgba(9,16,28,.55);overflow:hidden;animation:pSheet .22s var(--p-yay)}
+.harp-alt a{display:flex;gap:12px;text-decoration:none;color:var(--murekkep);min-height:104px}
+.harp-alt .foto{width:116px;flex-shrink:0;background:var(--yuzey2) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.harp-alt .ara{display:flex;flex-direction:column;gap:2px;padding:10px 34px 10px 0}
+.harp-alt b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.harp-alt span{font-size:12px;color:var(--soluk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.harp-alt strong{font-size:17px;font-weight:800;margin-top:auto;letter-spacing:-.02em}
+.harp-alt-x{position:absolute;right:6px;top:6px;width:32px;height:32px;border:0;border-radius:50%;background:var(--yuzey2);color:var(--murekkep);font-size:20px;line-height:1;cursor:pointer}

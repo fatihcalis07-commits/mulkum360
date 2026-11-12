@@ -38,17 +38,31 @@ function harpCiz() {
     (kufeler.get(k) || kufeler.set(k, []).get(k)).push({ i, m, sx, sy });
   }
   let iğneler = '';
-  for (const hucre of kufeler.values()) {
-    const sx = hucre.reduce((t, x) => t + x.sx, 0) / hucre.length, sy = hucre.reduce((t, x) => t + x.sy, 0) / hucre.length;
-    if (hucre.length > 2) iğneler += `<button class="harp-kume" data-hk="${hucre.map((x) => x.i.id).join(' ')}" style="left:${sx}px;top:${sy}px">${hucre.length}</button>`;
-    else for (const x of hucre) iğneler += `<button class="harp-pin${x.i.alanlar?.islem === 'Kiralık' ? ' harp-k' : ''}" data-hp="${x.i.id}" style="left:${x.sx}px;top:${x.sy}px">${fiyatKisa(x.i.fiyat)} ₺</button>`;
+  // Fiyat rengi: ekrandaki ilanlar içinde m² fiyatı (yoksa fiyat) sırasına göre yeşilden kırmızıya
+  const gorunen = [...kufeler.values()].flat(), deger = (i) => (+i.alanlar?.m2net > 0 ? i.fiyat / i.alanlar.m2net : i.fiyat);
+  const sirali = gorunen.map((x) => deger(x.i)).sort((a, b) => a - b), RENK = ['#2E7D32', '#7CB342', '#F2B705', '#F08A24', '#C62828'];
+  const renk = (i) => { if (sirali.length < 4) return ''; const k = sirali.findIndex((v) => v >= deger(i)); return RENK[Math.min(4, Math.floor((k / sirali.length) * 5))]; };
+  const pin = (x, dx = 0, dy = 0) => { const c = renk(x.i), yak = /mahalle|ilçe/.test(x.i.alanlar?.konumDuzey || ''); return '<button class="harp-pin' + (x.i.alanlar?.islem === 'Kiralık' ? ' harp-k' : '') + (HARP.secili === x.i.id ? ' secili' : '') + (yak ? ' yaklasik' : '') + '" data-hp="' + x.i.id + '" style="left:' + (x.sx + dx) + 'px;top:' + (x.sy + dy) + 'px' + (c ? ';--pr:' + c : '') + '">' + fiyatKisa(x.i.fiyat) + ' ₺</button>'; };
+  if (z < 13) {
+    // Uzak ölçek (il / ilçe): yakın ilanlar sayı balonunda toplanır
+    for (const hucre of kufeler.values()) {
+      const sx = hucre.reduce((t, x) => t + x.sx, 0) / hucre.length, sy = hucre.reduce((t, x) => t + x.sy, 0) / hucre.length;
+      if (hucre.length > 2) iğneler += '<button class="harp-kume" data-hk="' + hucre.map((x) => x.i.id).join(' ') + '" style="left:' + sx + 'px;top:' + sy + 'px">' + hucre.length + '</button>';
+      else hucre.forEach((x) => (iğneler += pin(x)));
+    }
+  } else {
+    // Mahalle / sokak ölçeği: her ilan tek tek; aynı noktadakiler yelpaze gibi açılır
+    const nokta = new Map();
+    gorunen.forEach((x) => { const k = Math.round(x.sx / 6) + ':' + Math.round(x.sy / 6); (nokta.get(k) || nokta.set(k, []).get(k)).push(x); });
+    for (const grup of nokta.values()) grup.forEach((x, n) => { if (!n) return (iğneler += pin(x)); const a = n * 2.39996, r = 26 * Math.sqrt(n); iğneler += pin(x, Math.cos(a) * r * 1.7, Math.sin(a) * r * 1.15); });
   }
   const halka = HARP.r ? `<svg width="${W}" height="${H}" style="position:absolute;inset:0;pointer-events:none"><circle cx="${W / 2}" cy="${H / 2}" r="${HARP.r / mPx}" fill="var(--vurgu-ikon,#C8553D)" fill-opacity=".06" stroke="var(--vurgu-ikon,#C8553D)" stroke-width="2.5" stroke-dasharray="7 5"/></svg>` : '';
   const benNokta = HARP.kaynak === 'sen' ? `<svg width="${W}" height="${H}" style="position:absolute;inset:0;pointer-events:none"><circle cx="${W / 2}" cy="${H / 2}" r="${Math.min(60, (HARP.hassasiyet || 30) / mPx)}" fill="#2563EB" fill-opacity=".15"/><circle cx="${W / 2}" cy="${H / 2}" r="7" fill="#2563EB" stroke="#fff" stroke-width="3"/></svg>` : '';
   kap.innerHTML = `<div class="harp-kaydir" style="position:absolute;inset:0;will-change:transform">${karolar}</div>${halka}${benNokta}<div class="harp-kaydir" style="position:absolute;inset:0">${iğneler}</div>
     <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px"><button class="btn sade kucuk" id="hz+" style="width:44px;height:44px;padding:0;font-weight:900">+</button><button class="btn sade kucuk" id="hz-" style="width:44px;height:44px;padding:0;font-weight:900">−</button></div>
     <div class="r-harita-not" style="font-size:10px">© OpenStreetMap</div>`;
-  kap.querySelectorAll('[data-hp]').forEach((b) => (b.onclick = () => harpKart(b.dataset.hp)));
+  kap.querySelectorAll('[data-hp]').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); HARP.secili = b.dataset.hp; kap.querySelectorAll('.harp-pin.secili').forEach((x) => x.classList.remove('secili')); b.classList.add('secili'); harpAltKart(kap, b.dataset.hp); }));
+  if (HARP.secili && ilan(HARP.secili)) harpAltKart(kap, HARP.secili);
   kap.querySelectorAll('[data-hk]').forEach((b) => (b.onclick = () => {
     const l = b.dataset.hk.split(' ').map(ilan).filter(Boolean).map((i) => ({ l: +i.alanlar.enlem, o: +i.alanlar.boylam }));
     HARP.lat = l.reduce((t, x) => t + x.l, 0) / l.length; HARP.lon = l.reduce((t, x) => t + x.o, 0) / l.length; HARP.z = Math.min(18, HARP.z + 2); harpCiz(); harpListe();
@@ -67,6 +81,14 @@ function harpListe(hazir) {
   yer.querySelectorAll('[data-hgit]').forEach((b) => (b.onclick = () => { const i = ilan(b.dataset.hgit); HARP.lat = +i.alanlar.enlem; HARP.lon = +i.alanlar.boylam; HARP.z = Math.max(HARP.z, 15); harpCiz(); scrollTo({ top: 0, behavior: 'smooth' }); }));
 }
 
+// Haritanın altında seçili ilanın kartı (sayfayı kapatmadan)
+function harpAltKart(kap, id) {
+  const i = ilan(id); kap.querySelector('.harp-alt')?.remove(); if (!i) return;
+  const f = i.alanlar || {}, d = document.createElement('div'); d.className = 'harp-alt';
+  d.innerHTML = '<a href="#/ilan/' + i.id + '"><div class="foto"' + (kapak(i) ? ' data-bg="' + kac(kapak(i)) + '"' : '') + '>' + fotoKutu(i, 26) + '</div><div class="ara" style="min-width:0"><b>' + kac(i.baslik) + '</b><span>' + konum(i) + '</span><span>' + [f.oda, +f.m2net > 0 && f.m2net + ' m²', f.kat && f.kat + '. kat'].filter(Boolean).map(kac).join(' · ') + '</span><strong>' + tl(i.fiyat) + '</strong></div></a><button class="harp-alt-x" aria-label="Kapat">×</button>';
+  d.querySelector('.harp-alt-x').onclick = (e) => { e.preventDefault(); HARP.secili = null; d.remove(); kap.querySelectorAll('.harp-pin.secili').forEach((x) => x.classList.remove('secili')); };
+  kap.appendChild(d);
+}
 function harpKart(id) { const i = ilan(id); if (!i) return; sheetAc(`<h2 style="font-size:16px;font-weight:800">${kac(i.baslik)}</h2><div style="margin:8px 0">${ilanKart(i)}</div><a class="btn tam" href="#/ilan/${i.id}">İlan detayı</a>`); }
 
 async function haritaKonum() {
