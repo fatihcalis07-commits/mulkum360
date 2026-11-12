@@ -23,14 +23,14 @@ function hataMetni(e) {
 }
 async function islem(p) { const { data, error } = await p; if (error) throw error; return data; }
 
-async function profilleriGetir(idler) {
-  idler = [...new Set(idler)].filter((id) => id && !S.kullanicilar.some((k) => k.id === id));
+async function profilleriGetir(idler, tazele) {
+  idler = [...new Set(idler)].filter((id) => id && (tazele || !S.kullanicilar.some((k) => k.id === id)));
   if (!idler.length) return;
   // Gizlilik sütunları henüz yoksa (veritabanı güncellenmeden) eski alanlarla devam et
   let r = await sb.from('profiller').select('id,ad,olusturma,soyad_gizle,acik_tel,firma,unvan,hakkinda,yetki_no,dogrulanmis,hesap_turu,sektor,foto').in('id', idler);
   if (r.error) r = await sb.from('profiller').select('id,ad,olusturma').in('id', idler);
   const data = await islem(r);
-  data.forEach((p) => S.kullanicilar.push({ id: p.id, ad: p.ad, olusturma: ms(p.olusturma), soyadGizle: !!p.soyad_gizle, acikTel: p.acik_tel || '', firma: p.firma || '', unvan: p.unvan || '', hakkinda: p.hakkinda || '', yetkiNo: p.yetki_no || '', dogrulanmis: !!p.dogrulanmis, ofis: p.hesap_turu === 'ofis', sektor: p.hesap_turu === 'ofis' ? (p.sektor || 'emlak') : '', foto: p.foto || '' }));
+  data.forEach((p) => { const y = ({ id: p.id, ad: p.ad, olusturma: ms(p.olusturma), soyadGizle: !!p.soyad_gizle, acikTel: p.acik_tel || '', firma: p.firma || '', unvan: p.unvan || '', hakkinda: p.hakkinda || '', yetkiNo: p.yetki_no || '', dogrulanmis: !!p.dogrulanmis, ofis: p.hesap_turu === 'ofis', sektor: p.hesap_turu === 'ofis' ? (p.sektor || 'emlak') : '', foto: p.foto || '' }); const n = S.kullanicilar.findIndex((k) => k.id === p.id); if (n < 0) S.kullanicilar.push(y); else if (p.id !== S.oturum) S.kullanicilar[n] = y; });
 }
 
 async function veriYukle() {
@@ -42,8 +42,8 @@ async function veriYukle() {
     typeof dopingYukle === 'function' ? dopingYukle() : null
   ]);
   S.ilanlar = il.map(ilanEsle);
-  S.kullanicilar = [];
-  await profilleriGetir(S.ilanlar.map((i) => i.sahip));
+  if (!S.oturum || !S.kullanicilar.some((k) => k.id === S.oturum)) S.kullanicilar = [];
+  await profilleriGetir(S.ilanlar.map((i) => i.sahip), true);
   if (S.oturum) await kisiselYukle(session.user);
   else { S.sohbetler = []; S.kayitliAramalar = []; S.yonetici = false; }
   sonYukleme = Date.now();

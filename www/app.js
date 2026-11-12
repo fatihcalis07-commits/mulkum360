@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.1 · 13.11.2026 06:15';
+const SURUM = '10.2 · 13.11.2026 07:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2648,6 +2648,8 @@ async function basla() {
   temaUygula();
   app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak ve Vasıtada Yapay Zekâ</div><div class="acilis-cipler"><span>Değer Raporu</span><span>MülkümDeko</span><span>MülkümVideo</span></div></div>
     <div class="acilis-alt"><div class="acilis-cubuk"><span></span></div><div class="acilis-not">Hayalindekine bir adım</div></div></div>`;
+  // Açılış ekranı en az 1,4 sn görünür (veri hazır olsa da bir anda kaybolmasın)
+  const acilisT = Date.now(), acilisBekle = () => new Promise((r) => setTimeout(r, Math.max(0, 1400 - (Date.now() - acilisT))));
   try {
     const P = window.Capacitor?.Plugins;
     if (P?.App && !basla.dinleniyor) {
@@ -2672,12 +2674,14 @@ async function basla() {
         }
       } catch (_) {}
       if (hizli) {
-        ciz();
-        veriYukle().then(() => { if (!/^#\/(ver|sohbet|giris|kayit|profil|degerle|ai|toplu|karsilastir)/.test(location.hash) && sheetEl.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) ciz(); aramaBildir(); if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {}); }, () => {});
+        const yenile = veriYukle();
+        await acilisBekle(); ciz();
+        yenile.then(() => { if (!/^#\/(ver|sohbet|giris|kayit|profil|degerle|ai|toplu|karsilastir)/.test(location.hash) && sheetEl.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) ciz(); aramaBildir(); if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {}); }, () => {});
         return;
       }
       await veriYukle();
     }
+    await acilisBekle();
   }
   catch (x) {
     console.error(x);
