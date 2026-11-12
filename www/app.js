@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '12.4 · 14.11.2026 14:00';
+const SURUM = '12.5 · 14.11.2026 14:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2952,7 +2952,7 @@ async function basla() {
   await yukle();
   const uTema = new URLSearchParams(location.search).get('tema'); if (PALETLER.some(([k]) => k === uTema)) S.palet = uTema; // test/derin bağlantı: ?tema=vitrin
   temaUygula();
-  if (!app.querySelector('.acilis')) app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak ve Vasıtada Yapay Zekâ</div><div class="acilis-cipler"><span>Değer Raporu</span><span>MülkümDeko</span><span>MülkümVideo</span></div></div>
+  if (!app.querySelector('.acilis')) app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">İlan · Değerleme · Rapor</div><div class="acilis-cipler"><span>Değer Raporu</span><span>MülkümDeko</span><span>MülkümVideo</span></div></div>
     <div class="acilis-alt"><div class="acilis-cubuk"><span></span></div><div class="acilis-not">Hayalindekine bir adım</div></div></div>`;
   // Açılış ekranı en az 1,4 sn görünür (veri hazır olsa da bir anda kaybolmasın)
   const acilisT = Date.now(), acilisBekle = () => new Promise((r) => setTimeout(r, Math.max(0, 1400 - (Date.now() - acilisT))));
