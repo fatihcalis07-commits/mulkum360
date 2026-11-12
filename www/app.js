@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.7 · 13.11.2026 12:15';
+const SURUM = '10.8 · 13.11.2026 12:45';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -78,10 +78,15 @@ async function gorevHatirlatKur() {
     const bekleyen = (await BLD.getPending()).notifications.filter((n) => n.extra?.gorev).map((n) => ({ id: n.id }));
     if (bekleyen.length) await BLD.cancel({ notifications: bekleyen });
     if (!bldAcik() || !(await bildirimIzni(false))) return;
-    const simdi = Date.now(), l = PANEL.filter((g) => g.tur === 'gorev' && !g.tamam && g.tarih && new Date(g.tarih) > simdi).slice(0, 60).map((g) => {
-      const t = new Date(g.tarih).getTime(), at = new Date(Math.max(simdi + 5000, t - (+g.veri.hatirlat || 30) * 60000));
+    // Hatırlatma anı geçmiş olanlar bir kez gösterilir; aynı görev ve saat için her açılışta yeniden düşmez
+    let gecmis = {}; try { gecmis = JSON.parse(localStorage.getItem('hatirlatGosterilen') || '{}'); } catch (_) {}
+    const simdi = Date.now(), anahtar = (g) => g.id + '@' + g.tarih + '@' + (+g.veri.hatirlat || 30);
+    const l = PANEL.filter((g) => g.tur === 'gorev' && !g.tamam && g.tarih && new Date(g.tarih) > simdi).filter((g) => { const vakit = new Date(g.tarih).getTime() - (+g.veri.hatirlat || 30) * 60000; return vakit > simdi || !gecmis[anahtar(g)]; }).slice(0, 60).map((g) => {
+      const t = new Date(g.tarih).getTime(), vakit = t - (+g.veri.hatirlat || 30) * 60000, at = new Date(Math.max(simdi + 5000, vakit));
+      gecmis[anahtar(g)] = Math.max(simdi, vakit); // kurulan her hatırlatma kaydedilir: çaldıktan sonra yeniden kurulmaz
       return { id: bldId('gorev-' + g.id), title: 'Hatırlatma: ' + g.veri.baslik, body: new Date(t).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) + (g.veri.musteri ? ' · ' + g.veri.musteri : ''), schedule: { at, allowWhileIdle: true }, extra: { hash: '#/panel/gorev', gorev: true } };
     });
+    try { const sinir = simdi - 14 * 864e5; localStorage.setItem('hatirlatGosterilen', JSON.stringify(Object.fromEntries(Object.entries(gecmis).filter(([, z]) => z > sinir)))); } catch (_) {}
     if (l.length) await BLD.schedule({ notifications: l });
   } catch (_) {}
 }
