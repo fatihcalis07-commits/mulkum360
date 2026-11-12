@@ -480,3 +480,22 @@ html[data-tema] .yon-ozet{background:radial-gradient(90% 120% at 100% 0%,var(--t
 .ki-zum button,.ki-ben{border:0;background:var(--yuzey);color:var(--murekkep);box-shadow:0 4px 12px -4px rgba(9,16,28,.45);cursor:pointer;font:inherit;font-weight:800}
 .ki-zum button{width:42px;height:42px;border-radius:12px;font-size:20px}
 .ki-ben{position:absolute;left:10px;bottom:10px;height:38px;padding:0 12px;border-radius:999px;font-size:13px;display:flex;align-items:center;gap:6px}
+
+/* ============ İlan altı iletişim çubuğu ============ */
+.iletisim-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1.7fr;gap:8px;width:100%}
+.iletisim-bar.telsiz{grid-template-columns:1fr 2.2fr}
+.il-d{height:58px;border-radius:16px;border:0;font:inherit;font-size:11.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;cursor:pointer;transition:transform .14s var(--p-yay)}
+.il-d:active{transform:scale(.95)}
+.il-d span{display:flex;align-items:center;justify-content:center;height:22px}
+.il-d span svg{width:21px;height:21px}
+.il-ara{background:color-mix(in srgb,#16A34A 12%,var(--yuzey));color:#15803D}
+.il-ara svg{stroke:#15803D}
+.il-wa{background:#25D366;color:#fff;box-shadow:0 10px 20px -10px rgba(37,211,102,.85)}
+.il-wa svg{fill:#fff}
+.il-teklif{background:var(--yuzey2);color:var(--murekkep)}
+.il-teklif svg{stroke:var(--murekkep)}
+.il-mesaj{background:var(--birincil);color:var(--birincil-yazi);font-size:13px;flex-direction:row;gap:8px;box-shadow:0 10px 22px -10px color-mix(in srgb,var(--birincil) 80%,transparent);background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 55%)}
+.il-mesaj svg{stroke:var(--birincil-yazi)}
+.alt-bar:has(.iletisim-bar){padding-top:10px;padding-bottom:calc(10px + var(--alt))}
+.il-mesaj{white-space:nowrap;font-size:13.5px}
+.il-d{white-space:nowrap}

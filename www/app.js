@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.1 · 13.11.2026 14:30';
+const SURUM = '11.2 · 13.11.2026 15:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -834,7 +834,6 @@ EKRAN.ilan = (id) => {
       </div></div>
       ${i.ana === 'emlak' && f.ada && f.parsel ? `<div class="kart" id="parselK"><h3>Ada / Parsel (TKGM)</h3><div class="bilgi-tablo"><div><span>Ada / parsel</span><b>${kac(f.ada)} / ${kac(f.parsel)}</b></div></div><div class="k soluk" style="margin-top:6px">Tapu ve Kadastro kayıtları yükleniyor…</div></div>` : ''}
       <a class="kart satir" href="#/uye/${s.id}" style="text-decoration:none;color:inherit">${avatarHtml(s, 44)}<div class="ara"><b>${kac(gorunenAd(s))}</b> ${rozet(s, i.ana)}${s.firma ? `<div class="k">${kac(s.firma)}</div>` : ''}<div class="k soluk">${s.olusturma ? 'Üyelik: ' + new Date(s.olusturma).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) + ' · ' : ''}${S.ilanlar.filter((x) => x.sahip === s.id && x.durum === 'yayinda').length} ilan${s.acikTel ? ' · ' + kac(s.acikTel) : ''}</div><div class="k soluk" data-sozet="${s.id}"></div></div><span class="ok">›</span></a>
-      ${!sahip && !satildi && s.acikTel ? `<div class="izgara2"><a class="btn wa-btn" href="${waBaglanti(s.acikTel, i)}" target="_blank" rel="noopener">${WA_SVG}WhatsApp'tan yaz</a><a class="btn cizgili" href="tel:${kac(telTemiz(s.acikTel))}">${ic('telefon', 18)}Ara</a></div>` : ''}
       </div>
       <div data-panel="aciklama" hidden>
         ${i.aciklama ? `<div class="kart"><h3>Açıklama</h3><div class="aciklama-metin">${kac(i.aciklama)}</div></div>` : bosDurum('belge', 'Açıklama yazılmamış', 'Satıcı bu ilana açıklama eklememiş. Merak ettiklerini mesajla sorabilirsin.')}
@@ -868,7 +867,7 @@ EKRAN.ilan = (id) => {
     <div class="alt-bar"><div class="alt-bar-ic">${sahip
       ? `<button class="btn sade" id="oneCikar">${ic('yildiz', 16)}Öne çıkar</button><a class="btn cizgili" href="#/ver/${i.id}">${ic('kalem', 18)}Düzenle</a><button class="btn ${satildi ? '' : 'guven'}" id="durum">${satildi ? 'Yeniden yayınla' : f.islem === 'Kiralık' ? 'Kiralandı' : 'Satıldı'}</button>`
       : satildi ? `<a class="btn sade" href="#/ara?alt=${i.alt}">Benzer ilanları gör</a>`
-      : `<button class="btn cizgili" id="teklif">Teklif ver</button><button class="btn" id="mesaj" style="flex:1.4">${ic('mesaj', 18, '#fff')}Mesaj gönder</button>${s.acikTel ? `<a class="btn iletisim-ara" href="tel:${kac(telTemiz(s.acikTel))}" aria-label="Ara">${ic('telefon', 20, '#fff')}</a><a class="btn iletisim-wa" href="${waBaglanti(s.acikTel, i)}" target="_blank" rel="noopener" aria-label="WhatsApp ile yaz">${WA_SVG}</a>` : ''}`}</div></div>`;
+      : `<div class="iletisim-bar${s.acikTel ? '' : ' telsiz'}">${s.acikTel ? `<a class="il-d il-ara" href="tel:${kac(telTemiz(s.acikTel))}"><span>${ic('telefon', 20)}</span>Ara</a><a class="il-d il-wa" href="${waBaglanti(s.acikTel, i)}" target="_blank" rel="noopener"><span>${WA_SVG}</span>WhatsApp</a>` : ''}<button class="il-d il-teklif" id="teklif"><span>${ic('kredi', 20)}</span>Teklif</button><button class="il-d il-mesaj" id="mesaj"><span>${ic('mesaj', 20)}</span>Mesaj</button></div>`}</div></div>`;
   if (typeof endeksKartiYukle === 'function') endeksKartiYukle(i);
   const oc = $('#oneCikar'); if (oc) oc.onclick = () => { if (!girisGerek()) dopingAlimSheet(i); };
   if ($('#dopingK') && typeof dopingKartiYukle === 'function') dopingKartiYukle(i);
