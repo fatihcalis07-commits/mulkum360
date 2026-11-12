@@ -35,7 +35,7 @@ function eidsSheet(ilanId, poIsla) {
       if (!plakaGecerli(p)) return toast('Plakayı kontrol et (ör. 34 ABC 123).');
       if (!sasiGecerli(sa)) return toast('Şasi numarası 17 karakter olmalı.');
       if (y.value === 'yetkili' && $('#eYetki', s).value.trim().length < 6) return toast('Yetki belge numarasını gir.');
-      if (await dene(() => eidsIsteTasit(ilanId, y.value, p, sa, $('#eYetki', s).value.trim()), 'Talebin alındı — onaylanınca ilanın yayına çıkacak')) { sheetKapat(); if (poIsla) poIsla(); else ciz(); }
+      if (await dene(() => eidsIsteTasit(ilanId, y.value, p, sa, $('#eYetki', s).value.trim()), eidsCanli() ? 'Bakanlık kaydı sorgulanıyor…' : 'Talebin alındı — onaylanınca ilanın yayına çıkacak')) { sheetKapat(); if (eidsCanli()) return eidsAracSorgula(ilanId); if (poIsla) poIsla(); else ciz(); }
     };
   });
   sheetAc(`<h2 style="font-size:19px;font-weight:800">EİDS doğrulaması</h2>
@@ -58,3 +58,82 @@ function eidsSheet(ilanId, poIsla) {
 }
 document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('[data-eids]'); if (b) { ev.preventDefault(); eidsSheet(b.dataset.eids); } });
 eidsFazGetir();
+
+// ================= CANLI EİDS (röle sunucusu: eids-sunucu/, sabit IP) =================
+// Faz 'canli' olunca devreye girer. Yönetici her fazda test edebilir.
+const EIDS_SUNUCU = 'https://eids.mulkum360.com';
+const EIDS_APP_DONUS = 'com.mulkum360.prototip://eids';
+const eidsCanli = () => S.eidsFaz === 'canli';
+async function eidsToken() { return (await sb.auth.getSession()).data.session?.access_token || ''; }
+async function eidsIstek(yol, govde) {
+  const r = await fetch(EIDS_SUNUCU + yol, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (await eidsToken()) }, body: JSON.stringify(govde || {}) });
+  let j = {}; try { j = await r.json(); } catch (_) {}
+  return { ok: r.ok, durum: r.status, ...j };
+}
+async function eidsUyeDurum() { try { const { data } = await sb.rpc('eids_uye_durum'); return data || { dogrulandi: false }; } catch (_) { return { dogrulandi: false }; } }
+async function telefonDurum() { const u = (await sb.auth.getUser()).data.user; return { tel: u?.phone || '', onayli: !!u?.phone_confirmed_at }; }
+
+// Telefon SMS doğrulaması (EİDS, OTP ile doğrulanmış GSM ister). Supabase Auth'ta SMS sağlayıcısı tanımlı olmalı.
+function telefonDogrulaSheet(sonra) {
+  sheetAc(String.raw`<h2 style="font-size:19px;font-weight:800">Telefonunu doğrula</h2>
+    <p class="soluk" style="margin:0;line-height:1.5">Ticaret Bakanlığı EİDS kuralı gereği ilan verenin cep telefonu SMS koduyla doğrulanır. Numaran diğer üyelere gösterilmez.</p>
+    <label class="alan">Cep telefonu<input id="tTel" inputmode="tel" maxlength="14" placeholder="5XX XXX XX XX"></label>
+    <button class="btn tam" id="tGonder">SMS kodu gönder</button>
+    <div id="tKodK" hidden><label class="alan">SMS kodu<input id="tKod" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></label><button class="btn tam" id="tOnay">Doğrula</button></div>`, (s) => {
+    let tel = '';
+    $('#tGonder', s).onclick = async () => {
+      const n = $('#tTel', s).value.replace(/\D/g, '').replace(/^90/, '').replace(/^0/, '');
+      if (!/^5\d{9}$/.test(n)) return toast('Numarayı 5XX XXX XX XX biçiminde gir.');
+      tel = '+90' + n;
+      if (await dene(async () => { const { error } = await sb.auth.updateUser({ phone: tel }); if (error) throw error; }, 'Kod gönderildi')) { $('#tKodK', s).hidden = false; $('#tKod', s).focus(); }
+    };
+    $('#tOnay', s).onclick = async () => {
+      const kod = $('#tKod', s).value.replace(/\D/g, '');
+      if (kod.length < 4) return toast('SMS kodunu gir.');
+      if (await dene(async () => { const { error } = await sb.auth.verifyOtp({ phone: tel, token: kod, type: 'phone_change' }); if (error) throw error; }, 'Telefonun doğrulandı')) { sheetKapat(); if (sonra) sonra(); }
+    };
+  });
+}
+
+// e-Devlet ile kimlik doğrulama: sunucu tek kullanımlık oturum açar, tarayıcıda e-Devlet girişi açılır
+async function eidsKimlikBaslat() {
+  const t = await telefonDurum();
+  if (!t.onayli) return telefonDogrulaSheet(eidsKimlikBaslat);
+  const b = ben(), yerel = !!window.Capacitor?.isNativePlatform?.();
+  const r = await eidsIstek('/eids/baslat', { donus: yerel ? 'uygulama' : 'web', vergiNo: b?.ofis ? (b.vergiNo || null) : null });
+  if (r.hata === 'telefon') return telefonDogrulaSheet(eidsKimlikBaslat);
+  if (!r.ok || !r.url) return toast(r.mesaj || r.hata || 'Doğrulama başlatılamadı, biraz sonra tekrar dene.');
+  const url = EIDS_SUNUCU + r.url, P = window.Capacitor?.Plugins;
+  if (yerel && P?.Browser) await P.Browser.open({ url, presentationStyle: 'popover' }); else location.href = url;
+}
+// Dönüş: uygulamada derin bağlantı, web'de #/hesap?eids=ok
+async function eidsDonus(durum, mesaj) {
+  try { window.Capacitor?.Plugins?.Browser?.close(); } catch (_) {}
+  if (durum === 'ok') toast('Kimliğin e-Devlet ile doğrulandı'); else toast('Doğrulama tamamlanmadı: ' + (mesaj || 'tekrar dene'));
+  if (location.hash.startsWith('#/hesap')) ciz(); else git('#/hesap');
+}
+
+// Araç ilanı: EİDS yetki sorgusu (anlık). Başarılıysa ilan yayına çıkar, marka/model/yıl kilitlenir.
+async function eidsAracSorgula(ilanId) {
+  const u = await eidsUyeDurum();
+  if (!u.dogrulandi) { toast('Araç ilanı için önce e-Devlet ile kimliğini doğrula.'); return eidsKimlikBaslat(); }
+  const r = await eidsIstek('/eids/arac', { ilan: ilanId });
+  if (r.ok) { toast('EİDS yetki doğrulaması tamam, ilanın yayında'); await sessizTazele?.(); git('#/ilan/' + ilanId); return true; }
+  if (r.hata === 'eids-uye') return eidsKimlikBaslat();
+  toast('EİDS: ' + (r.mesaj || r.hata || 'yetki doğrulanamadı'));
+  return false;
+}
+
+// Hesabım ekranındaki "Kimlik doğrulama" kartı
+async function eidsHesapKarti() {
+  const yer = document.getElementById('eidsKart'); if (!yer || !S.oturum) return;
+  if (!eidsCanli() && !S.yonetici) return;
+  const [u, t] = await Promise.all([eidsUyeDurum(), telefonDurum()]);
+  const tarih = u.zaman ? new Date(u.zaman).toLocaleDateString('tr-TR') : '';
+  yer.innerHTML = '<div class="kart eids-kart"><div class="eids-bas"><span class="eids-ikon' + (u.dogrulandi ? ' tamam' : '') + '">' + ic('kalkan', 22) + '</span><div><b>Kimlik doğrulama (EİDS)</b><div class="k soluk">' + (u.dogrulandi ? 'e-Devlet ile doğrulandı · ' + tarih : 'İlan vermek için e-Devlet ile bir kez doğrulaman gerekir') + '</div></div></div>'
+    + '<div class="eids-adim"><span class="' + (t.onayli ? 'ok' : '') + '">' + (t.onayli ? '✓' : '1') + '</span>Telefon SMS doğrulaması' + (t.onayli ? '' : ' <button class="btn sade kucuk" id="eidsTel">Doğrula</button>') + '</div>'
+    + '<div class="eids-adim"><span class="' + (u.dogrulandi ? 'ok' : '') + '">' + (u.dogrulandi ? '✓' : '2') + '</span>e-Devlet kimlik doğrulaması' + (u.dogrulandi ? '' : ' <button class="btn kucuk" id="eidsBas">e-Devlet ile doğrula</button>') + '</div>'
+    + (eidsCanli() ? '' : '<div class="k soluk" style="margin-top:6px">Faz: ' + kac(S.eidsFaz || 'kapali') + ' · bu kart şimdilik yalnız yöneticiye görünür.</div>') + '</div>';
+  const a = document.getElementById('eidsTel'); if (a) a.onclick = () => telefonDogrulaSheet(() => eidsHesapKarti());
+  const b2 = document.getElementById('eidsBas'); if (b2) b2.onclick = () => eidsKimlikBaslat();
+}

@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '12.9 · 14.11.2026 17:00';
+const SURUM = '13.0 · 13.11.2026 01:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -222,7 +222,7 @@ function etiketHtml(i) {
 }
 function ilanKart(i) {
   return `<a class="ilan-k" href="#/ilan/${i.id}">
-    <div class="foto"${kapak(i) ? ` data-bg="${kac(kapak(i))}"` : ''} style="position:relative">${fotoKutu(i)}<div class="kart-alt">${dopingRozet(i)}${(i.fotolar || []).length > 1 ? `<span>${ic('foto', 11)}${i.fotolar.length}</span>` : ''}${(i.alanlar?.deko || []).length ? `<span>${ic('yildiz', 11)}AI dekor</span>` : ''}${i.ana === 'emlak' && i.id !== 'onizleme' && kullanici(i.sahip).ofis ? '<span>Emlak ofisi</span>' : ''}${i.dogrulanmis ? `<span>${i.ana === 'vasita' ? 'Ruhsat' : 'Tapu'} doğrulandı</span>` : ''}${i.alanlar?.video ? '<span>Video</span>' : ''}${i.alanlar?.tur360 ? '<span>360°</span>' : ''}</div></div>
+    <div class="foto"${kapak(i) ? ` data-bg="${kac(kapak(i))}"` : ''} style="position:relative">${fotoKutu(i)}<div class="kart-alt">${dopingRozet(i)}${(i.fotolar || []).length > 1 ? `<span>${ic('foto', 11)}${i.fotolar.length}</span>` : ''}${(i.alanlar?.deko || []).length ? `<span>${ic('yildiz', 11)}AI dekor</span>` : ''}${i.ana === 'emlak' && i.id !== 'onizleme' && kullanici(i.sahip).ofis ? '<span>Emlak ofisi</span>' : ''}${i.alanlar?.eids ? '<span>EİDS doğrulandı</span>' : i.dogrulanmis ? `<span>${i.ana === 'vasita' ? 'Ruhsat' : 'Tapu'} doğrulandı</span>` : ''}${i.alanlar?.video ? '<span>Video</span>' : ''}${i.alanlar?.tur360 ? '<span>360°</span>' : ''}</div></div>
     ${etiketHtml(i)}
     ${S.oturum && S.oturum !== i.sahip && i.id !== 'onizleme' ? `<button class="kart-kalp ${favMi(i.id) ? 'dolu' : ''}" data-kfav="${i.id}" aria-label="Favori">${ic('kalp', 16, favMi(i.id) ? '#fff' : 'currentColor')}</button>` : ''}
     <div class="bilgi"><div class="fiyat">${tl(i.fiyat)}</div><div class="baslik">${kac(i.baslik)}</div><div class="k soluk">${konum(i)}</div></div>
@@ -2032,6 +2032,7 @@ EKRAN.ver = (id) => {
       let eidsOldu = false;
       if (eid) { try { if (eid.tasit) await eidsIsteTasit(i.id, eid.yontem, eid.plaka, eid.sasi, eid.yetki); else await eidsIste(i.id, eid.yontem, eid.no, eid.yetki); eidsOldu = true; } catch (x) { toast('İlan kaydedildi; doğrulama talebi gönderilemedi: ' + hataMetni(x)); } }
       taslak = null; if (!duzenleme) try { localStorage.removeItem('ilanTaslak'); } catch (_) {}
+      if (eidsOldu && eid.tasit && eidsCanli()) { git('#/ilan/' + i.id); eidsAracSorgula(i.id); return; }
       toast(duzenleme ? (eidsOldu ? 'Kaydedildi — doğrulama sonrası yayına çıkacak' : 'İlan güncellendi') : eidsOldu ? 'İlanın doğrulamaya alındı — onaylanınca otomatik yayına çıkacak' : 'İlanın yayında!'); git('#/ilan/' + i.id);
       if (!duzenleme && !eid) setTimeout(() => yayinSonrasi(ilan(i.id) || i), 900);
       return;
@@ -2359,6 +2360,7 @@ EKRAN.hesap = () => {
         <a class="ayar-d" href="#/metin/kosullar">${ic('yasal', 22)}<span>Yasal bilgiler</span></a>
       </div>`, DILLER.find(([k]) => k === DIL)[1])}
       ${S.yonetici ? `<a class="yon-giris" href="#/yonetim"><span class="yg-ikon">${ic('pano', 22)}</span><div class="ara"><b>Yönetim Paneli</b><div class="k soluk">Kullanıcılar, kredi satışları, şikayetler, veriler</div></div><span class="rozet" id="yonBekleyen" style="position:static" hidden></span><span class="soluk">›</span></a>` : ''}
+      <div id="eidsKart"></div>
       <button class="btn sade tam" id="cikis">${ic('cikis', 18)}Çıkış yap</button>
       <button class="btn tehlike tam" id="hesapSil">Hesabımı sil</button>
       <div class="k soluk" style="text-align:center">Mülküm360 · sürüm ${SURUM}</div>
@@ -2408,6 +2410,8 @@ EKRAN.hesap = () => {
     if (await dene(() => ilanKaydet(t, yaz), `Fotoğraflar eklendi (${yeni.length})`)) ciz(); else et.style.pointerEvents = '';
   }));
   $('#cikis').onclick = async () => { if (await onayla('Çıkış yap', 'Bu cihazdaki oturumun kapanacak.', 'Çıkış yap')) { await dene(cikisYap, 'Çıkış yapıldı'); git('#/'); } };
+  eidsHesapKarti();
+  { const q = sorgu(); if (q.eids) { history.replaceState(null, '', '#/hesap'); setTimeout(() => eidsDonus(q.eids, q.m), 300); } }
   $('#hesapSil').onclick = async () => {
     if (!(await onayla('Hesabın silinsin mi?', 'Hesabın, ilanların, fotoğrafların, mesajların ve raporların sunucudan kalıcı olarak silinir. Bu işlem geri alınamaz.', 'Hesabımı sil', true))) return;
     if (await dene(hesabiSil, 'Hesabın silindi')) git('#/');
@@ -2863,6 +2867,19 @@ EKRAN.kredi = async () => {
 };
 
 // ---------- Bilgi metinleri ----------
+const KUNYE = {
+  ad: 'Mülküm360',
+  unvan: '',          // ticaret unvanı (ör. "Mülküm360 Bilişim Teknolojileri Ltd. Şti.")
+  mersis: '',         // MERSİS no
+  vergi: '',          // vergi dairesi ve no
+  adres: '',          // merkez adresi
+  kep: '',            // KEP adresi
+  telefon: '',        // müşteri hizmetleri telefonu
+  eposta: 'fatihcalis07@gmail.com', // kurumsal adres açılınca değiştirin (ör. destek@mulkum360.com)
+  etbis: '',          // ETBİS kayıt doğrulama bağlantısı (karekodun gösterdiği adres)
+  yerSaglayici: '',   // BTK yer sağlayıcı bildirim tarihi/numarası
+};
+const kunyeSatirlar = () => [['Ticaret unvanı', KUNYE.unvan], ['MERSİS no', KUNYE.mersis], ['Vergi dairesi / no', KUNYE.vergi], ['Adres', KUNYE.adres], ['KEP adresi', KUNYE.kep], ['Telefon', KUNYE.telefon], ['E-posta', KUNYE.eposta], ['Yer sağlayıcı bildirimi (5651)', KUNYE.yerSaglayici]].filter(([, v]) => v);
 const METIN = {
   guvenlik: ['Güvenli alışveriş rehberi', `<b>Görmeden ödeme yapma.</b> Ev ya da aracı yerinde görmeden kapora veya ön ödeme gönderme.
 
@@ -2873,7 +2890,7 @@ const METIN = {
 <b>Piyasanın çok altındaki fiyatlar</b> dolandırıcılık işareti olabilir. İlan detayındaki fiyat karşılaştırmasına bak.
 
 <b>Şüpheli bir ilan gördüğünde</b> “İlanı şikayet et”e dokun.`],
-  kosullar: ['Kullanım koşulları', `Mülküm360 · iletişim: fatihcalis07@gmail.com
+  kosullar: ['Kullanım koşulları', `Mülküm360 · iletişim: ${KUNYE.eposta}
 
 1. Mülküm360, kullanıcıların emlak ve vasıta ilanı yayınlayıp birbirleriyle iletişim kurduğu bir platformdur. Alım satım taraflar arasında gerçekleşir.
 
@@ -2890,18 +2907,18 @@ const METIN = {
 7. Yapay zekâ ile üretilen görsel ve videolar ilanda "yapay zekâ ile oluşturuldu" notuyla gösterilir ve mülkün gerçek durumunu yansıtmayabilir. Olmayan bir özelliği varmış gibi göstermek gibi yanıltıcı kullanım yasaktır.
 
 8. Kredi satın alımları Google Play üzerinden yapılır ve "Satış ve iade koşulları"na tabidir.`],
-  satis: ['Satış ve iade koşulları', `<b>1. Satıcı.</b> Uygulama içi kredi paketleri Google Play üzerinden satılır. Satış, ödeme, fatura ve iade işlemlerini Google Play yürütür; Google Play'in Hizmet Şartları ve iade politikası geçerlidir. Uygulamayı geliştiren: Mülküm360, iletişim: fatihcalis07@gmail.com.
+  satis: ['Satış ve iade koşulları', `<b>1. Satıcı.</b> Uygulama içi kredi paketleri Google Play üzerinden satılır. Satış, ödeme, fatura ve iade işlemlerini Google Play yürütür; Google Play'in Hizmet Şartları ve iade politikası geçerlidir. Uygulamayı geliştiren: Mülküm360, iletişim: ${KUNYE.eposta}.
 
 <b>2. Konu.</b> Alıcının uygulama içinden seçtiği kredi paketi (dijital içerik). Paket adı, kredi miktarı ve vergiler dahil fiyat, ödeme öncesinde Google Play ödeme ekranında gösterilir.
 
 <b>3. Teslim.</b> Krediler, Google Play ödemeyi onayladıktan hemen sonra hesabına yüklenir ve "Kredilerim" ekranında görünür.
 
-<b>4. Cayma ve iade.</b> Anında teslim edilen dijital içerikte cayma hakkı bulunmaz (Mesafeli Sözleşmeler Yönetmeliği md. 15/ğ). Hiç kullanılmamış krediler için iade talebini Google Play üzerinden ya da fatihcalis07@gmail.com adresine iletebilirsin.
+<b>4. Cayma ve iade.</b> Anında teslim edilen dijital içerikte cayma hakkı bulunmaz (Mesafeli Sözleşmeler Yönetmeliği md. 15/ğ). Hiç kullanılmamış krediler için iade talebini Google Play üzerinden ya da ${KUNYE.eposta} adresine iletebilirsin.
 
 <b>5. Krediler.</b> Krediler süresizdir, nakde çevrilemez, devredilemez. Yapay zekâ üretimi başarısız olursa kullanılan kredi otomatik iade edilir.
 
-<b>6. Şikâyet.</b> Sorun ve itirazlarını fatihcalis07@gmail.com adresine yazabilirsin; tüketici hakem heyeti ve tüketici mahkemesine başvuru hakkın saklıdır.`],
-  gizlilik: ['Gizlilik politikası', `<b>Veri sorumlusu:</b> Mülküm360 uygulamasının veri sorumlusu Mülküm360'tır. İletişim: fatihcalis07@gmail.com.
+<b>6. Şikâyet.</b> Sorun ve itirazlarını ${KUNYE.eposta} adresine yazabilirsin; tüketici hakem heyeti ve tüketici mahkemesine başvuru hakkın saklıdır.`],
+  gizlilik: ['Gizlilik politikası', `<b>Veri sorumlusu:</b> Mülküm360 uygulamasının veri sorumlusu Mülküm360'tır. İletişim: ${KUNYE.eposta}.
 
 <b>Toplanan veriler:</b> ad soyad, e-posta, telefon, ilan içerikleri ve fotoğraflar, mesajlar, satın alma kayıtları, uygulama hata kayıtları.
 
@@ -2913,8 +2930,8 @@ const METIN = {
 
 <b>Hesap silme:</b> Hesabım → Hesabımı sil ile hesabınızı, ilanlarınızı, fotoğraflarınızı ve mesajlarınızı kalıcı olarak silebilirsiniz.
 
-<b>Haklarınız:</b> KVKK'nın 11. maddesindeki haklarınız için fatihcalis07@gmail.com adresine yazabilirsiniz.`],
-  kvkk: ['KVKK aydınlatma metni', `<b>Veri sorumlusu:</b> Mülküm360 · fatihcalis07@gmail.com
+<b>Haklarınız:</b> KVKK'nın 11. maddesindeki haklarınız için ${KUNYE.eposta} adresine yazabilirsiniz.`],
+  kvkk: ['KVKK aydınlatma metni', `<b>Veri sorumlusu:</b> Mülküm360 · ${KUNYE.eposta}
 
 <b>Toplanan veriler:</b> ad soyad, e-posta, telefon, ilan içerikleri ve fotoğraflar, mesajlar, uygulama içi tercihleriniz.
 
@@ -2922,11 +2939,15 @@ const METIN = {
 
 <b>Saklama:</b> Veriler Avrupa Birliği’ndeki (Frankfurt) güvenli sunucularda saklanır. Telefon numaranız diğer üyelere gösterilmez. Hesabınızı sildiğinizde ilanlarınız, fotoğraflarınız ve mesajlarınız kalıcı olarak silinir.
 
-<b>Yurt dışına aktarım:</b> Sunucular yurt dışında bulunduğundan verileriniz KVKK’nın 9. maddesi kapsamında yurt dışına aktarılır; bunun için ayrıca açık rızanız alınacaktır.
+<b>İlan doğrulama (EİDS):</b> Ticaret Bakanlığı mevzuatı gereği ilan vermeden önce kimliğiniz e-Devlet üzerinden Elektronik İlan Doğrulama Sistemi (EİDS) ile, cep telefonunuz SMS koduyla doğrulanır. EİDS'ten dönen ad, soyad, kullanıcı kodu ve doğrulanmış telefon numaranız yasal yükümlülük nedeniyle saklanır, diğer üyelere gösterilmez. İlan konusu taşıtın plakası ve taşınmaz numarası yetki sorgusu için Bakanlık sistemine iletilir.
+
+<b>Yurt dışına aktarım:</b> Sunucular Avrupa Birliği'nde (Frankfurt) bulunduğundan verileriniz KVKK'nın 9. maddesi kapsamında, Kişisel Verileri Koruma Kurulu'nun ilan ettiği standart sözleşme imzalanarak ve Kurul'a bildirilerek yurt dışına aktarılır.
 
 <b>Haklarınız:</b> 6698 sayılı Kanun’un 11. maddesi kapsamındaki haklarınızı (bilgi talep etme, düzeltme, silme vb.) kullanabilirsiniz.`]
 };
+METIN.kunye = ['Künye', ''];
 EKRAN.metin = (k) => {
+  if (k === 'kunye') METIN.kunye[1] = '<b>' + kac(KUNYE.ad) + '</b>\n\n' + (kunyeSatirlar().map(([a, v]) => '<b>' + a + ':</b> ' + kac(v)).join('\n') || 'Şirket bilgileri eklenecek.') + (KUNYE.etbis ? '\n\n<b>ETBİS kaydı:</b> <a href="' + kac(KUNYE.etbis) + '" target="_blank" rel="noopener">Elektronik Ticaret Bilgi Sistemi kaydını doğrula</a>' : '') + '\n\nMülküm360, 6563 sayılı Kanun kapsamında aracı hizmet sağlayıcı ve 5651 sayılı Kanun kapsamında yer sağlayıcıdır. İlanların içeriğinden ilanı veren üye sorumludur. Hukuka aykırı içerik bildirimleri için "İlanı şikayet et" düğmesini ya da yukarıdaki iletişim adresini kullanabilirsiniz.';
   const m = METIN[k]; if (!m) { git('#/'); return; }
   const digerleri = Object.entries(METIN).filter(([x]) => x !== k);
   app.innerHTML = ustBar(m[0]) + `<div class="ic"><div class="kart" style="white-space:pre-line;line-height:1.6;font-size:14px">${m[1]}</div>
@@ -3000,6 +3021,7 @@ async function basla() {
     if (P?.App && !basla.dinleniyor) {
       basla.dinleniyor = true;
       P.App.addListener('appUrlOpen', async ({ url }) => {
+        if (url.startsWith(EIDS_APP_DONUS)) { const q = new URL(url.replace(/^[^:]+:\/\//, 'https://x/')).searchParams; return eidsDonus(q.get('eids'), q.get('m')); }
         if (!url.startsWith(GOOGLE_DONUS)) return;
         try { if (await googleDonus(url)) { S.karsilandi = true; kaydet(); toast('Hoş geldin, ' + (ben()?.ad || '').split(' ')[0]); const d = S.donus; S.donus = null; git(d && !/giris|kayit/.test(d) ? d : '#/'); kayitTuruUygula(); } }
         catch (x) { toast(hataMetni(x)); }

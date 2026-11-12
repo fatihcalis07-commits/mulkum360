@@ -1,0 +1,4 @@
+# eids.mulkum360.com → sunucunun sabit IP'sine A kaydı açıldıktan sonra Caddy HTTPS sertifikasını kendisi alır
+eids.mulkum360.com {
+	reverse_proxy 127.0.0.1:8080
+}

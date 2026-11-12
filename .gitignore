@@ -12,3 +12,5 @@ www-mirror/
 
 android/keystore.properties
 android/app/google-services.json
+
+eids-sunucu/.env

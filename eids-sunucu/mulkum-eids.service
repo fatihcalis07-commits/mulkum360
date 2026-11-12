@@ -1,0 +1,13 @@
+[Unit]
+Description=Mulkum360 EIDS role sunucusu
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/mulkum-eids
+EnvironmentFile=/opt/mulkum-eids/.env
+ExecStart=/usr/bin/node /opt/mulkum-eids/sunucu.mjs
+Restart=always
+User=www-data
+
+[Install]
+WantedBy=multi-user.target

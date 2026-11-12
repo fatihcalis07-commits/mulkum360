@@ -21,7 +21,7 @@
 > - İletişim: e-posta + telefon (OTP doğrulanmış GSM — Faz 1 `GetKullaniciKodu` çağrısında zorunlu)
 >
 > **Teknik bilgiler**
-> - **returnUrl (dönüş adresi):** `https://[KULLANICI — hosting kararı, bkz. §3.1]/eids/donus`
+> - **returnUrl (dönüş adresi):** `https://eids.mulkum360.com/eids/donus` (röle sunucusu: `eids-sunucu/`)
 > - **Sunucu IP adresleri:** Entegrasyon çağrılarımız (GetKullaniciKodu) §3.2'de belirtilen sabit çıkış IP(ler)inden yapılacaktır. [Sunucu IP listesi eklenecek]
 >
 > Faz 1 akışını (e-Devlet üzerinden üye kimlik doğrulama → `returnUrlAdresi?yetkiKodu=…&durum=…` → sunucu tarafından `GetKullaniciKodu`) V2.2 dokümanına uygun kurmayı taahhüt ederiz. Faz 2 (taşınmaz yetki doğrulama) servis uçlarının ve güncel entegrasyon dokümanının tarafımıza iletilmesini talep ederiz.

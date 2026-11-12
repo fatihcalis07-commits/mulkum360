@@ -26,6 +26,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.mulkum360.prototip" android:host="giris" />
+                <data android:scheme="com.mulkum360.prototip" android:host="eids" />
             </intent-filter>
         </activity>
 
