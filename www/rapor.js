@@ -228,13 +228,14 @@ function secimSayfasi(s) {
 }
 
 // ---- Sayfa iskeleti ----
+let rRaporNo = '', rBolumNo = 0, rRaporAd = 'Değerleme Raporu';
 function sayfa(ic, d, no, toplam) {
-  return `<section class="r-sayfa">
-    <div class="r-ust"><div><b>${kac(d.ad)}</b>${d.firma ? ' · ' + kac(d.firma) : ''}<br>${kac(d.tel || '')}${d.tel && d.eposta ? ' · ' : ''}${kac(d.eposta || '')}</div><div class="r-logo"><img src="logo.png" alt="">mülküm<span>360</span></div></div>
-    <div class="r-govde">${ic}</div>
-    <div class="r-alt"><span>MülkümAI Elektronik Değerleme Raporu</span><span>Sayfa ${no} / ${toplam}</span></div></section>`;
+  const iki = (n) => String(n).padStart(2, '0');
+  return '<section class="r-sayfa"><div class="r-ust"><div class="r-logo"><img src="logo.png" alt="">mülküm<span>360</span></div><div class="r-ust-sag"><b>' + kac(rRaporAd) + '</b><span>' + kac(rRaporNo) + '</span></div></div>'
+    + '<div class="r-govde">' + ic + '</div>'
+    + '<div class="r-alt"><span>' + [d.ad, d.firma, d.tel].filter(Boolean).map(kac).join(' · ') + '</span><span class="r-sayfa-no"><b>' + iki(no) + '</b> / ' + iki(toplam) + '</span></div></section>';
 }
-const rBaslik = (t) => `<div class="r-bas">${t}</div>`;
+const rBaslik = (t) => '<div class="r-bas"><i>' + String(++rBolumNo).padStart(2, '0') + '</i>' + t + '</div>';
 const rDeger = (v, birim = '') => (v == null || isNaN(v) ? '—' : tl(v).replace(' TL', '') + (birim ? ' ' + birim : ' TL'));
 
 EKRAN.rapor = (id) => {
@@ -251,23 +252,24 @@ EKRAN.rapor = (id) => {
   h._m2 = f.m2net;
 
   // 1 · Kapak
-  const kapak = `<section class="r-sayfa r-kapak">
-    <div class="r-kapak-ust"><div class="r-logo buyuk"><img src="logo.png" alt="">mülküm<span>360</span></div><div class="r-etiket">MülkümAI</div></div>
-    <h1>${kac(tur.toLocaleUpperCase('tr-TR'))}<br>ELEKTRONİK<br>DEĞERLEME RAPORU</h1>
-    <div class="r-kapak-orta">
-      <div class="r-foto">${h.kapak ? `<img src="${h.kapak}" alt="" crossorigin="anonymous">` : `<div class="r-foto-yok">${ic(ALT[f.alt]?.ikon || 'ev', 64, R_ALTIN, 1.4)}</div>`}</div>
-      <div class="r-kapak-bilgi">
-        <div class="r-cizgi"></div>
-        <b class="r-ad">${kac(d.ad)}</b>
-        ${f.adina ? `<div>Bu rapor <b>${kac(f.adina)}</b> adına hazırlanmıştır.</div>` : ''}
-        <div><b>Konum:</b> ${kac([f.adres, f.ilce, f.il].filter(Boolean).join(', ') || '—')}</div>
-        ${f.ada || f.parsel ? `<div><b>Ada / Parsel:</b> ${kac(f.ada || '—')} / ${kac(f.parsel || '—')}</div>` : ''}
-        ${!emlak ? `<div><b>Araç:</b> ${kac([f.marka, f.model, f.yil].filter(Boolean).join(' '))}</div>` : ''}
-        <div><b>Rapor No:</b> ${r.no}</div><div><b>Rapor Tarihi:</b> ${tarih}</div>
-        <div class="r-cizgi"></div>
-      </div></div>
-    <div class="r-kapak-yasal"><p>Bu rapor Mülküm360 tarafından, platformda yayınlanan ilan verileri ve kullanıcının sağladığı bilgilerle istatistiksel yöntemlerle üretilmiştir; sapmalar içerebilir. Bilgi ve tahminler varsayımsaldır, taahhüt içermez ve yalnız bilgilendirme amaçlıdır. SPK lisanslı değerleme raporu ya da ekspertiz yerine geçmez; kredi, mahkeme ve resmî işlemlerde kullanılamaz.</p><div class="r-qr">${qrSvg(`Mülküm360 · ${r.no} · ${tarih} · ${tur} · ${[f.ilce, f.il].filter(Boolean).join(', ')}`)}<small>Rapor kimliği</small></div></div>
-    <div class="r-silüet">${silüet}</div></section>`;
+  rRaporNo = r.no + ' · ' + tarih; rBolumNo = 0;
+  // Başlıklar: taşınmazda "Satılık Konut Değerleme Raporu", vasıtada "Araç Değerleme Raporu"
+  const kapakUst = emlak ? (kira ? 'Kiralık ' : 'Satılık ') + tur : 'Araç', kapakEtiket = emlak ? 'MülkümAI · Taşınmaz Değerleme' : 'MülkümAI · Araç Değerleme';
+  rRaporAd = (emlak ? tur : 'Araç') + ' Değerleme Raporu';
+  const konumYazi = emlak ? [f.adres, f.ilce, f.il].filter(Boolean).join(', ') : [f.marka, f.model, f.paket, f.yil].filter(Boolean).join(' ');
+  const hucre = (ad, v) => (v ? '<div><small>' + ad + '</small><b>' + v + '</b></div>' : '');
+  const kapak = '<section class="r-sayfa r-kapak2">'
+    + '<div class="r-k-ust"><div class="r-k-bar"><div class="r-logo"><img src="logo.png" alt="">mülküm<span>360</span></div><div class="r-k-no">Rapor No ' + kac(r.no) + '</div></div>'
+    + '<div class="r-k-etiket">' + kapakEtiket + '</div>'
+    + '<h1>' + kac(kapakUst) + '<br>Değerleme Raporu</h1>'
+    + '<div class="r-k-konum">' + kac(konumYazi || '—') + '</div></div>'
+    + '<div class="r-k-orta"><div class="r-k-foto">' + (h.kapak ? '<img src="' + h.kapak + '" alt="" crossorigin="anonymous">' : '<div class="r-foto-yok">' + ic(ALT[f.alt]?.ikon || 'ev', 72, '#C9D2E0', 1.3) + '</div>') + '</div>'
+    + '<div class="r-k-deger"><small>' + (kira ? 'Tahmini aylık kira' : emlak ? 'Tahmini piyasa değeri' : 'Tahmini araç değeri') + '</small><b>' + tl(h.orta) + '</b><span>' + tl(h.alt) + ' – ' + tl(h.ust) + '</span>'
+    + (emlak && +f.m2net > 0 && h.orta ? '<em>' + tl(h.orta / f.m2net) + ' / m²</em>' : '') + '<i>Güven düzeyi: ' + kac(h.guven || '—') + '</i></div></div>'
+    + '<div class="r-k-bilgi">' + hucre('Hazırlayan', kac(d.ad) + (d.firma ? ' · ' + kac(d.firma) : '')) + hucre('Rapor tarihi', tarih) + hucre('Adına hazırlanan', f.adina ? kac(f.adina) : '') + hucre('Ada / Parsel', f.ada || f.parsel ? kac(f.ada || '—') + ' / ' + kac(f.parsel || '—') : '')
+    + hucre(emlak ? 'Taşınmaz' : 'Araç', kac(emlak ? [tur, f.islem, f.oda, f.m2net && f.m2net + ' m²'].filter(Boolean).join(' · ') : [f.yil, f.km && sayiBicim(f.km) + ' km', f.yakit, f.vites].filter(Boolean).join(' · '))) + hucre('Emsal', (h.sayi || 0) + ' ilan' + (h.kapsam ? ' · ' + kac(h.kapsam) : '')) + '</div>'
+    + '<div class="r-k-alt"><p>Bu rapor Mülküm360 tarafından, platformda yayınlanan ilan verileri, yayımlanmış piyasa verileri ve kullanıcının sağladığı bilgilerle istatistiksel yöntemlerle üretilmiştir; sapmalar içerebilir. Bilgi ve tahminler varsayımsaldır, taahhüt içermez ve yalnız bilgilendirme amaçlıdır. SPK lisanslı değerleme raporu ya da ekspertiz yerine geçmez; kredi, mahkeme ve resmî işlemlerde kullanılamaz.</p>'
+    + '<div class="r-qr">' + qrSvg('Mülküm360 · ' + r.no + ' · ' + tarih + ' · ' + tur + ' · ' + [f.ilce, f.il].filter(Boolean).join(', ')) + '<small>Rapor kimliği</small></div></div></section>';
 
   const sayfalar = [];
   // 2 · Danışman
@@ -287,8 +289,7 @@ EKRAN.rapor = (id) => {
     <div class="r-serit">${emlak ? 'TAŞINMAZIN' : 'ARACIN'} DEĞER / FİYAT ANALİZİ</div>
     <div class="r-uclu">${VADE.map(([ad, sure, k, acik], n) => `<div class="r-vade ${['y', 'a', 'k'][n]}"><div class="r-vade-fiyat">${tl(h[k])}</div><div class="r-vade-ad">${n === 0 ? 'Hızlı satış fiyatı' : n === 1 ? (kira ? 'Tahmini piyasa kirası' : 'Tahmini piyasa değeri') : 'Üst fiyat'}</div><div class="r-vade-sure">Hedef süre: ${ad} (${sure})</div>${vadeEk(n, k)}</div>`).join('')}</div>
     <div class="r-not">Hedef süreler kullanıcı tanımıdır; ${kira ? 'kiralama' : 'satış'} süresi garanti edilmez. Değerler ${h.sayi} emsal ilanın dağılımından (alt çeyrek, ortalama, üst çeyrek) hesaplanmıştır. Güven düzeyi: <b>${h.guven}</b>${h.kapsam ? ' · Emsal kapsamı: <b>' + kac(h.kapsam) + '</b>' : ''}.${h.genis ? ' Bölgede yeterli ilan olmadığından Türkiye geneli emsaller kullanıldı; bölge farkı büyük olabilir.' : ''}</div>
-    ${rBaslik('Emsal Fiyat Dağılımı')}<div class="r-kutu">${dagilimSvg(h, f.ana) || '<div class="r-not">Grafik için en az 3 emsal gerekir.</div>'}</div>
-    <div class="r-ai"><div class="r-ai-bas">MÜLKÜMAI DEĞERLENDİRMESİ</div>${yorum.map((y) => `<div>• ${kac(y)}</div>`).join('')}</div>`);
+    `);
 
   // 4 · Emsaller
   sayfalar.push(`${rBaslik('Değere Esas Emsaller')}
@@ -296,6 +297,7 @@ EKRAN.rapor = (id) => {
     <table class="r-tablo" ${em.length ? '' : 'style="display:none"'}><tr><th>#</th><th>İlan</th><th>Konum</th><th>${emlak ? 'Alan / oda' : 'Yıl / km'}</th><th>Fiyat</th>${emlak ? '<th>TL/m²</th>' : ''}</tr>
     ${em.map((i, n) => `<tr><td>${n + 1}</td><td>${kac(String(i.baslik).slice(0, 34))}</td><td>${kac([i.ilce, i.il].filter(Boolean).join(', '))}</td><td>${emlak ? kac((i.alanlar.m2net || '—') + ' m² · ' + (i.alanlar.oda || '—')) : kac((i.alanlar.yil || '—') + ' · ' + sayiBicim(i.alanlar.km || 0) + ' km')}</td><td>${tl(i.fiyat)}</td>${emlak ? `<td>${i.alanlar.m2net ? tl(i.fiyat / i.alanlar.m2net) : '—'}</td>` : ''}</tr>`).join('')}</table>
     ${h.sayi > em.length ? `<div class="r-not">Hesapta ${h.sayi} emsal kullanıldı; ilk ${em.length} tanesi listelendi.</div>` : ''}
+    ${rBaslik('Emsal Fiyat Dağılımı')}<div class="r-kutu">${dagilimSvg(h, f.ana) || '<div class="r-not">Grafik için en az 3 emsal gerekir.</div>'}</div>
     ${h.tablo ? `${rBaslik(emlak ? (kira ? 'Kiralık' : 'Satılık') + ' Gayrimenkul Bilgileri' : 'Bölge Araç Piyasası')}
     <table class="r-tablo bolge"><tr><th></th>${h.tablo.sutunlar.map((s) => `<th>${kac(s)}</th>`).join('')}</tr>
       ${[['Ortalama brüt alan', (x) => (x.brutAlan ? Math.round(x.brutAlan) + ' m²' : '—'), emlak],
@@ -344,8 +346,18 @@ EKRAN.rapor = (id) => {
     <div class="r-imza"><div><b>Hazırlayan</b><br>${kac(d.ad)}${d.firma ? '<br>' + kac(d.firma) : ''}</div><div><b>Rapor No</b><br>${r.no}<br>${tarih}</div><div>${qrSvg(r.no + ' · ' + tarih)}</div></div>
     <div class="r-silüet" style="margin-top:auto">${silüet}</div>`);
 
-  const toplam = sayfalar.length + 1;
-  const html = kapak + sayfalar.map((s, n) => sayfa(s, d, n + 2, toplam)).join('');
+  const toplam = sayfalar.length + 2;
+  // 2 · Yönetici özeti ve rapor içeriği (bölüm başlıkları sayfalardan toplanır)
+  const icerik = []; sayfalar.forEach((sy, n) => { const m = [...sy.matchAll(/<div class="r-bas"><i>(\d+)<\/i>([^<]+)<\/div>/g)]; m.forEach((x) => icerik.push([x[1], x[2].replace(/[ ·:–-]+$/, '').trim(), n + 3])); });
+  const yari = Math.ceil(icerik.length / 2), sutun = (l) => '<div>' + l.map(([no, ad, sf]) => '<div class="r-ic-satir"><i>' + no + '</i><span>' + ad + '</span><b>' + String(sf).padStart(2, '0') + '</b></div>').join('') + '</div>';
+  const ozet = '<div class="r-oz-bas"><small>' + (emlak ? 'Taşınmaz değerleme özeti' : 'Araç değerleme özeti') + '</small><h2>' + kac(emlak ? [tur, f.islem].filter(Boolean).join(' · ') : [f.marka, f.model, f.yil].filter(Boolean).join(' ')) + '</h2><p>' + kac(konumYazi || '') + '</p></div>'
+    + '<div class="r-oz-deger"><div class="r-oz-ana"><small>' + (kira ? 'Tahmini aylık kira' : emlak ? 'Tahmini piyasa değeri' : 'Tahmini araç değeri') + '</small><b>' + tl(h.orta) + '</b><span>Aralık: ' + tl(h.alt) + ' – ' + tl(h.ust) + '</span></div>'
+    + '<div class="r-oz-yan">' + (emlak && +f.m2net > 0 && h.orta ? '<div><b>' + tl(h.orta / f.m2net) + '</b><small>m² birim değeri</small></div>' : '') + '<div><b>' + kac(h.guven || '—') + '</b><small>Güven düzeyi</small></div><div><b>' + (h.sayi || 0) + '</b><small>Emsal ilan</small></div></div></div>'
+    + ozetHtml
+    + '<div class="r-bas ozel">Öne çıkan değerlendirmeler</div><div class="r-oz-madde">' + yorum.map((y, n) => '<div><i>' + (n + 1) + '</i><span>' + kac(y) + '</span></div>').join('') + '</div>'
+    + (h.refKaynak ? '<div class="r-not">Dayanak: ' + (h.emsalAgirlik ? '%' + h.emsalAgirlik + ' Mülküm360 ilanları, %' + (100 - h.emsalAgirlik) + ' ' : '') + kac(h.refKaynak) + '.</div>' : '')
+    + '<div class="r-bas ozel">Rapor içeriği</div><div class="r-icindekiler">' + sutun(icerik.slice(0, yari)) + sutun(icerik.slice(yari)) + '</div>';
+  const html = kapak + sayfa(ozet, d, 2, toplam) + sayfalar.map((sy, n) => sayfa(sy, d, n + 3, toplam)).join('');
   app.innerHTML = ustBar('Değerleme raporu') + `<div class="ic">
     <div class="rapor-kap" id="kap"><div class="rapor-olcek" id="olcek"><div id="raporSayfa">${html}</div></div></div>
     <button class="btn tam" id="pdf">${ic('indir', 18)}PDF olarak kaydet / paylaş (${toplam} sayfa)</button>
