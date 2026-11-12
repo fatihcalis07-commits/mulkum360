@@ -417,3 +417,6 @@ html[data-tema] #aiFab svg{stroke:#fff!important}
 body.animsiz #app>*,body.animsiz .nav{animation:none!important}
 
 #haberK{min-height:260px}
+
+.dis-foto .btn{white-space:nowrap;font-size:13px;padding:0 10px}
+.dis-foto .btn svg{flex-shrink:0}

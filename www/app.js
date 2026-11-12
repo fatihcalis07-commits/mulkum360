@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.6 · 13.11.2026 11:45';
+const SURUM = '10.7 · 13.11.2026 12:15';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1679,7 +1679,8 @@ EKRAN.ver = (id) => {
       <div class="bolum-bas"><h2>Emlak</h2></div><div class="kat-izgara">${altlari('emlak').map(kutu).join('')}</div>
       <div class="bolum-bas"><h2>Vasıta</h2></div><div class="kat-izgara">${altlari('vasita').map(kutu).join('')}</div>`;
   } else if (t.adim === 1) {
-    govde = `<div class="foto-izgara">${t.fotolar.map((u, n) => `<div class="f" style="background-image:url('${u}')">${n === 0 ? '<span class="kapak">Kapak</span>' : ''}<button type="button" data-sil="${n}" aria-label="Fotoğrafı sil">×</button></div>`).join('')}
+    const dis = t.disFoto && t.fotolar.length ? `<div class="uyari-k dis-foto">${ic('foto', 18)}<div><b>Bu fotoğraflar ${t.disFoto.kaynak ? kac(t.disFoto.kaynak) + ' sitesinden' : 'başka bir siteden'} alındı.</b> O sitenin filigranını taşıyabilirler. Filigransız ve daha net görünmesi için orijinallerini telefonundan eklemen önerilir.<div class="izgara2" style="margin-top:10px"><label class="btn kucuk">${ic('foto', 16, '#fff')}Telefondan değiştir<input type="file" accept="image/*" multiple hidden id="disDegis"></label><button type="button" class="btn sade kucuk" id="disTut">Böyle kalsın</button></div></div></div>` : '';
+    govde = dis + `<div class="foto-izgara">${t.fotolar.map((u, n) => `<div class="f" style="background-image:url('${u}')">${n === 0 ? '<span class="kapak">Kapak</span>' : ''}<button type="button" data-sil="${n}" aria-label="Fotoğrafı sil">×</button></div>`).join('')}
       ${t.fotolar.length < FOTO_SINIR ? `<label class="foto-ekle" aria-label="Fotoğraf ekle">${ic('foto', 24)}<input type="file" accept="image/*" multiple hidden id="dosya"></label>` : ''}</div>
       <div class="k soluk">${t.fotolar.length}/${FOTO_SINIR} fotoğraf. İlk fotoğraf kapak olur; bir fotoğrafa dokunup kapak yapabilirsin. Fotoğraflı ilanlar çok daha fazla görüntülenir.</div>
       <label class="alan">İlan başlığı<input id="baslik" maxlength="80" value="${kac(t.baslik || '')}" placeholder="${ALT[t.alt].ana === 'emlak' ? 'örn. Metroya yakın, bakımlı 3+1 daire' : 'örn. Hatasız, tek elden 2019 Clio'}"></label>
@@ -1826,6 +1827,7 @@ EKRAN.ver = (id) => {
         if (sayfa && sayfa.f && sayfa.f.length) {
           let n = 0; sayfa.f = galeriSec(sayfa.f); const N = Math.min(FOTO_SINIR, sayfa.f.length);
           for (const u of sayfa.f.slice(0, FOTO_SINIR)) { ++n; b.textContent = `Fotoğraflar alınıyor ${n}/${N}…`; ek.simdi('foto', `${n} / ${N} · ${taslak.fotolar.length} eklendi`); try { taslak.fotolar.push(await fotoKucult(await urlDosya(u))); } catch (_) {} }
+          if (taslak.fotolar.length) taslak.disFoto = { kaynak: (() => { try { return new URL(link || '').hostname.replace(/^www./, ''); } catch (_) { return ''; } })(), sayi: taslak.fotolar.length };
         } else if (yalnizLink) ek.simdi('foto', 'Sayfada fotoğraf bulunamadı; sonra telefonundan ekleyebilirsin');
         ek.simdi('form', `Bulunan: ${dolu.join(', ') || 'yok'}${taslak.fotolar.length ? ` · ${taslak.fotolar.length} fotoğraf` : ''}`);
         await new Promise((r) => setTimeout(r, 900));
@@ -1835,6 +1837,13 @@ EKRAN.ver = (id) => {
     };
   });
   app.querySelectorAll('[data-alt]').forEach((x) => (x.onclick = () => { if (t.alt && ALT[t.alt].ana !== ALT[x.dataset.alt].ana) t.alanlar = {}; t.alt = x.dataset.alt; t.adim = 1; ciz(); }));
+  const dd = $('#disDegis'); if (dd) dd.onchange = async () => {
+    if (!dd.files.length) return;
+    topla(); t.fotolar = []; delete t.disFoto;
+    for (const d of [...dd.files].slice(0, FOTO_SINIR)) { try { t.fotolar.push(await fotoKucult(d)); } catch (_) { toast('Bir fotoğraf okunamadı'); } }
+    toast(t.fotolar.length + ' fotoğraf eklendi; aktarılan fotoğraflar kaldırıldı'); ciz();
+  };
+  const dt = $('#disTut'); if (dt) dt.onclick = () => { topla(); delete t.disFoto; ciz(); };
   const ds = $('#dosya'); if (ds) ds.onchange = async () => {
     topla(); const yer = FOTO_SINIR - t.fotolar.length;
     for (const d of [...ds.files].slice(0, yer)) { try { t.fotolar.push(await fotoKucult(d)); } catch (_) { toast('Bir fotoğraf okunamadı'); } }
