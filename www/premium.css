@@ -414,4 +414,6 @@ html[data-tema] .btn:not(.sade):not(.cizgili):not(.tehlike):not(.google):not(.gu
 html[data-tema] .bolum-bas a,html[data-tema] .katla-tumu{color:var(--vurgu-koyu)}
 html[data-tema] #aiFab svg{stroke:#fff!important}
 
-body.ilk-cizim #app>*,body.ilk-cizim .nav{animation:none!important}
+body.animsiz #app>*,body.animsiz .nav{animation:none!important}
+
+#haberK{min-height:260px}

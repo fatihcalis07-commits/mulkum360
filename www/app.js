@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.4 · 13.11.2026 10:15';
+const SURUM = '10.5 · 13.11.2026 11:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2647,6 +2647,8 @@ function sifreGoz() {
 }
 function ciz() {
   const hsh = location.hash;
+  // Giriş animasyonu yalnız başka sayfaya geçerken oynar; ilk açılışta ve aynı sayfa tazelenirken oynamaz (yoksa ekran bir an saydamlaşıp titrer)
+  document.body.classList.toggle('animsiz', ciz.son === undefined || ciz.son === hsh); ciz.son = hsh;
   GERI_DONUS = YIGIN.length > 1 && YIGIN[YIGIN.length - 2] === hsh;
   if (GERI_DONUS) YIGIN.pop(); else if (YIGIN[YIGIN.length - 1] !== hsh) { YIGIN.push(hsh); if (YIGIN.length > 40) YIGIN.shift(); }
   const hedefY = GERI_DONUS ? KAYDIR[hsh]?.y || 0 : 0;
@@ -2703,7 +2705,7 @@ async function basla() {
         sonYukleme = Date.now();
         const imza = () => S.ilanlar.length + '|' + S.ilanlar.reduce((m, i) => Math.max(m, i.guncelleme || i.olusturma || 0), 0) + '|' + (ben()?.kredi ?? '') + '|' + (S.oturum && ben() ? okunmamis() : 0) + '|' + Object.keys(S.DOPING?.aktif || {}).length + '|' + (S.bildirimler || []).filter((x) => !x.okundu).length;
         const once = imza(), yenile = veriYukle();
-        await acilisBekle(); document.body.classList.add('ilk-cizim'); ciz(); setTimeout(() => document.body.classList.remove('ilk-cizim'), 600);
+        await acilisBekle(); ciz();
         yenile.then(() => { if (imza() !== once && !/^#\/(ver|sohbet|giris|kayit|profil|degerle|ai|toplu|karsilastir)/.test(location.hash) && sheetEl.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) ciz(); aramaBildir(); if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {}); }, () => {});
         return;
       }
@@ -2716,7 +2718,7 @@ async function basla() {
     app.innerHTML = bosDurum('uyari', 'Bağlantı kurulamadı', hataMetni(x), '<button class="btn" id="tekrar">Tekrar dene</button>');
     $('#tekrar').onclick = basla; return;
   }
-  document.body.classList.add('ilk-cizim'); ciz(); setTimeout(() => document.body.classList.remove('ilk-cizim'), 600);
+  ciz();
   setTimeout(aramaBildir, 3000);
   if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {});
 }
