@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '12.5 · 14.11.2026 14:30';
+const SURUM = '12.6 · 14.11.2026 15:15';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -568,7 +568,7 @@ EKRAN.kesfet = () => {
     <section class="hero hero-sade">
       <div class="hero-selam">${selam}${b ? ', ' + kac(b.ad.split(' ')[0]) : ''}</div>
       <form id="araF" role="search" class="ai-arama"><span class="ai-isaret">${ic('ara', 18)}</span><input name="q" aria-label="Ara" placeholder="Kelime, ilan no ya da “3+1 satılık Kadıköy”" enterkeyhint="search"><button class="btn kucuk" aria-label="Ara">${ic('ara', 18, '#fff')}</button></form>
-      <div class="hizli">${[['#/harita', 'konum', 'Haritada ara'], ['#/degerle', 'grafik', 'Değerleme'], ['#/ai', 'yildiz', 'MülkümAI'], ['#/ara?dusen=1', 'simsek', 'Fırsatlar']].map(([h, ik, ad]) => `<a href="${h}"><span>${ic(ik, 20)}</span>${ad}</a>`).join('')}</div>
+      <div class="hizli">${[['#/harita', 'konum', 'Haritada ara'], ['#/degerle', 'grafik', 'Değerleme'], ['#/ai', 'yildiz', 'MülkümAI'], ['#/firsat', 'simsek', 'Fırsatlar']].map(([h, ik, ad]) => `<a href="${h}"><span>${ic(ik, 20)}</span>${ad}</a>`).join('')}</div>
     </section>
     <div class="ic">
       <div class="kat-liste">${Object.entries(ANA).map(([k, a]) => { const n = yayinda().filter((i) => i.ana === k).length, alt = altlari(k).map((x) => [x, yayinda().filter((i) => i.alt === x).length]).filter(([, m]) => m); return `<details class="kat-blok"><summary class="kat-ana"><span class="kat-ikon2 ${k}">${ic(a.ikon, 24)}</span><span class="kat-yazi"><b>${a.ad}</b><small>${sayiBicim(n)} ilan · ${alt.length} kategori</small></span>${ic('asagi', 18)}</summary><div class="kat-alt2"><a href="#/ara?ana=${k}"><span>Tüm ${a.ad.toLocaleLowerCase('tr-TR')} ilanları</span><small>${sayiBicim(n)}</small>${ic('ok', 14)}</a>${alt.map(([x, m]) => `<a href="#/ara?ana=${k}&alt=${x}"><span class="ka-ikon">${ic(ALT[x].ikon, 16)}</span><span>${ALT[x].ad}</span><small>${sayiBicim(m)}</small>${ic('ok', 14)}</a>`).join('')}</div></details>`; }).join('')}</div>
@@ -1415,6 +1415,30 @@ async function degerlendirmeKarti(id) {
     const dy = $('#degYaz'); if (dy) dy.onclick = () => degerlendirSheet(id, () => degerlendirmeKarti(id));
   } catch (_) { el.innerHTML = ''; }
 }
+// ---------- Fırsatlar: fiyatı düşenler ve acil satılıklar (test ilanları hariç) ----------
+EKRAN.firsat = (sekme) => {
+  sekme = sekme === 'acil' ? 'acil' : 'dusen';
+  const gercek = yayinda().filter((i) => !i.ornek);
+  const indirim = (i) => { const o = +(i.alanlar?.oncekiFiyat || 0); return o > i.fiyat ? 1 - i.fiyat / o : 0; };
+  const dusen = gercek.filter((i) => indirim(i) >= 0.01).sort((a, b) => indirim(b) - indirim(a));
+  const acil = gercek.filter((i) => dopingBilgi(i)?.tur === 'acil').sort((a, b) => b.olusturma - a.olusturma);
+  const l = sekme === 'acil' ? acil : dusen;
+  const kart = (i) => {
+    const ind = indirim(i), o = +(i.alanlar?.oncekiFiyat || 0);
+    return '<a class="firsat-k" href="#/ilan/' + i.id + '"><div class="foto"' + (kapak(i) ? ' data-bg="' + kac(kapak(i)) + '"' : '') + '>' + fotoKutu(i, 28) + (sekme === 'acil' ? '<span class="fr-rozet acil">ACİL</span>' : '<span class="fr-rozet">%' + Math.round(ind * 100) + ' indirim</span>') + '</div>'
+      + '<div class="fr-bilgi"><b class="fr-fiyat">' + tl(i.fiyat) + '</b>' + (sekme === 'dusen' && o ? '<s>' + tl(o) + '</s>' : '') + '<span class="fr-baslik">' + kac(i.baslik) + '</span><span class="k soluk">' + konum(i) + '</span>'
+      + (sekme === 'dusen' && o ? '<span class="fr-not">' + tl(o - i.fiyat) + ' düştü</span>' : '<span class="fr-not acil">' + ozetSatir(i) + '</span>') + '</div></a>';
+  };
+  const bos = sekme === 'acil'
+    ? bosDurum('uyari', 'Şu an acil satılık ilan yok', 'Satıcılar ilanlarını "Acil" etiketiyle öne çıkardığında burada listelenir.', '<a class="btn" href="#/hesap">İlanımı acil olarak öne çıkar</a>')
+    : bosDurum('simsek', 'Şu an fiyatı düşen ilan yok', 'Bir satıcı ilan fiyatını düşürdüğünde ilan burada indirim oranıyla görünür. Favorine aldığın ilanın fiyatı düşerse bildirim de gelir.', '<a class="btn" href="#/ara">İlanlara göz at</a>');
+  app.innerHTML = ustBar('Fırsatlar') + '<div class="ic">'
+    + '<div class="firsat-ust"><b>Güncel fırsatlar</b><span>Fiyatı düşürülen ve satıcısının acil satışa çıkardığı ilanlar. Test ilanları dahil değildir.</span></div>'
+    + '<div class="ara-sekme firsat-sekme" role="tablist">' + [['dusen', 'Fiyatı düşenler', 'simsek', dusen.length], ['acil', 'Acil satılık', 'uyari', acil.length]].map(([k, ad, ik, n]) => '<button role="tab" aria-selected="' + (sekme === k) + '" class="' + (sekme === k ? 'secili' : '') + '" data-fs="' + k + '"><span class="as-ikon">' + ic(ik, 22) + '</span><span class="as-yazi"><b>' + ad + '</b><small>' + sayiBicim(n) + ' ilan</small></span></button>').join('') + '</div>'
+    + (l.length ? '<div class="firsat-liste">' + l.slice(0, 60).map(kart).join('') + '</div>' : bos) + '</div>';
+  app.querySelectorAll('[data-fs]').forEach((b) => (b.onclick = () => git('#/firsat/' + b.dataset.fs)));
+  navCiz('kesfet');
+};
 // ---------- Karşılaştırma (favorilerden 2-3 ilan yan yana) ----------
 EKRAN.karsilastir = () => {
   const l = String(sorgu().ids || '').split(',').map(ilan).filter(Boolean).slice(0, 3);
@@ -2936,7 +2960,7 @@ function ciz() {
   const p = yol.split('/').filter(Boolean);
   // Karşılama ekranı da aynı bağlamalardan geçmeli (Google düğmesi burada da var)
   if (!S.karsilandi && !ben() && !['giris', 'kayit', 'metin', 'ilan', 'uye'].includes(p[0])) { EKRAN.karsilama(); app.querySelectorAll('[data-google]').forEach((x) => (x.onclick = () => googleBasla(x))); aiDugme(); document.getElementById('aiFab').hidden = true; return; }
-  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', bildirimler: 'bildirimler', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', karsilastir: 'karsilastir', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
+  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', bildirimler: 'bildirimler', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', karsilastir: 'karsilastir', firsat: 'firsat', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
   EKRAN[e](p[1]);
   sifreGoz(); saticiOzetDoldur();
   aiDugme();

@@ -757,3 +757,20 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ara-kat small{min-width:38px;padding:3px 9px;border-radius:999px;background:var(--yuzey2);text-align:center}
 .kat-liste{margin-top:4px}
 .ara-kat .ak-ikon{flex:0 0 38px!important;width:38px}
+
+/* ============ Fırsatlar ============ */
+.firsat-ust{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border-radius:20px;color:#fff;background:radial-gradient(90% 130% at 100% 0%,rgba(255,199,44,.35),transparent 60%),linear-gradient(150deg,var(--t-bas1,#0E1A2D),var(--t-bas2,#1A3A68));box-shadow:0 16px 32px -18px rgba(9,16,28,.7)}
+.firsat-ust b{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.firsat-ust span{font-size:13px;opacity:.78;line-height:1.45}
+.firsat-sekme .as-yazi b{font-size:15px}
+.firsat-liste{display:flex;flex-direction:column;gap:10px}
+.firsat-k{display:flex;gap:12px;background:var(--yuzey);border:1px solid var(--p-ince);border-radius:18px;box-shadow:var(--golge);overflow:hidden;text-decoration:none;color:var(--murekkep);min-height:128px}
+.firsat-k .foto{position:relative;width:128px;flex-shrink:0;background:var(--yuzey2) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.fr-rozet{position:absolute;left:8px;top:8px;padding:4px 8px;border-radius:8px;background:#0F9D58;color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em;box-shadow:0 4px 10px -4px rgba(0,0,0,.4)}
+.fr-rozet.acil{background:#C8553D;letter-spacing:.1em}
+.fr-bilgi{display:flex;flex-direction:column;gap:2px;padding:12px 12px 12px 0;min-width:0}
+.fr-fiyat{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.fr-bilgi s{font-size:12.5px;color:var(--soluk)}
+.fr-baslik{font-size:13.5px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
+.fr-not{margin-top:auto;align-self:flex-start;font-size:12px;font-weight:700;color:#0F7A45;background:color-mix(in srgb,#0F9D58 10%,var(--yuzey));padding:3px 8px;border-radius:999px}
+.fr-not.acil{color:var(--soluk);background:var(--yuzey2);font-weight:600}
