@@ -1,0 +1,337 @@
+// Mülküm360 — rapor ek verileri: toplu taşıma, ulaşım süreleri, çevre (sahil, yeşil alan, gürültü, olumsuz tesisler),
+// rakım ve güneş, fiyat trendi, piyasa davranışı, resmî göstergeler, kullanıcı beyanı ve kredi hesabı.
+// Kaynaklar: OpenStreetMap (Overpass), OSRM, Open-Meteo (Copernicus DEM), kendi ilanlarımız, yönetimden girilen resmî veriler.
+'use strict';
+
+const TASIMA = [
+  ['Metro', (t) => t.station === 'subway' || t.railway === 'subway_entrance' || (t.public_transport === 'station' && /subway|metro/.test(t.subway || t.station || ''))],
+  ['Tramvay', (t) => t.railway === 'tram_stop'],
+  ['Tren / banliyö', (t) => (t.railway === 'station' || t.railway === 'halt') && t.station !== 'subway'],
+  ['Vapur / deniz otobüsü', (t) => t.amenity === 'ferry_terminal'],
+  ['Otobüs durağı', (t) => t.highway === 'bus_stop'],
+  ['Otobüs terminali', (t) => t.amenity === 'bus_station']
+];
+const CEVRE = [
+  ['Sahil / plaj', 'sahil', (t) => t.natural === 'coastline' || t.natural === 'beach'],
+  ['Park / yeşil alan', 'yesil', (t) => /^(park|garden|nature_reserve)$/.test(t.leisure || '') || /^(forest|recreation_ground)$/.test(t.landuse || '')],
+  ['Otoyol / ana yol', 'gurultu', (t) => /^(motorway|trunk)$/.test(t.highway || '')],
+  ['Demiryolu hattı', 'gurultu', (t) => t.railway === 'rail'],
+  ['Havalimanı', 'gurultu', (t) => t.aeroway === 'aerodrome'],
+  ['Sanayi alanı', 'olumsuz', (t) => t.landuse === 'industrial'],
+  ['Atık / geri dönüşüm tesisi', 'olumsuz', (t) => /^(waste_disposal|waste_transfer_station)$/.test(t.amenity || '') || t.landuse === 'landfill'],
+  ['Yüksek gerilim hattı / trafo', 'olumsuz', (t) => t.power === 'line' || t.power === 'substation'],
+  ['Baz istasyonu / iletişim kulesi', 'olumsuz', (t) => (t.man_made === 'mast' || t.man_made === 'tower') && /communication/.test(t['tower:type'] || t['communication:mobile_phone'] || 'communication')]
+];
+
+async function overpass(sorgu) {
+  // Sunucular yoğunsa (502/zaman aşımı) bir kez 4 sn bekleyip yeniden dene
+  const g = 'data=' + encodeURIComponent(sorgu);
+  return (await overpassYaris(g)) || (await new Promise((r) => setTimeout(r, 4000)), await overpassYaris(g));
+}
+// Öğenin konuma en yakın noktası (çizgi/alan geometrisi varsa köşelerden)
+function enYakinMesafe(lat, lon, e) {
+  const noktalar = e.geometry?.length ? e.geometry : [{ lat: e.lat ?? e.center?.lat, lon: e.lon ?? e.center?.lon }];
+  return Math.min(...noktalar.filter((p) => p.lat != null).map((p) => mesafe(lat, lon, p.lat, p.lon)));
+}
+async function osrmSure(a, b) {
+  try {
+    const r = await (await sureliFetch(`https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`, null, 9000)).json();
+    return r.routes?.[0] ? { dk: Math.round(r.routes[0].duration / 60), km: Math.round(r.routes[0].distance / 100) / 10 } : null;
+  } catch (_) { return null; }
+}
+
+// Önbellekli: aynı ~100 m'lik nokta (3 ondalık) için 30 gün içindeki sonuç sunucudan gelir
+async function cevreVerisi(k, f) {
+  if (!k) return null;
+  const anahtar = `v2:${(+k.lat).toFixed(3)},${(+k.lon).toFixed(3)}`;
+  try {
+    const { data } = await sb.from('cevre_onbellek').select('veri, olusturma').eq('anahtar', anahtar).maybeSingle();
+    if (data && Date.now() - new Date(data.olusturma) < 30 * 864e5) return { ...data.veri, onbellek: data.olusturma };
+  } catch (_) {}
+  const s = await cevreVerisiCanli(k, f);
+  if (s && !s.hata && !s.eksik) sb.from('cevre_onbellek').upsert({ anahtar, veri: s, olusturma: new Date().toISOString() }).then(() => {}, () => {});
+  return s;
+}
+async function cevreVerisiCanli(k, f) {
+  const { lat, lon } = k, s = {};
+  const [cizgi, nokta, tasimaJ] = await Promise.all([
+    overpass(`[out:json][timeout:25];(way(around:5000,${lat},${lon})["natural"~"^(coastline|beach)$"];way(around:1000,${lat},${lon})["leisure"~"^(park|garden|nature_reserve)$"];way(around:1000,${lat},${lon})["landuse"~"^(forest|recreation_ground)$"];way(around:1500,${lat},${lon})["highway"~"^(motorway|trunk)$"];way(around:1500,${lat},${lon})["railway"="rail"];way(around:1500,${lat},${lon})["landuse"~"^(industrial|landfill)$"];way(around:800,${lat},${lon})["power"="line"];);out geom;`),
+    overpass(`[out:json][timeout:25];(nwr(around:1500,${lat},${lon})["amenity"~"^(waste_disposal|waste_transfer_station)$"];nwr(around:1500,${lat},${lon})["amenity"~"^(waste_disposal|waste_transfer_station)$"];nwr(around:800,${lat},${lon})["power"="substation"];node(around:500,${lat},${lon})["man_made"~"^(mast|tower)$"];nwr(around:10000,${lat},${lon})["amenity"="hospital"];nwr(around:150000,${lat},${lon})["aeroway"="aerodrome"]["iata"];);out center tags;`),
+    overpass(`[out:json][timeout:25];(nwr(around:1500,${lat},${lon})["railway"~"^(station|halt|tram_stop|subway_entrance)$"];nwr(around:1500,${lat},${lon})["public_transport"="station"];nwr(around:2500,${lat},${lon})["amenity"="ferry_terminal"];node(around:600,${lat},${lon})["highway"="bus_stop"];nwr(around:5000,${lat},${lon})["amenity"="bus_station"];);out center tags;`)
+  ]);
+  if (!cizgi && !nokta && !tasimaJ) return { hata: true };
+  s.eksik = !cizgi || !nokta || !tasimaJ; // eksikse önbelleğe yazılmaz, sonraki raporda yeniden denenir
+  s.tasimaYok = !tasimaJ;
+  const hepsi = [...(cizgi?.elements || []), ...(nokta?.elements || []), ...(tasimaJ?.elements || [])].map((e) => ({ e, t: e.tags || {}, m: enYakinMesafe(lat, lon, e) })).filter((x) => isFinite(x.m));
+  // Toplu taşıma: türe göre en yakın + sayı
+  s.tasima = TASIMA.map(([ad, fn]) => {
+    const l = hepsi.filter((x) => fn(x.t)).sort((a, b) => a.m - b.m);
+    return { ad, sayi: l.length, enYakin: l[0] ? Math.round(l[0].m) : null, isim: l[0]?.t.name || '', yuruyus: l[0] ? Math.max(1, Math.round(l[0].m / 80)) : null };
+  });
+  // Çevre: en yakın mesafe
+  s.cevre = CEVRE.map(([ad, grup, fn]) => {
+    const l = hepsi.filter((x) => fn(x.t) && !(ad === 'Havalimanı' && x.m > 15000)).sort((a, b) => a.m - b.m);
+    return { ad, grup, sayi: l.length, enYakin: l[0] ? Math.round(l[0].m) : null };
+  });
+  // Ulaşım süreleri: il merkezi, en yakın hastane, en yakın havalimanı (araçla)
+  const hedefler = [];
+  try {
+    const p = await (await sureliFetch('https://photon.komoot.io/api/?limit=1&osm_tag=place&q=' + encodeURIComponent(f.il + ', Türkiye'))).json();
+    const ft = p.features?.[0]; if (ft) hedefler.push(['İl merkezi (' + f.il + ')', { lat: ft.geometry.coordinates[1], lon: ft.geometry.coordinates[0] }]);
+  } catch (_) {}
+  const yakin = (fn) => hepsi.filter((x) => fn(x.t)).sort((a, b) => a.m - b.m)[0];
+  const hs = yakin((t) => t.amenity === 'hospital'); if (hs) hedefler.push(['En yakın hastane' + (hs.t.name ? ' (' + hs.t.name + ')' : ''), { lat: hs.e.lat ?? hs.e.center?.lat, lon: hs.e.lon ?? hs.e.center?.lon }]);
+  const hv = yakin((t) => t.aeroway === 'aerodrome' && t.iata); if (hv) hedefler.push([`En yakın havalimanı (${hv.t.name || hv.t.iata})`, { lat: hv.e.lat ?? hv.e.center?.lat, lon: hv.e.lon ?? hv.e.center?.lon }]);
+  s.sureler = (await Promise.all(hedefler.map(async ([ad, n]) => ({ ad, ...(await osrmSure(k, n)) })))).filter((x) => x.dk != null);
+  // Open-Meteo (Copernicus DEM); OpenTopoData tarayıcıdan CORS ile engelleniyordu
+  try { const r = await (await sureliFetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`, null, 8000)).json(); const z = r.elevation?.[0]; if (z != null) s.rakim = Math.round(z); } catch (_) {}
+  // Güneş: gün ışığı süresi (astronomik hesap)
+  const gun = (dek) => (24 / Math.PI) * Math.acos(-Math.tan((lat * Math.PI) / 180) * Math.tan((dek * Math.PI) / 180));
+  s.gunes = { yaz: gun(23.44), kis: gun(-23.44), ogleYaz: 90 - lat + 23.44, ogleKis: 90 - lat - 23.44 };
+  return s;
+}
+
+// Geçmiş depremler: USGS kataloğu (FDSN), 1976'dan bugüne, 100 km içinde M≥5
+// Depremler: EMSC (Avrupa-Akdeniz Sismoloji Merkezi, hızlı, Türkiye kapsamı iyi) ana kaynak, USGS yedek.
+// Geçmiş: 1976'dan bugüne 100 km içinde M≥5. Son: son 12 ayda 50 km içinde M≥3.
+async function depremSorgu(k, yariKm, minM, bas, sira, adet) {
+  const ev = (r) => (r.features || []).map((e) => { const [lon, lat, der] = e.geometry.coordinates; const p = e.properties; return { m: +p.mag, t: new Date(p.time), km: Math.round(enYakinMesafe(k.lat, k.lon, { lat, lon }) / 1000), der: Math.round(Math.abs(der)), yer: p.flynn_region || p.place || '' }; });
+  try {
+    const r = await (await sureliFetch(`https://www.seismicportal.eu/fdsnws/event/1/query?lat=${k.lat}&lon=${k.lon}&maxradius=${(yariKm / 111.2).toFixed(3)}&minmag=${minM}&start=${bas}&format=json&orderby=${sira}&limit=${adet}`, null, 15000)).json();
+    return { l: ev(r), kaynak: 'EMSC' };
+  } catch (_) {
+    const r = await (await sureliFetch(`https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=${k.lat}&longitude=${k.lon}&maxradiuskm=${yariKm}&minmagnitude=${minM}&starttime=${bas}&orderby=${sira === 'time' ? 'time' : 'magnitude'}&limit=${adet}`, null, 25000)).json();
+    return { l: ev(r), kaynak: 'USGS' };
+  }
+}
+async function depremVerisi(k) {
+  const yilOnce = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+  const [g, s] = await Promise.all([depremSorgu(k, 100, 5, '1976-01-01', 'magnitude', 200), depremSorgu(k, 50, 3, yilOnce, 'time', 8).catch(() => ({ l: [], kaynak: '' }))]);
+  const l = g.l;
+  return { sayi: l.length, m6: l.filter((x) => x.m >= 6).length, en: l.slice(0, 6), yakin50: l.filter((x) => x.km <= 50).length, son: s.l, sonSayi: s.l.length, kaynak: [...new Set([g.kaynak, s.kaynak].filter(Boolean))].join(', ') };
+}
+// Aktif faylar (www/faylar.json, GEM Global Active Faults, Türkiye kesimi). Noktadan fay çizgisine en kısa mesafe.
+let FAY_ONBELLEK = null;
+async function fayVerisi(k) {
+  FAY_ONBELLEK = FAY_ONBELLEK || (await (await fetch('faylar.json')).json());
+  const kx = Math.cos((k.lat * Math.PI) / 180) * 111.32, ky = 110.57;
+  const mesafe = (d) => { let en = Infinity; for (let i = 0; i + 3 < d.length; i += 2) {
+    const ax = (d[i] - k.lon) * kx, ay = (d[i + 1] - k.lat) * ky, bx = (d[i + 2] - k.lon) * kx, by = (d[i + 3] - k.lat) * ky;
+    const dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy || 1)));
+    en = Math.min(en, Math.hypot(ax + u * dx, ay + u * dy)); } return en; };
+  const l = FAY_ONBELLEK.faylar.map(([tip, kayma, d]) => ({ tip, kayma, km: mesafe(d) })).filter((x) => isFinite(x.km)).sort((a, b) => a.km - b.km);
+  return { en: l.slice(0, 4).map((x) => ({ ...x, km: Math.round(x.km * 10) / 10 })), k10: l.filter((x) => x.km <= 10).length, k25: l.filter((x) => x.km <= 25).length, k50: l.filter((x) => x.km <= 50).length, kaynak: FAY_ONBELLEK.kaynak };
+}
+// Yapım yılına göre yürürlükteki deprem yönetmeliği (bina yaşından yaklaşık yıl)
+function yonetmelikDonemi(binaYasi) {
+  const ys = typeof yasSayi === 'function' ? yasSayi(binaYasi) : +binaYasi;
+  if (binaYasi === '' || binaYasi == null || isNaN(ys)) return null;
+  const yil = Math.round(new Date().getFullYear() - ys);
+  if (yil >= 2019) return { yil, ad: '2018 Türkiye Bina Deprem Yönetmeliği (TBDY)', not: 'Yürürlükteki en güncel yönetmelik (1 Ocak 2019’dan itibaren). Zemine ve konuma özel tasarım esastır.', seviye: 'Güncel' };
+  if (yil >= 2007) return { yil, ad: '2007 Deprem Bölgelerinde Yapılacak Binalar Hakkında Yönetmelik', not: 'Performansa dayalı değerlendirme getiren yönetmelik; denetimli yapılarda iyi düzey beklenir.', seviye: 'İyi' };
+  if (yil >= 1999) return { yil, ad: '1998 Afet Bölgelerinde Yapılacak Yapılar Hakkında Yönetmelik', not: '1999 sonrası yapı denetimi (4708 sayılı Kanun, 2001) ile birlikte uygulanmaya başladı; proje ve denetim belgeleri kontrol edilmeli.', seviye: 'Orta' };
+  return { yil, ad: '1998 öncesi yönetmelikler (1975 vb.)', not: '1999 depremleri öncesi dönem; yapı denetimi zorunlu değildi. Deprem performans analizi önerilir; riskli yapı tespiti 6306 sayılı Kanun kapsamında yaptırılabilir.', seviye: 'Dikkat' };
+}
+
+// Kendi ilanlarımızdan: aylık m² fiyat trendi (son 12 ay), piyasa davranışı
+function fiyatTrendi(f) {
+  if (f.ana !== 'emlak') return null;
+  const temel = S.ilanlar.filter((i) => i.ana === 'emlak' && i.alt === f.alt && i.alanlar?.islem === f.islem && +i.alanlar?.m2net > 0 && i.fiyat > 0);
+  const ilce = temel.filter((i) => f.ilce && kucuk(i.ilce) === kucuk(f.ilce) && i.il === f.il), il = temel.filter((i) => i.il === f.il);
+  const l = ilce.length >= 6 ? ilce : il.length >= 6 ? il : temel, kapsam = l === ilce ? `${f.ilce}, ${f.il}` : l === il ? `${f.il} geneli` : 'Türkiye geneli';
+  const aylar = {};
+  l.forEach((i) => { const d = new Date(i.olusturma); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); (aylar[k] = aylar[k] || []).push(i.fiyat / +i.alanlar.m2net); });
+  const seri = Object.entries(aylar).sort().slice(-12).filter(([, v]) => v.length >= 2).map(([ay, v]) => ({ ay, deger: medyan(v), n: v.length }));
+  return { kapsam, seri };
+}
+function piyasaDavranisi(f) {
+  const l = S.ilanlar.filter((i) => i.ana === f.ana && i.alt === f.alt && i.il === f.il && (f.ana !== 'emlak' || i.alanlar?.islem === f.islem));
+  const sat = l.filter((i) => i.durum === 'satildi');
+  const fiyatli = sat.filter((i) => i.satis_fiyati > 0);
+  const yayin = l.filter((i) => i.durum === 'yayinda');
+  const genel = S.ilanlar.filter((i) => i.durum === 'yayinda');
+  const ort = (a, fn) => (a.length ? a.reduce((t, x) => t + fn(x), 0) / a.length : null);
+  return {
+    satilan: sat.length,
+    gun: ort(sat.filter((i) => i.guncelleme > i.olusturma), (i) => (i.guncelleme - i.olusturma) / GUN),
+    indirim: fiyatli.length ? ort(fiyatli, (i) => (1 - i.satis_fiyati / i.fiyat) * 100) : null, indirimN: fiyatli.length,
+    ilgi: ort(yayin, (i) => i.goruntulenme || 0), ilgiGenel: ort(genel, (i) => i.goruntulenme || 0),
+    yeni30: l.filter((i) => Date.now() - i.olusturma < 30 * GUN).length
+  };
+}
+function krediHesabi(tutar, faiz, vade, pesinatYuzde) {
+  const anapara = tutar * (1 - (pesinatYuzde || 0) / 100), r = faiz / 100;
+  const taksit = r > 0 ? (anapara * r) / (1 - Math.pow(1 + r, -vade)) : anapara / vade;
+  return { anapara, taksit, toplam: taksit * vade, faizToplam: taksit * vade - anapara, pesinat: tutar - anapara };
+}
+
+// ---- Rapor sayfaları ----
+const rMesafe = (m) => (m == null ? '—' : m >= 1000 ? String((m / 1000).toFixed(1)).replace('.', ',') + ' km' : m + ' m');
+function trendSvg(t) {
+  if (!t || t.seri.length < 2) return '';
+  const W = 682, H = 190, p = 46, v = t.seri.map((x) => x.deger), lo = Math.min(...v) * 0.95, hi = Math.max(...v) * 1.05;
+  const x = (n) => p + (n / (t.seri.length - 1)) * (W - 2 * p), y = (d) => H - 30 - ((d - lo) / (hi - lo || 1)) * (H - 60);
+  const yol = t.seri.map((s, n) => `${n ? 'L' : 'M'}${x(n)},${y(s.deger)}`).join(' ');
+  const ad = (a) => ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][+a.slice(5) - 1] + ' ' + a.slice(2, 4);
+  const kisa = (d) => new Intl.NumberFormat('tr-TR', { notation: 'compact', maximumFractionDigits: 1 }).format(d);
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">
+    ${[0, 0.5, 1].map((q) => { const d = lo + q * (hi - lo); return `<line x1="${p}" x2="${W - p}" y1="${y(d)}" y2="${y(d)}" stroke="${R_CIZGI}"/><text x="${p - 6}" y="${y(d) + 4}" font-size="10" fill="${R_SOLUK}" text-anchor="end">${kisa(d)}</text>`; }).join('')}
+    <path d="${yol} L${x(t.seri.length - 1)},${H - 30} L${x(0)},${H - 30}Z" fill="${R_ALTIN}" fill-opacity=".18"/><path d="${yol}" fill="none" stroke="${R_ALTIN_K}" stroke-width="3"/>
+    ${t.seri.map((s, n) => `<circle cx="${x(n)}" cy="${y(s.deger)}" r="4" fill="${R_MAVI}"/><text x="${x(n)}" y="${H - 12}" font-size="10" fill="${R_SOLUK}" text-anchor="middle">${ad(s.ay)}</text>`).join('')}</svg>`;
+}
+
+// Arazi kullanımı: 1 km yarıçapta OpenStreetMap landuse/leisure/natural alanları, merkezi daire içindekiler toplanır
+const ARAZI_GRUP = [['Konut', /^residential$/], ['Ticaret', /^(commercial|retail)$/], ['Sanayi', /^industrial$/], ['Yeşil alan', /^(park|garden|forest|wood|scrub|grass|recreation_ground|playground|pitch|meadow|village_green|cemetery_no)$/], ['Tarım', /^(farmland|orchard|vineyard|farmyard|greenhouse_horticulture|plant_nursery)$/], ['İnşaat / boş arazi', /^(construction|brownfield|greenfield)$/], ['Eğitim / sağlık / kamu', /^(education|religious|institutional|military|cemetery)$/], ['Su', /^(water|basin|reservoir|beach)$/]];
+// Arazi kullanımı görseli: 1 km'lik dairenin haritası (alanlar kullanım türüne göre boyalı) + halka grafik ve oranlar
+const ARAZI_RENK = { 'Konut': '#E9B44C', 'Ticaret': '#E0604F', 'Sanayi': '#8F6FC1', 'Yeşil alan': '#4FB07A', 'Tarım': '#B9C76A', 'İnşaat / boş arazi': '#C9A27E', 'Eğitim / sağlık / kamu': '#5B8DEF', 'Su': '#58B4E0', 'Diğer': '#A9B1BC' };
+function araziGorsel(ar) {
+  const renk = (ad) => ARAZI_RENK[ad] || '#A9B1BC', vr = (n) => String(n.toFixed(1)).replace('.', ',');
+  const top = ar.l.reduce((s, x) => s + x.yuzde, 0), kalan = Math.round(Math.max(0, 100 - top) * 10) / 10;
+  const dil = [...ar.l.map((x) => ({ ad: x.ad, y: x.yuzde, c: renk(x.ad) })), ...(kalan >= 0.5 ? [{ ad: 'Yol ve sınıflandırılmamış', y: kalan, c: '#E3E6EC' }] : [])];
+  const Rr = 56, C = 2 * Math.PI * Rr, tum = dil.reduce((s, d) => s + d.y, 0) || 1; let ofs = 0;
+  const halka = '<svg width="150" height="150" viewBox="0 0 150 150" style="flex-shrink:0">' + dil.map((d) => { const u = (d.y / tum) * C, s = '<circle cx="75" cy="75" r="' + Rr + '" fill="none" stroke="' + d.c + '" stroke-width="22" stroke-dasharray="' + u.toFixed(2) + ' ' + (C - u).toFixed(2) + '" stroke-dashoffset="' + (-ofs).toFixed(2) + '" transform="rotate(-90 75 75)"/>'; ofs += u; return s; }).join('')
+    + '<text x="75" y="73" text-anchor="middle" font-size="19" font-weight="700" fill="#0B1B33">%' + vr(ar.l[0].yuzde) + '</text><text x="75" y="88" text-anchor="middle" font-size="9.5" fill="#5B5F68">' + kac(ar.l[0].ad) + '</text></svg>';
+  const lejant = '<div class="r-arazi-lejant">' + dil.map((d) => '<div><i style="background:' + d.c + '"></i><span>' + kac(d.ad) + '</span><b>%' + vr(d.y) + '</b></div>').join('') + '</div>';
+  let harita = '';
+  if (ar.p && ar.p.length) {
+    const o = 150 / 1000, pt = (n) => { let s = ''; for (let i = 0; i < n.length; i += 2) s += (150 + n[i] * o).toFixed(1) + ',' + (150 - n[i + 1] * o).toFixed(1) + ' '; return s; };
+    harita = '<svg class="r-arazi-harita" width="300" height="300" viewBox="0 0 300 300" style="flex-shrink:0"><defs><clipPath id="arzK"><circle cx="150" cy="150" r="148"/></clipPath></defs><circle cx="150" cy="150" r="148" fill="#F1F3F6"/><g clip-path="url(#arzK)">'
+      + ar.p.map((x) => '<polygon points="' + pt(x.n) + '" fill="' + renk(x.g) + '" fill-opacity=".88" stroke="#fff" stroke-width=".7"/>').join('')
+      + '</g><circle cx="150" cy="150" r="74" fill="none" stroke="#0B1B33" stroke-opacity=".4" stroke-dasharray="4 4"/><circle cx="150" cy="150" r="148" fill="none" stroke="#0B1B33" stroke-opacity=".55" stroke-width="1.2"/>'
+      + '<rect x="132" y="68" width="36" height="13" rx="6.5" fill="#fff" fill-opacity=".85"/><text x="150" y="78" text-anchor="middle" font-size="9" font-weight="700" fill="#0B1B33">500 m</text><rect x="134" y="5" width="32" height="13" rx="6.5" fill="#fff" fill-opacity=".85"/><text x="150" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="#0B1B33">1 km</text>'
+      + '<circle cx="150" cy="150" r="6" fill="#C8553D" stroke="#fff" stroke-width="2.2"/></svg>';
+  }
+  return '<div class="r-kutu r-arazi' + (harita ? '' : ' haritasiz') + '">' + harita + '<div class="r-arazi-sag">' + halka + lejant + '</div></div>';
+}
+async function araziKullanimi(k) {
+  const j = await overpass(`[out:json][timeout:25];(way(around:1000,${k.lat},${k.lon})["landuse"];way(around:1000,${k.lat},${k.lon})["leisure"~"^(park|garden|playground|pitch|recreation_ground)$"];way(around:1000,${k.lat},${k.lon})["natural"~"^(wood|scrub|water|beach)$"];);out geom;`);
+  if (!j) return null;
+  const kx = Math.cos((k.lat * Math.PI) / 180) * 111320, ky = 110570, top = {}, parca = [];
+  for (const e of j.elements || []) {
+    const g = e.geometry; if (!g || g.length < 4) continue;
+    const p = g.map((n) => [(n.lon - k.lon) * kx, (n.lat - k.lat) * ky]);
+    const cx = p.reduce((s, q) => s + q[0], 0) / p.length, cy = p.reduce((s, q) => s + q[1], 0) / p.length;
+    if (Math.hypot(cx, cy) > 1000) continue;
+    let a = 0; for (let i = 0; i < p.length - 1; i++) a += p[i][0] * p[i + 1][1] - p[i + 1][0] * p[i][1];
+    a = Math.min(Math.abs(a) / 2, Math.PI * 1e6);
+    const t = e.tags || {}, deger = t.landuse || t.leisure || t.natural || '';
+    const grup = (ARAZI_GRUP.find(([, re]) => re.test(deger)) || ['Diğer'])[0];
+    top[grup] = (top[grup] || 0) + a; parca.push({ g: grup, a, p });
+  }
+  const daire = Math.PI * 1e6, l = Object.entries(top).map(([ad, a]) => ({ ad, yuzde: Math.round((a / daire) * 1000) / 10 })).filter((x) => x.yuzde >= 0.5).sort((x, y) => y.yuzde - x.yuzde);
+  const toplam = l.reduce((s, x) => s + x.yuzde, 0);
+  // Harita için en büyük 140 alan, köşeleri seyreltilmiş (rapor kaydı küçük kalsın)
+  const pp = parca.sort((x, y) => y.a - x.a).slice(0, 140).map((x) => { const adim = Math.ceil(x.p.length / 22), n = []; x.p.forEach((q, i) => { if (i % adim === 0) n.push(Math.round(q[0]), Math.round(q[1])); }); return { g: x.g, n }; });
+  return { l, haritali: Math.min(100, Math.round(toplam)), p: pp };
+}
+function raporSayfalari2(f, h) {
+  const sayfalar = [], emlak = f.ana === 'emlak', c = h.cevre;
+  // Konut ve bina özellikleri + ada/parsel
+  const oz = h.ozellik || {}, p = h.parsel;
+  if (emlak && (Object.keys(oz).length || p)) {
+    const katY = (x) => (x ? x + (/kat/i.test(x) ? '' : /^(bodrum|zemin)$/i.test(x) ? ' kat' : /^\d+$/.test(x) ? '. kat' : '') : '');
+    const konut = [['Net / brüt alan', oz.m2net ? oz.m2net + ' m²' + (oz.m2brut ? ' / ' + oz.m2brut + ' m²' : '') : ''], ['Oda sayısı', oz.oda], ['Bulunduğu kat', katY(oz.kat)], ['Cephe', oz.cephe], ['Manzara', oz.manzara], ['Balkon', oz.balkon], ['Isıtma', oz.isitma], ['Eşya', oz.esya], ['Tadilat durumu', oz.tadilat]];
+    const bina = [['Bina yaşı', oz.binaYasi], ['Bina kat sayısı', oz.katSayisi], ['Asansör', oz.asansor], ['Otopark', oz.otopark], ['Site içinde', oz.site], ['Havuz', oz.havuz], ['Güvenlik', oz.guvenlik], ['Tapu durumu', oz.tapu || oz.iskan], ['Krediye uygun', oz.kredi], ['Aylık aidat', oz.aidat ? tl(+oz.aidat) : '']];
+    const tablo = (l) => { const s = l.filter(([, x]) => x); return s.length ? `<table class="r-tablo iki">${s.map(([a, x]) => `<tr><th>${a}</th><td>${kac(String(x))}</td></tr>`).join('')}</table>` : '<div class="r-not">Bilgi girilmedi.</div>'; };
+    sayfalar.push(`${rBaslik('Konut Özellikleri')}${tablo(konut)}
+      ${rBaslik('Bina Özellikleri')}${tablo(bina)}
+      ${rBaslik('Ada / Parsel Bilgileri (TKGM)')}
+      ${p ? `<table class="r-tablo iki"><tr><th>Ada / parsel</th><td>${kac(p.ada)} / ${kac(p.parsel)}${p.pafta ? ' · pafta ' + kac(p.pafta) : ''}</td></tr><tr><th>Mahalle</th><td>${kac([p.mahalle, p.ilce, p.il].filter(Boolean).join(', '))}</td></tr><tr><th>Parsel yüzölçümü</th><td>${kac(p.alan)} m²</td></tr><tr><th>Nitelik</th><td>${kac(p.nitelik || '—')}</td></tr>${p.mevkii ? `<tr><th>Mevkii</th><td>${kac(p.mevkii)}</td></tr>` : ''}${p.zemin ? `<tr><th>Zemin türü</th><td>${kac(p.zemin)}</td></tr>` : ''}</table>
+        <div class="r-not">Kaynak: TKGM Parsel Sorgu (herkese açık MEGSİS). ${p.kaynak === 'konum' ? 'Ada/parsel girilmediği için adresin harita konumundaki parsel gösterilmiştir; doğruluğu tapuyla kontrol edin.' : 'Rapor bilgilerindeki ada/parsel ile sorgulanmıştır.'} Malik bilgisi bu serviste yer almaz.</div>`
+        : '<div class="r-not">Ada/parsel girilmediği ya da adres parsel düzeyinde bulunamadığı için TKGM bilgisi eklenemedi. Rapor oluştururken "Rapor bilgileri" penceresine ada ve parseli yazın.</div>'}`);
+  }
+  // Arazi kullanımı (1 km)
+  const ar = h.arazi;
+  if (emlak && ar && ar.l.length) {
+    sayfalar.push(`${rBaslik('Arazi Kullanımı (1 km çevre)')}${araziGorsel(ar)}
+      <div class="r-not">${ar.p && ar.p.length ? 'Harita, mülkün (kırmızı nokta) 1 km çevresindeki alanları kullanım türüne göre boyar; kesikli halka 500 metreyi gösterir. ' : ''}1 km yarıçaplı dairenin (3,14 km²) hangi oranının hangi kullanıma ayrıldığı. Haritada işaretlenmiş alanlar daireyi yaklaşık %${ar.haritali} oranında kaplıyor; kalan kısım yollar ve sınıflandırılmamış alanlardır. Kaynak: OpenStreetMap arazi kullanım verisi. Resmî imar durumu için belediyenin e-imar sistemine bakın.</div>`);
+  }
+  // A · Toplu taşıma ve ulaşım
+  if (emlak && c && !c.hata) {
+    sayfalar.push(`${rBaslik('Toplu Taşıma')}
+      ${c.tasimaYok ? '<div class="r-not">Toplu taşıma verisi rapor hazırlanırken harita servisinden alınamadı (OpenStreetMap yoğun). Raporu yeniden oluşturunca eklenir.</div>' : ''}<table class="r-tablo bolge" ${c.tasimaYok ? 'style="display:none"' : ''}><tr><th>Tür</th><th>Sayı</th><th>En yakın</th><th>Yürüyüş</th><th>Durak / istasyon</th></tr>
+      ${c.tasima.map((x) => `<tr><th>${x.ad}</th><td>${x.sayi}</td><td>${rMesafe(x.enYakin)}</td><td>${x.yuruyus ? x.yuruyus + ' dk' : '—'}</td><td>${kac(x.isim || '—')}</td></tr>`).join('')}</table>
+      <div class="r-not">Arama yarıçapı: raylı sistem 1,5 km, vapur 2,5 km, otobüs durağı 600 m, terminal 5 km. Yürüyüş süresi 80 m/dk kabulüyle kuş uçuşu mesafeden hesaplanır.</div>
+      ${c.sureler?.length ? `${rBaslik('Ulaşım Süreleri (araçla)')}<table class="r-tablo bolge"><tr><th>Hedef</th><th>Süre</th><th>Mesafe</th></tr>${c.sureler.map((s) => `<tr><th>${kac(s.ad)}</th><td>${s.dk} dk</td><td>${String(s.km).replace('.', ',')} km</td></tr>`).join('')}</table><div class="r-not">Trafik içermeyen yol ağı süresidir (OSRM, OpenStreetMap).</div>` : ''}
+      ${rBaslik('Çevre Analizi')}
+      <table class="r-tablo bolge"><tr><th></th><th>En yakın</th><th>Değerlendirme</th></tr>
+      ${c.cevre.map((x) => { const yok = x.enYakin == null; const not = x.grup === 'sahil' || x.grup === 'yesil' ? (yok ? 'Yakında yok' : x.enYakin < 500 ? 'Çok yakın (artı)' : x.enYakin < 1500 ? 'Yakın' : 'Uzak') : yok ? 'Yakında yok (artı)' : x.enYakin < 300 ? 'Çok yakın: etkisini yerinde kontrol et' : 'Uzak'; return `<tr><th>${x.ad}</th><td>${yok ? '—' : rMesafe(x.enYakin)}</td><td>${not}</td></tr>`; }).join('')}</table>
+      <div class="r-satir3">${c.rakim != null ? `<div class="r-kutu"><b>${c.rakim} m</b><small>Rakım</small></div>` : ''}<div class="r-kutu"><b>${String(c.gunes.yaz.toFixed(1)).replace('.', ',')} sa</b><small>Yaz gün ışığı (21 Haziran)</small></div><div class="r-kutu"><b>${String(c.gunes.kis.toFixed(1)).replace('.', ',')} sa</b><small>Kış gün ışığı (21 Aralık)</small></div></div>
+      <div class="r-not">Kışın güneş öğlen ${Math.round(c.gunes.ogleKis)}° yükseklikte; güney cepheli bölümler en çok güneşi alır. Kaynak: OpenStreetMap, Open-Meteo (Copernicus DEM), astronomik hesap. OSM’de eksik kayıt olabilir.${c.onbellek ? ` Çevre verisi ${new Date(c.onbellek).toLocaleDateString('tr-TR')} tarihinde alındı.` : ''}</div>`);
+  }
+  // Deprem: yönetmelik dönemi + geçmiş depremler
+  const yd = emlak ? yonetmelikDonemi(f.binaYasi) : null, dp = h.deprem;
+  if (yd || dp) {
+    const tarih = (d) => d.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
+    sayfalar.push(`${rBaslik('Deprem ve Yapı Güvenliği')}
+      ${yd ? `<table class="r-tablo bolge"><tr><th>Tahmini yapım yılı</th><td>${yd.yil} (bina yaşı ${kac(String(f.binaYasi))})</td></tr><tr><th>Dönemin yönetmeliği</th><td><b>${yd.ad}</b></td></tr><tr><th>Değerlendirme</th><td><b>${yd.seviye}</b> · ${yd.not}</td></tr></table>` : '<div class="r-not">Bina yaşı girilmediği için yönetmelik dönemi belirlenemedi.</div>'}
+      ${dp ? `<div class="r-satir3"><div class="r-kutu"><b>${dp.sayi}</b><small>M≥5 deprem, 100 km içinde (1976–bugün)</small></div><div class="r-kutu"><b>${dp.yakin50}</b><small>Bunların 50 km içindekiler</small></div><div class="r-kutu"><b>${dp.m6}</b><small>M≥6 deprem</small></div></div>
+      ${dp.en.length ? `<table class="r-tablo bolge"><tr><th>Büyüklük</th><th>Tarih</th><th>Uzaklık</th><th>Derinlik</th></tr>${dp.en.map((x) => `<tr><th>M ${String(x.m.toFixed(1)).replace('.', ',')}</th><td>${tarih(x.t)}</td><td>${x.km} km</td><td>${x.der} km</td></tr>`).join('')}</table>` : '<div class="r-not">Bu dönemde 100 km içinde M≥5 deprem kaydı yok. Bu, gelecekte deprem olmayacağı anlamına gelmez.</div>'}` : '<div class="r-not">Deprem kataloğuna şu an ulaşılamadı.</div>'}
+      <div class="r-not">Kaynak: ${kac(dp?.kaynak || 'EMSC / USGS')} deprem kataloğu (FDSN), yönetmelik tarihleri. Bu sayfa binanın kendi dayanıklılığını göstermez; beton kalitesi, zemin ve güçlendirme durumu için deprem performans analizi / zemin etüdü yaptırın. Konuma özel deprem tehlikesi: AFAD Türkiye Deprem Tehlike Haritası (tdth.afad.gov.tr).</div>`);
+  }
+  // Aktif faylar ve son 12 ayın depremleri
+  const fy = h.fay;
+  if (emlak && (fy || dp?.son)) {
+    const tarihK = (d) => d.toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' });
+    const yorum = !fy || !fy.en.length ? '' : fy.en[0].km < 2 ? 'Konum aktif bir fay hattına çok yakın (2 km içinde). Zemin etüdü ve yapı performans analizi özellikle önemlidir.' : fy.en[0].km < 10 ? 'En yakın aktif fay 10 km içinde; bölge deprem açısından aktiftir.' : fy.en[0].km < 25 ? 'En yakın aktif fay 10–25 km arasında.' : 'Yakın çevrede (25 km) haritalanmış aktif fay yok; bu, deprem riski olmadığı anlamına gelmez.';
+    sayfalar.push(`${rBaslik('Aktif Fay Hatları')}
+      ${fy ? `<div class="r-satir3"><div class="r-kutu"><b>${fy.en[0] ? String(fy.en[0].km).replace('.', ',') + ' km' : '—'}</b><small>En yakın aktif fay</small></div><div class="r-kutu"><b>${fy.k10} / ${fy.k25}</b><small>10 km / 25 km içindeki fay parçası</small></div><div class="r-kutu"><b>${fy.k50}</b><small>50 km içindeki fay parçası</small></div></div>
+      <table class="r-tablo bolge"><tr><th>Uzaklık</th><th>Fay türü</th><th>Kayma hızı</th></tr>${fy.en.map((x) => `<tr><th>${String(x.km).replace('.', ',')} km</th><td>${kac(x.tip)}</td><td>${x.kayma != null ? String(x.kayma).replace('.', ',') + ' mm/yıl' : '—'}</td></tr>`).join('')}</table>
+      <div class="r-not">${yorum} Kaynak: ${kac(fy.kaynak)}. Fay konumları ölçekli haritadan sayısallaştırılmıştır, birkaç yüz metre sapabilir; resmî diri fay bilgisi için MTA Yerbilimleri Harita Görüntüleyici (yerbilimleri.mta.gov.tr) ve parsel bazında imar/zemin raporuna bakın.</div>` : '<div class="r-not">Fay verisi alınamadı.</div>'}
+      ${rBaslik('Son 12 Ayın Depremleri (50 km, M≥3)')}
+      ${dp?.son?.length ? `<table class="r-tablo bolge"><tr><th>Büyüklük</th><th>Tarih</th><th>Uzaklık</th><th>Derinlik</th></tr>${dp.son.slice(0, 8).map((x) => `<tr><th>M ${String(x.m.toFixed(1)).replace('.', ',')}</th><td>${tarihK(x.t)}</td><td>${x.km} km</td><td>${x.der} km</td></tr>`).join('')}</table>` : `<div class="r-not">${dp ? 'Son 12 ayda 50 km içinde M≥3 deprem kaydı yok.' : 'Deprem kataloğuna ulaşılamadı; rapor yeniden oluşturulunca eklenir.'}</div>`}
+      <div class="r-not">Kaynak: ${kac(dp?.kaynak || 'EMSC / USGS')} deprem kataloğu. Anlık deprem bilgisi için AFAD (deprem.afad.gov.tr) ve Kandilli Rasathanesi.</div>`);
+  }
+  // B · Piyasa: trend + davranış + resmî göstergeler
+  const t = h.trend, pd = h.piyasa, g = h.gostergeler || [];
+  sayfalar.push(`${rBaslik(`Aylık m² Fiyat Trendi · ${kac(t?.kapsam || '')}`)}
+    ${t && t.seri.length >= 2 ? `<div class="r-kutu">${trendSvg(t)}</div><div class="r-not">Mülküm360’ta o ay yayına giren ilanların m² fiyat ortalaması (en az 2 ilanlı aylar). Platform verisi biriktikçe grafik uzar.</div>` : `<div class="r-not">Trend için en az iki ayda yeterli ilan gerekir; Mülküm360 verisi biriktikçe bu bölüm dolacak.</div>`}
+    ${pd ? `${rBaslik('Piyasa Davranışı')}<div class="r-satir3">
+      <div class="r-kutu"><b>${pd.gun != null ? Math.round(pd.gun) + ' gün' : '—'}</b><small>Ortalama satılma süresi (${pd.satilan} satış)</small></div>
+      <div class="r-kutu"><b>${pd.indirim != null ? '%' + String(pd.indirim.toFixed(1)).replace('.', ',') : '—'}</b><small>Ortalama pazarlık payı${pd.indirimN ? ` (${pd.indirimN} gerçekleşen fiyat)` : ''}</small></div>
+      <div class="r-kutu"><b>${pd.ilgi != null && pd.ilgiGenel >= 5 ? Math.round((pd.ilgi / pd.ilgiGenel) * 100) : '—'}</b><small>İlgi endeksi (platform ortalaması = 100)</small></div></div>
+      <div class="r-not">${kac(f.il)} · son 30 günde ${pd.yeni30} yeni ilan. Pazarlık payı, satıcıların “satıldı” derken girdiği gerçekleşen fiyat ile ilan fiyatı farkıdır.</div>` : ''}
+    ${h.yatirim && h.yatirim.skor != null ? `${rBaslik(`${kac(f.il)} Yatırım Endeksi`)}
+      <div class="r-satir3"><div class="r-kutu"><b>${h.yatirim.skor}/100</b><small>Genel skor · ${kac(h.yatirim.seviye)}</small></div>${h.yatirim.bilesenler.slice(0, 2).map((b) => `<div class="r-kutu"><b>${b.puan}</b><small>${kac(b.ad)} (${b.deger.toLocaleString('tr-TR')}${b.birim === '%' ? '%' : b.birim})</small></div>`).join('')}</div>
+      ${h.yatirim.bilesenler.map((b) => `<div style="display:flex;gap:8px;align-items:center;margin:3px 0;font-size:12px"><span style="flex:0 0 110px">${kac(b.ad)}</span><span style="flex:1;height:6px;background:${R_CIZGI};border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${b.puan}%;background:${h.yatirim.skor >= 60 ? '#2E7D32' : h.yatirim.skor >= 45 ? '#B58A2B' : '#C8553D'}"></i></span><b style="flex:0 0 60px;text-align:right">${b.puan}/100</b></div>`).join('')}
+      <div class="r-not">Ağırlıklı endeks: fiyat büyümesi %30, kira getirisi %25, talep momentumu (TÜİK satış değişimi) %25, kredi erişimi (ipotekli payı) %12, fiyat düzeyi %8. Bölgedeki eksik bileşenlerin ağırlığı diğerlerine dağıtılmıştır (bileşen verisinin %${h.yatirim.guven}'iyle hesaplandı). Bu bir gösterge endeksidir; yatırım tavsiyesi değildir.</div>` : ''}
+    ${rBaslik('Resmî Göstergeler')}
+    ${g.length ? `<table class="r-tablo"><tr><th>Gösterge</th><th>Değer</th><th>Dönem</th><th>Kapsam</th><th>Kaynak</th></tr>${g.map((x) => `<tr><td>${kac(x.gosterge)}</td><td><b>${String(x.deger).replace('.', ',')}${x.birim ? ' ' + kac(x.birim) : ''}</b></td><td>${kac(x.donem)}</td><td>${kac(x.ilce || x.il)}</td><td>${kac(x.kaynak)}</td></tr>`).join('')}</table>`
+      : `<div class="r-not">Bu bölge için resmî gösterge (TCMB konut fiyat endeksi, TÜİK konut satışları, AFAD deprem tehlikesi vb.) henüz girilmedi.</div>`}`);
+  // İmar, inşaat alanı, rayiç bedel (kullanıcının belgeden girdiği değerlerle hesap)
+  const b = h.beyan || {};
+  if (emlak && (b.kaks || b.taks || b.rayic || b.imarTipi)) {
+    const alan = +b.arsaAlani || (f.alt === 'arsa' ? +f.m2net : 0);
+    const insaat = alan && b.kaks ? alan * +b.kaks : null, taban = alan && b.taks ? alan * +b.taks : null;
+    const katSayi = b.kaks && b.taks ? +b.kaks / +b.taks : null, hmaxKat = b.hmax ? Math.floor(+b.hmax / 3) : null;
+    const rayicDeger = b.rayic ? +b.rayic * (alan || +f.m2net || 0) : null;
+    const virgul = (x, d = 2) => String(Number(x).toFixed(d)).replace('.', ',');
+    sayfalar.push(`${rBaslik('İmar ve Yapılaşma')}
+      <table class="r-tablo iki">${[['İmar durumu', b.imarTipi], ['Arsa alanı', alan ? sayiBicim(alan) + ' m²' : ''], ['KAKS (emsal)', b.kaks && virgul(b.kaks)], ['TAKS', b.taks && virgul(b.taks)], ['Hmax', b.hmax && virgul(b.hmax, 1) + ' m']].filter(([, x]) => x).map(([a, x]) => `<tr><th>${a}</th><td>${kac(x)}</td></tr>`).join('')}</table>
+      ${insaat || taban ? `<div class="r-satir3">
+        <div class="r-kutu"><b>${insaat ? sayiBicim(Math.round(insaat)) + ' m²' : '—'}</b><small>Toplam inşaat alanı (arsa × KAKS)</small></div>
+        <div class="r-kutu"><b>${taban ? sayiBicim(Math.round(taban)) + ' m²' : '—'}</b><small>Taban oturumu (arsa × TAKS)</small></div>
+        <div class="r-kutu"><b>${katSayi ? '≈ ' + Math.floor(katSayi) + ' kat' : '—'}</b><small>KAKS/TAKS oranı${hmaxKat ? ` · Hmax ile en çok ≈ ${hmaxKat} kat` : ''}</small></div></div>
+        ${insaat && h.birimOrta && f.alt !== 'arsa' ? '' : ''}
+        <div class="r-not">Hesap; emsale dahil olmayan alanları (bodrum, çatı, balkon muafiyetleri), çekme mesafelerini ve plan notlarını içermez. Kesin yapılaşma hakkı için belediyeden imar durum belgesi alınmalıdır.</div>` : ''}
+      ${rayicDeger ? `${rBaslik('Belediye Rayiç Bedeli')}<div class="r-satir3">
+        <div class="r-kutu"><b>${tl(+b.rayic)}</b><small>Rayiç m² birim değeri${b.rayicYil ? ' (' + kac(b.rayicYil) + ')' : ''}</small></div>
+        <div class="r-kutu"><b>${tl(rayicDeger)}</b><small>Rayiç değer (${sayiBicim(alan || +f.m2net)} m²)</small></div>
+        <div class="r-kutu"><b>${h.orta ? (h.orta / rayicDeger).toFixed(1).replace('.', ',') + ' kat' : '—'}</b><small>Piyasa değeri / rayiç değer</small></div></div>
+        <div class="r-not">Rayiç bedel belediyenin emlak vergisi için belirlediği değerdir ve genellikle piyasa değerinin altındadır; tapu harcı ve vergi hesabında alt sınır olarak kullanılır. Değer kullanıcı tarafından girilmiştir.</div>` : ''}`);
+  }
+  // Saha ve dron görüntüleri
+  if (h.saha?.length) sayfalar.push(`${rBaslik('Saha ve Dron Görüntüleri')}<div class="r-galeri r-galeri-${Math.min(h.saha.length, 4)}">${h.saha.map((u) => `<img src="${u}" crossorigin="anonymous" alt="">`).join('')}</div><div class="r-not">Görüntüler rapor sahibi tarafından eklenmiştir.</div>`);
+  // C · Kullanıcı beyanı ve kredi
+  const k = h.beyan;
+  if (k && k.faiz && k.vade) {
+    const tutar = h.orta, kr = k.faiz && k.vade && !/Kiralık/.test(f.islem || '') ? krediHesabi(tutar, +k.faiz, +k.vade, +k.pesinat || 0) : null;
+    if (kr) sayfalar.push(`${rBaslik('Konut Kredisi Hesabı')}<div class="r-satir3">
+        <div class="r-kutu"><b>${tl(kr.taksit)}</b><small>Aylık taksit (${k.vade} ay, aylık %${String(k.faiz).replace('.', ',')})</small></div>
+        <div class="r-kutu"><b>${tl(kr.pesinat)}</b><small>Peşinat (%${k.pesinat || 0})</small></div>
+        <div class="r-kutu"><b>${tl(kr.toplam)}</b><small>Toplam geri ödeme · faiz ${tl(kr.faizToplam)}</small></div></div>
+        ${k.aidat ? `<div class="r-not">Aylık toplam konut gideri (taksit + aidat): <b>${tl(kr.taksit + +k.aidat)}</b>.</div>` : ''}
+        <div class="r-not">Hesap tahmini piyasa değeri (${tl(tutar)}) üzerinden, eşit taksitli kredi formülüyle yapılmıştır; banka masrafları ve vergiler dahil değildir.</div>`);
+  }
+  return sayfalar;
+}

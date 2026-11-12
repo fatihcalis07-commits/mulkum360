@@ -1,0 +1,64 @@
+/* ============================================================
+   TEMA KATMANI (09.11.2026): Prestij (varsayılan, app.css'te) ·
+   Vitrin (gök mavisi + sarı, Roboto) · Alev (kırmızı + turkuaz,
+   Plus Jakarta Sans). app.css'ten SONRA yüklenir; html[data-tema]
+   seçicileri kazanır. Koyu tema (html.koyu) her paletle çalışır.
+   Logo Tektur kalır; rapor sayfası her temada Prestij kimliği. */
+
+@font-face{font-family:'Roboto Variable';font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/roboto-latin-wght-normal.woff2) format('woff2-variations');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Roboto Variable';font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/roboto-latin-ext-wght-normal.woff2) format('woff2-variations');unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Plus Jakarta Sans Variable';font-style:normal;font-weight:400 800;font-display:swap;src:url(fonts/pjs-latin-wght-normal.woff2) format('woff2-variations');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Plus Jakarta Sans Variable';font-style:normal;font-weight:400 800;font-display:swap;src:url(fonts/pjs-latin-ext-wght-normal.woff2) format('woff2-variations');unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+/* ---------- Vitrin: gök mavisi + sarı (Roboto) ---------- */
+html[data-tema='vitrin']{
+  --zemin:#F2F2F2;--yuzey:#FFFFFF;--yuzey2:#EFEFEF;--murekkep:#333333;--soluk:#666666;--cizgi:#E3E3E3;
+  --vurgu:#FFE800;--vurgu-koyu:#1064BC;--vurgu-acik:#FFF7BF;--vurgu-yazi:#1064BC;--vurgu-ikon:#1064BC;
+  --birincil:#1064BC;--birincil-yazi:#FFFFFF;--guven:#0F766E;--guven-acik:#CCFBF1;--koyu-kart:#22303F;
+  --baslik-zemin:#558ED2;
+  font-family:'Roboto Variable',Roboto,system-ui,sans-serif;
+}
+html[data-tema='vitrin'] body{font-family:'Roboto Variable',Roboto,system-ui,sans-serif}
+html[data-tema='vitrin'].koyu{
+  --zemin:#0C1826;--yuzey:#14263B;--yuzey2:#1C3049;--murekkep:#EEF3F8;--soluk:#9FB0C3;--cizgi:#28405C;
+  --vurgu:#FFE800;--vurgu-koyu:#6FB4EE;--vurgu-acik:#1E3A55;--vurgu-yazi:#0C1826;--vurgu-ikon:#6FB4EE;
+  --birincil:#1064BC;--birincil-yazi:#FFFFFF;--koyu-kart:#1C3049;--baslik-zemin:#1B3A5C;
+}
+
+/* ---------- Alev: kırmızı + turkuaz (Plus Jakarta Sans) ---------- */
+html[data-tema='alev']{
+  --zemin:#F7F7F7;--yuzey:#FFFFFF;--yuzey2:#EFEFEF;--murekkep:#222222;--soluk:#717171;--cizgi:#E9E9E9;
+  --vurgu:#F03245;--vurgu-koyu:#D11F31;--vurgu-acik:#FFE9EC;--vurgu-yazi:#FFFFFF;--vurgu-ikon:#D11F31;
+  --birincil:#F03245;--birincil-yazi:#FFFFFF;--guven:#00A699;--guven-acik:#E2F5F2;--koyu-kart:#2A1215;
+  --baslik-zemin:#F03245;
+  font-family:'Plus Jakarta Sans Variable','Plus Jakarta Sans',system-ui,sans-serif;
+}
+html[data-tema='alev'] body{font-family:'Plus Jakarta Sans Variable','Plus Jakarta Sans',system-ui,sans-serif}
+html[data-tema='alev'].koyu{
+  --zemin:#16090C;--yuzey:#26151A;--yuzey2:#331E24;--murekkep:#F8ECEE;--soluk:#C3A3A8;--cizgi:#4A2A31;
+  --vurgu:#FF5A69;--vurgu-koyu:#FF8A94;--vurgu-acik:#3A1A21;--vurgu-yazi:#16090C;--vurgu-ikon:#FF8A94;
+  --birincil:#F03245;--birincil-yazi:#FFFFFF;--guven:#2DD4BF;--guven-acik:#0F2E2B;--koyu-kart:#331E24;--baslik-zemin:#8E1622;
+}
+
+/* ---------- Kurumsal sabitler ---------- */
+/* Logo her temada Tektur; bar üstü "360" vurgu sarısı yerine beyaz (mock onayı) */
+html[data-tema] .logo,html[data-tema] .logo b,html[data-tema] .logo span{font-family:'Tektur',system-ui,sans-serif}
+html[data-tema='vitrin'] .ust:not(.ust-hero) .logo span,html[data-tema='alev'] .ust:not(.ust-hero) .logo span{color:#FFFFFF!important}
+/* Rapor/PDF kimliği sabit: Prestij lacivert-altın + Tektur */
+html[data-tema] #raporSayfa,html[data-tema] .rapor{
+  --zemin:#FFFFFF;--yuzey:#FFFFFF;--yuzey2:#ECEFF5;--murekkep:#0B1B33;--soluk:#5B5F68;--cizgi:#E1E5EE;
+  --vurgu:#FFC72C;--vurgu-koyu:#8A6516;--vurgu-acik:#FFF4CC;--vurgu-yazi:#0B1B33;--vurgu-ikon:#8A6516;
+  --birincil:#0B1B33;--birincil-yazi:#FFFFFF;--guven:#0F766E;--guven-acik:#CCFBF1;
+  --baslik-zemin:linear-gradient(135deg,#1B2A41 0%,#1064BC 100%);
+  font-family:'Tektur',system-ui,sans-serif;
+}
+
+/* ---------- Arapça RTL (dir=rtl) ---------- */
+/* app.css flex-first yazıldı; burası okuma yönü + yönü olan ikonları çevirir. İnce ayar cihaz QA'sında. */
+html[dir='rtl'] body{text-align:right}
+html[dir='rtl'] [class*='ok']:not(.paket-k),html[dir='rtl'] .ok{transform:scaleX(-1)}
+html[dir='rtl'] button[data-geri] svg{transform:scaleX(-1)}
+html[dir='rtl'] .sag,html[dir='rtl'] .saga{text-align:left}
+html[dir='rtl'] input,html[dir='rtl'] textarea,html[dir='rtl'] select{text-align:right;direction:rtl}
+html[dir='rtl'] input[name='m2net'],html[dir='rtl'] input[inputmode='numeric'],html[dir='rtl'] input[inputmode='decimal'],html[dir='rtl'] input[type='number'],html[dir='rtl'] input[type='date'],html[dir='rtl'] input[type='email'],html[dir='rtl'] input[type='tel'],html[dir='rtl'] input[type='password']{text-align:left;direction:ltr}
+html[dir='rtl'] .konum-yol{direction:rtl}
