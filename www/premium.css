@@ -650,3 +650,19 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .fs-ust{display:flex;align-items:center;gap:10px}
 .fs-kapat{width:40px;height:40px;border:0;border-radius:50%;background:var(--yuzey2);font-size:22px;line-height:1;color:var(--murekkep);cursor:pointer;flex-shrink:0}
 .sheet.tam .fs-alt{position:sticky;bottom:0;background:var(--zemin);padding:12px 0 calc(6px + var(--alt));margin-top:auto}
+
+/* Arama: alt kategoriler alt alta, ilk 5 ilan, çoklu seçim */
+.ara-kat{display:flex;flex-direction:column;background:var(--yuzey);border:1px solid var(--p-ince);border-radius:16px;box-shadow:var(--golge);overflow:hidden}
+.ara-kat button{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border:0;border-bottom:1px solid var(--p-ince);background:none;font:inherit;font-size:14.5px;font-weight:600;color:var(--murekkep);text-align:left;cursor:pointer}
+.ara-kat button:last-child{border-bottom:0}
+.ara-kat span{flex:1}
+.ara-kat small{font-size:12.5px;font-weight:600;color:var(--soluk)}
+.ara-kat svg{stroke:var(--soluk)}
+.ara-tumu{margin-top:2px;font-weight:700}
+.fs-ana{display:grid!important;grid-template-columns:1fr 1fr}
+.fs-cok{flex-direction:column;align-items:stretch!important;gap:8px;padding-top:10px!important;padding-bottom:12px!important}
+.fs-cok>span em{font-style:normal;font-size:11px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--birincil);color:var(--birincil-yazi);display:inline-flex;align-items:center;justify-content:center;margin-left:4px}
+.fs-ciplar{display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow:auto}
+.fs-ciplar button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--cizgi);background:var(--yuzey);font:inherit;font-size:13px;font-weight:600;color:var(--murekkep);cursor:pointer}
+.fs-ciplar button.secili{background:color-mix(in srgb,var(--birincil) 12%,var(--yuzey));border-color:var(--birincil);color:var(--vurgu-koyu,var(--birincil))}
+.fs-ipucu{font-size:12.5px;color:var(--soluk);padding:10px 14px}

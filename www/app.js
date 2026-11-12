@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.9 · 14.11.2026 10:00';
+const SURUM = '12.0 · 14.11.2026 11:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -660,6 +660,8 @@ EKRAN.kategori = (ana) => {
   navCiz('kesfet');
 };
 
+// Çoklu seçim: değerler virgülle ayrılır ("2+1,3+1")
+const coklu = (v, x) => !v || String(v).split(',').includes(String(x ?? ''));
 function aramaYap(q) {
   const o = typeof q === 'string' ? Object.fromEntries(new URLSearchParams(q)) : q;
   const kelimeler = kucuk(o.q || '').split(/\s+/).filter(Boolean);
@@ -667,19 +669,19 @@ function aramaYap(q) {
     if (o.ana && i.ana !== o.ana) return false;
     if (o.alt && i.alt !== o.alt) return false;
     if (o.il && i.il !== o.il) return false;
-    if (o.ilce && i.ilce !== o.ilce) return false;
-    if (o.mahalle && i.alanlar?.mahalle !== o.mahalle) return false;
+    if (!coklu(o.ilce, i.ilce)) return false;
+    if (!coklu(o.mahalle, i.alanlar?.mahalle)) return false;
     if (o.min && i.fiyat < +o.min) return false;
     if (o.max && i.fiyat > +o.max) return false;
     const f = i.alanlar || {};
-    if (o.islem && f.islem !== o.islem) return false;
+    if (!coklu(o.islem, f.islem)) return false;
     if (o.dusen && !(+f.oncekiFiyat > i.fiyat)) return false;
-    if (o.oda && f.oda !== o.oda) return false;
-    if (o.yas && yasGrubu(f.binaYasi) !== o.yas) return false;
+    if (!coklu(o.oda, f.oda)) return false;
+    if (o.yas && !coklu(o.yas, yasGrubu(f.binaYasi))) return false;
     if (o.aidatmax && !(f.aidat !== undefined && f.aidat !== '' && +f.aidat <= +o.aidatmax)) return false;
-    for (const k of ['site', 'asansor', 'otopark', 'esya']) if (o[k] && f[k] !== o[k]) return false;
-    if (o.kimden && kimden(i) !== o.kimden) return false;
-    if (o.kat && f.kat !== o.kat) return false;
+    for (const k of ['site', 'asansor', 'otopark', 'esya', 'isitma', 'tip']) if (!coklu(o[k], f[k])) return false;
+    if (!coklu(o.kimden, kimden(i))) return false;
+    if (!coklu(o.kat, f.kat)) return false;
     if (o.marka && f.marka !== o.marka) return false;
     if (o.model && !kucuk(f.model || '').includes(kucuk(o.model))) return false;
     if (o.yilmax && +f.yil > +o.yilmax) return false;
@@ -711,7 +713,7 @@ function araYolHtml(o, seciliAna, altlar) {
   const sonraki = !seciliAna ? Object.entries(ANA).map(([k, a]) => [a.ad, { ana: k, alt: '' }]) : !o.alt ? altlar.map(([k, a]) => [a.ad, { alt: k, ana: a.ana }]) : seciliAna === 'emlak' && !o.islem ? alanSecenek('emlak', 'islem').map((x) => [x, { islem: x }]) : [];
   const dq = (q) => " data-q='" + kac(JSON.stringify(q)) + "'";
   return '<div class="ara-yol">' + yol.map(([ad, q], n) => (n < yol.length - 1 ? '<button' + dq(q) + '>' + kac(ad) + '</button>' + ic('ok', 12) : '<b>' + kac(ad) + '</b>')).join('') + '</div>'
-    + (sonraki.length ? '<div class="ciplar ara-kat">' + sonraki.map(([ad, q]) => { const n = say(q); return n ? '<button class="cip"' + dq(q) + '>' + kac(ad) + ' <small>' + sayiBicim(n) + '</small></button>' : ''; }).join('') + '</div>' : '');
+    + (sonraki.length ? '<div class="ara-kat">' + sonraki.map(([ad, q]) => { const n = say(q); return n ? '<button' + dq(q) + '><span>' + kac(ad) + '</span><small>' + sayiBicim(n) + '</small>' + ic('ok', 14) + '</button>' : ''; }).join('') + '</div>' : '');
 }
 function araCubukHtml(o, filtreSay) {
   return '<div class="ara-cubuk"><button id="filtreBtn" class="' + (filtreSay ? 'aktif' : '') + '">' + ic('filtre', 17) + 'Filtrele' + (filtreSay ? '<i>' + filtreSay + '</i>' : '') + '</button>'
@@ -723,18 +725,19 @@ function araEtiketHtml(o) {
   const ad = { il: 'İl', ilce: 'İlçe', mahalle: 'Mahalle', oda: 'Oda', yas: 'Bina yaşı', kat: 'Kat', kimden: 'Kimden', site: 'Site', asansor: 'Asansör', otopark: 'Otopark', esya: 'Eşya', marka: 'Marka', model: 'Model', kasa: 'Kasa', yakit: 'Yakıt', vites: 'Vites', hasar: 'Boya/değişen', takas: 'Takas', renk: 'Renk', agirhasar: 'Ağır hasar' };
   const yalin = ['il', 'ilce', 'mahalle', 'marka', 'model', 'oda', 'yakit', 'vites'];
   const aralik = (a, b, bir) => (o[a] || o[b] ? [[a, b], (o[a] ? sayiBicim(+o[a]) : '…') + ' – ' + (o[b] ? sayiBicim(+o[b]) : '…') + ' ' + bir] : null);
-  const l = [...Object.keys(ad).filter((k) => o[k]).map((k) => [[k], (yalin.includes(k) ? '' : ad[k] + ': ') + o[k]]), aralik('min', 'max', 'TL'), aralik('yilmin', 'yilmax', 'model'), aralik('kmmin', 'kmmax', 'km'), o.aidatmax ? [['aidatmax'], 'Aidat ≤ ' + sayiBicim(+o.aidatmax)] : null].filter(Boolean);
+  const l = [...Object.keys(ad).filter((k) => o[k]).map((k) => [[k], (yalin.includes(k) ? '' : ad[k] + ': ') + String(o[k]).split(',').join(', ')]), aralik('min', 'max', 'TL'), aralik('yilmin', 'yilmax', 'model'), aralik('kmmin', 'kmmax', 'km'), o.aidatmax ? [['aidatmax'], 'Aidat ≤ ' + sayiBicim(+o.aidatmax)] : null].filter(Boolean);
   if (!l.length) return '';
   const ds = (ks) => " data-sil='" + kac(JSON.stringify(Object.fromEntries(ks.map((k) => [k, ''])))) + "'";
   return '<div class="ciplar ara-etiket">' + l.map(([ks, yazi]) => '<button class="cip"' + ds(ks) + '>' + kac(yazi) + ' <b>×</b></button>').join('')
     + (l.length > 1 ? '<button class="cip ara-temizle"' + ds([...Object.keys(ad), 'min', 'max', 'yilmin', 'yilmax', 'kmmin', 'kmmax', 'aidatmax']) + '>Tümünü temizle</button>' : '') + '</div>';
 }
+const araTumuAcik = new Set(); // "Tümünü göster"e basılan aramalar (oturum boyunca açık kalır)
 const araHaritaAcik = () => { try { return localStorage.getItem('araHarita') !== 'kapali'; } catch (_) { return true; } };
 EKRAN.ara = () => {
   const o = sorgu(), l = aramaYap(o);
-  const filtreSay = ['il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'aidatmax', 'site', 'asansor', 'otopark', 'esya', 'kimden', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk', 'agirhasar'].filter((k) => o[k]).length;
+  const filtreSay = ['tip', 'isitma', 'il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'aidatmax', 'site', 'asansor', 'otopark', 'esya', 'kimden', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk', 'agirhasar'].filter((k) => o[k]).length;
   const cip = (ad, deg) => `<button class="cip ${deg.secili ? 'secili' : ''}" data-q='${kac(JSON.stringify(deg.q))}'>${ad}</button>`;
-  const ilkAdet = Math.max(30, (GERI_DONUS && KAYDIR[location.hash]?.n) || 0);
+  const acik = araTumuAcik.has(location.hash), ilkAdet = acik ? Math.max(30, (GERI_DONUS && KAYDIR[location.hash]?.n) || 0) : 5;
   const seciliAna = o.ana || (o.alt && ALT[o.alt]?.ana) || '';
   const altlar = seciliAna ? Object.entries(ALT).filter(([, a]) => a.ana === seciliAna) : [];
   app.innerHTML = `<header class="ust" style="flex-wrap:wrap">
@@ -748,8 +751,9 @@ EKRAN.ara = () => {
       ${araCubukHtml(o, filtreSay)}
       ${araEtiketHtml(o)}
       <div class="ara-sonuc"><b>${sayiBicim(l.length)}</b> ilan</div>
-      ${l.length ? l.slice(0, ilkAdet).map((i) => ilanSatir(i)).join('') + (l.length > ilkAdet ? '<div id="dahaFazla" style="height:1px"></div>' : '') : bosDurum('ara', 'Sonuç bulunamadı', 'Filtreleri azaltmayı ya da farklı kelimeler denemeyi dene. Aramayı kaydedersen yeni ilan gelince haber veririz.')}
+      ${l.length ? l.slice(0, ilkAdet).map((i) => ilanSatir(i)).join('') + (l.length > ilkAdet ? (acik ? '<div id="dahaFazla" style="height:1px"></div>' : '<button class="btn sade tam ara-tumu" id="tumunuGoster">' + sayiBicim(l.length - ilkAdet) + ' ilan daha · Tümünü göster</button>') : '') : bosDurum('ara', 'Sonuç bulunamadı', 'Filtreleri azaltmayı ya da farklı kelimeler denemeyi dene. Aramayı kaydedersen yeni ilan gelince haber veririz.')}
     </div>`;
+  const tg = $('#tumunuGoster'); if (tg) tg.onclick = () => { araTumuAcik.add(location.hash); ciz.yerinde = true; ciz(); };
   // Listenin kalanı sona yaklaşıldıkça eklenir
   const son = $('#dahaFazla');
   if (son && 'IntersectionObserver' in window) {
@@ -793,17 +797,22 @@ function aramaAdi(o) {
   return [o.q, o.alt ? ALT[o.alt].ad : o.ana === 'emlak' ? 'Emlak' : o.ana === 'vasita' ? 'Vasıta' : '', o.islem, o.oda, o.yas && 'Bina ' + o.yas, o.mahalle, o.ilce, o.il, o.max && '≤ ' + tl(+o.max)].filter(Boolean).join(' · ') || 'Tüm ilanlar';
 }
 function filtreSheet(o) {
-  const ana = o.ana || (o.alt && ALT[o.alt].ana) || '';
+  const ana = o.ana || (o.alt && ALT[o.alt].ana) || filtreSheet.ana || 'emlak'; filtreSheet.ana = ana;
+  // Çoklu seçim düğmeleri: seçilenler virgülle gizli alanda tutulur
+  const cok = (ad, ad2, ops) => { const sec2 = String(o[ad] || '').split(',').filter(Boolean); return '<div class="fs-satir fs-cok"><span>' + ad2 + (sec2.length ? ' <em>' + sec2.length + '</em>' : '') + '</span><div class="fs-ciplar">' + ops.map((x) => '<button type="button" class="' + (sec2.includes(x) ? 'secili' : '') + '" data-cok="' + ad + '" data-d="' + kac(x) + '">' + kac(x) + '</button>').join('') + '</div><input type="hidden" name="' + ad + '" value="' + kac(o[ad] || '') + '"></div>'; };
+  const ilceler = o.il ? [...new Set(yayinda().filter((i) => i.ana === ana && i.il === o.il && i.ilce).map((i) => i.ilce))].sort((a, b) => a.localeCompare(b, 'tr')) : [];
+  const mahalleler = o.il ? [...new Set(yayinda().filter((i) => i.ana === 'emlak' && i.il === o.il && coklu(o.ilce, i.ilce) && i.alanlar?.mahalle).map((i) => i.alanlar.mahalle))].sort((a, b) => a.localeCompare(b, 'tr')) : [];
   const sec = (ad, ad2, ops, ozel = '') => `<label class="fs-satir"><span>${ad2}</span><select name="${ad}" ${ozel}><option value="">Farketmez</option>${ops.map((x) => `<option ${o[ad] === x ? 'selected' : ''}>${kac(x)}</option>`).join('')}</select></label>`;
   const sayi = (ad, ad2, ph, ek = '') => `<label class="fs-satir"><span>${ad2}</span><input name="${ad}" inputmode="numeric" placeholder="${ph}" value="${kac(o[ad] || '')}" ${ek}></label>`;
   const grup = (baslik, ic2) => `<div class="fs-grup"><div class="fs-baslik">${baslik}</div><div class="fs-liste">${ic2}</div></div>`;
-  const aktif = ['kimden', 'il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'site', 'asansor', 'otopark', 'esya', 'aidatmax', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk', 'agirhasar'].filter((k) => o[k]).length;
+  const aktif = ['tip', 'isitma', 'kimden', 'il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'site', 'asansor', 'otopark', 'esya', 'aidatmax', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk', 'agirhasar'].filter((k) => o[k]).length;
   sheetAc(`<div class="fs-ust"><button type="button" class="fs-kapat" aria-label="Kapat">×</button><h2 style="font-size:19px;font-weight:800;margin:0">Filtrele</h2>${aktif ? `<span class="fs-say">${aktif} filtre</span>` : ''}</div><form id="ff" class="fs-form">
-    ${grup('Konum', sec('il', 'İl', ILLER) + `<label class="fs-satir"><span>İlçe</span><select name="ilce" data-bos="Farketmez"><option value="">Farketmez</option>${o.ilce ? `<option selected>${kac(o.ilce)}</option>` : ''}</select></label><label class="fs-satir"><span>Mahalle</span><select name="mahalle" data-bos="Farketmez"><option value="">Farketmez</option>${o.mahalle ? `<option selected>${kac(o.mahalle)}</option>` : ''}</select></label>`)}
+    <div class="segment fs-ana">${[['emlak', 'Emlak'], ['vasita', 'Vasıta']].map(([k, a]) => '<button type="button" class="' + (ana === k ? 'secili' : '') + '" data-fsana="' + k + '">' + a + '</button>').join('')}</div>
+    ${grup('Konum', sec('il', 'İl', ILLER, 'data-yenile') + (o.il ? (ilceler.length ? cok('ilce', 'İlçe', ilceler) : '') + (ana === 'emlak' && mahalleler.length ? cok('mahalle', 'Mahalle', mahalleler) : '') : '<div class="fs-ipucu">İlçe ve mahalle için önce il seç.</div>'))}
     ${grup('Fiyat (TL)', `<div class="fs-satir fs-ikili"><input name="min" inputmode="numeric" placeholder="En az" value="${kac(o.min || '')}"><i>–</i><input name="max" inputmode="numeric" placeholder="En çok" value="${kac(o.max || '')}"></div>`)}
-    ${ana !== 'vasita' ? grup('Emlak', sec('islem', 'İşlem', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Sezonluk', 'Devren']) + sec('oda', 'Oda sayısı', alanSecenek('emlak', 'oda')) + sec('yas', 'Bina yaşı', YAS_GRUPLARI) + sec('kat', 'Bulunduğu kat', ONERI.kat) + sec('kimden', 'Kimden', ['Sahibinden', 'Emlak ofisinden']))
-      + grup('Özellikler', sec('site', 'Site içinde', ['Evet', 'Hayır']) + sec('asansor', 'Asansör', ['Var', 'Yok']) + sec('otopark', 'Otopark', ['Kapalı', 'Açık', 'Yok']) + sec('esya', 'Eşya', ['Eşyasız', 'Eşyalı']) + sayi('aidatmax', 'En çok aidat (TL)', 'Farketmez', `list="on-aidat" autocomplete="off"`) + `<datalist id="on-aidat">${ONERI.aidat.map((x) => `<option value="${x}">`).join('')}</datalist>`) : ''}
-    ${ana !== 'emlak' ? grup('Araç', sec('marka', 'Marka', MARKALAR) + `<label class="fs-satir"><span>Model / seri</span><select name="model"><option value="">Farketmez</option>${o.model ? `<option selected>${kac(o.model)}</option>` : ''}</select></label>` + sec('kasa', 'Kasa tipi', alanSecenek('vasita', 'kasa')))
+    ${ana === 'emlak' ? grup('Emlak', cok('islem', 'İşlem', alanSecenek('emlak', 'islem')) + cok('tip', 'Tip', alanSecenek('emlak', 'tip')) + cok('oda', 'Oda sayısı', alanSecenek('emlak', 'oda')) + cok('yas', 'Bina yaşı', YAS_GRUPLARI) + cok('kat', 'Bulunduğu kat', ONERI.kat) + cok('kimden', 'Kimden', ['Sahibinden', 'Emlak ofisinden']))
+      + grup('Özellikler', cok('isitma', 'Isıtma', alanSecenek('emlak', 'isitma')) + cok('site', 'Site içinde', ['Evet', 'Hayır']) + cok('asansor', 'Asansör', ['Var', 'Yok']) + cok('otopark', 'Otopark', ['Kapalı', 'Açık', 'Yok']) + cok('esya', 'Eşya', ['Eşyasız', 'Eşyalı']) + sayi('aidatmax', 'En çok aidat (TL)', 'Farketmez', `list="on-aidat" autocomplete="off"`) + `<datalist id="on-aidat">${ONERI.aidat.map((x) => `<option value="${x}">`).join('')}</datalist>`) : ''}
+    ${ana === 'vasita' ? grup('Araç', sec('marka', 'Marka', MARKALAR) + `<label class="fs-satir"><span>Model / seri</span><select name="model"><option value="">Farketmez</option>${o.model ? `<option selected>${kac(o.model)}</option>` : ''}</select></label>` + sec('kasa', 'Kasa tipi', alanSecenek('vasita', 'kasa')))
       + grup('Model yılı', `<div class="fs-satir fs-ikili"><input name="yilmin" inputmode="numeric" placeholder="En eski" value="${kac(o.yilmin || '')}"><i>–</i><input name="yilmax" inputmode="numeric" placeholder="En yeni" value="${kac(o.yilmax || '')}"></div>`)
       + grup('Kilometre', `<div class="fs-satir fs-ikili"><input name="kmmin" inputmode="numeric" placeholder="En az" value="${kac(o.kmmin || '')}"><i>–</i><input name="kmmax" inputmode="numeric" placeholder="En çok" value="${kac(o.kmmax || '')}"></div>`)
       + grup('Teknik ve durum', sec('yakit', 'Yakıt', alanSecenek('vasita', 'yakit')) + sec('vites', 'Vites', alanSecenek('vasita', 'vites')) + sec('agirhasar', 'Ağır hasar kayıtlı', ['Evet', 'Hayır']) + sec('hasar', 'Boya / değişen', alanSecenek('vasita', 'hasar')) + `<label class="fs-satir"><span>Renk</span><input name="renk" maxlength="20" placeholder="Farketmez" value="${kac(o.renk || '')}"></label>` + sec('takas', 'Takas', alanSecenek('vasita', 'takas')) + (ana === 'vasita' ? sec('kimden', 'Kimden', ['Sahibinden', 'Galeriden']) : '')) : ''}
@@ -812,12 +821,21 @@ function filtreSheet(o) {
     $('.fs-kapat', s).onclick = sheetKapat;
     const fsSay = () => { const v = Object.fromEntries(new FormData($('#ff', s))); ['min', 'max', 'yilmin', 'yilmax', 'kmmin', 'kmmax', 'aidatmax'].forEach((k) => v[k] && (v[k] = v[k].replace(/\D/g, ''))); const n = aramaYap({ ...o, ...v }).length, b = $('#fsGoster', s); b.textContent = n ? sayiBicim(n) + ' sonucu göster' : 'Sonuç yok'; b.disabled = !n; };
     $('#ff', s).addEventListener('input', fsSay); $('#ff', s).addEventListener('change', fsSay); setTimeout(fsSay, 0);
-    konumSecBagla($('[name=il]', s), $('[name=ilce]', s), $('[name=mahalle]', s));
+    // Emlak / Vasıta geçişi ve il değişince filtre ekranı yeniden kurulur (seçimler korunur)
+    const yenidenKur = (ek) => { const v = Object.fromEntries(new FormData($('#ff', s))); sheetKapat(); filtreSheet({ ...o, ...v, ...ek }); };
+    s.querySelectorAll('[data-fsana]').forEach((b) => (b.onclick = () => { filtreSheet.ana = b.dataset.fsana; const temiz = Object.fromEntries(['islem', 'tip', 'oda', 'yas', 'kat', 'kimden', 'isitma', 'site', 'asansor', 'otopark', 'esya', 'aidatmax', 'mahalle', 'marka', 'model', 'kasa', 'yilmin', 'yilmax', 'kmmin', 'kmmax', 'yakit', 'vites', 'agirhasar', 'hasar', 'renk', 'takas', 'alt'].map((k) => [k, ''])); yenidenKur({ ...temiz, ana: b.dataset.fsana }); }));
+    const ilSec = $('[name=il]', s); if (ilSec) ilSec.onchange = () => yenidenKur({ ilce: '', mahalle: '' });
+    s.querySelectorAll('[data-cok]').forEach((b) => (b.onclick = () => {
+      const g = $('[name="' + b.dataset.cok + '"]', s), l = String(g.value || '').split(',').filter(Boolean), d = b.dataset.d, n = l.indexOf(d);
+      if (n < 0) l.push(d); else l.splice(n, 1);
+      g.value = l.join(','); b.classList.toggle('secili', n < 0); g.dispatchEvent(new Event('change', { bubbles: true }));
+      if (b.dataset.cok === 'ilce' && ($('[name=mahalle]', s) || filtreSheet.ana === 'emlak')) yenidenKur({ mahalle: '' });
+    }));
     aracModelBagla($('[name=marka]', s), $('[name=model]', s), 'Farketmez');
     $('#temizle', s).onclick = () => { sheetKapat(); git('#/ara?' + sorguYap({ q: o.q, ana: o.ana, alt: o.alt })); };
     $('#ff', s).onsubmit = (e) => {
       e.preventDefault();
-      const v = Object.fromEntries(new FormData(e.target));
+      const v = { ana: filtreSheet.ana, ...Object.fromEntries(new FormData(e.target)) };
       ['min', 'max', 'yilmin', 'yilmax', 'kmmin', 'kmmax', 'aidatmax'].forEach((k) => v[k] && (v[k] = v[k].replace(/\D/g, '')));
       sheetKapat(); git('#/ara?' + sorguYap({ ...o, ...v }));
     };
