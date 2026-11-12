@@ -36,15 +36,15 @@ YON.ozet = async (el) => {
   const test = S.ilanlar.filter((i) => i.ornek).length;
   const onayda = S.ilanlar.filter((i) => i.durum === 'onayda').length;
   const uyari = [onayda ? [`${onayda} ilan onay bekliyor`, '#/yonetim/dogrulama'] : null, st.sikayet ? [`${st.sikayet} açık şikayet`, '#/yonetim/sikayet'] : null, YON_BEKLEYEN ? [`${YON_BEKLEYEN} kredi talebi`, '#/yonetim/satis'] : null, dopBek ? [`${dopBek} doping talebi`, '#/yonetim/doping'] : null, test ? [`${test} test ilanı yayında`, '#/yonetim/ozet'] : null].filter(Boolean);
-  el.innerHTML = `${uyari.length ? `<div class="yon-uyari">${uyari.map(([m, h]) => `<a href="${h}">${ic('uyari', 15)}${m}</a>`).join('')}</div>` : ''}
-    <div class="bolum-bas"><h2>Üyeler</h2></div>
-    <div class="yon-izgara">${k('kisi', st.uye, 'Toplam üye', '#/yonetim/uyeler', 'p2')}${k('davet', yeni7, 'Yeni (7 gün)', '#/yonetim/uyeler', 'p3')}${k('goz', aktif7, 'Aktif (7 gün)', '#/yonetim/uyeler', 'p4')}</div>
-    <div class="bolum-bas"><h2>İlanlar</h2></div>
-    <div class="yon-izgara">${k('ev', st.yayinda, 'Yayında ilan', '#/', 'p2')}${k('tik', st.satildi, 'Satılan ilan', '#/', 'p3')}${k('bayrak', st.sikayet, 'Açık şikayet', '#/yonetim/sikayet', 'p1')}</div>
-    <div class="bolum-bas"><h2>Kredi ve rapor</h2></div>
-    <div class="yon-izgara">${k('kredi', sayiBicim(toplamKredi), 'Toplam kredi', '#/yonetim/kredi', 'p1')}${k('belge', rapor, 'Değer raporu', '#/yonetim/ozet', 'p4')}${k('uyari', test, 'Test ilanı', '#/yonetim/ozet', 'p1')}</div>
-    <div class="bolum-bas"><h2>Son üyeler</h2><a href="#/yonetim/uyeler">Tümü</a></div>
-    <div class="liste">${l.slice(0, 5).map(uyeSatir).join('') || '<div class="bos">Üye yok</div>'}</div>`;
+  const gercek = st.yayinda - test, satir = (ik, b, a, h, renk) => '<a class="yon-s ' + renk + '" href="' + h + '"><span>' + ic(ik, 16) + '</span><small>' + a + '</small><b>' + b + '</b></a>';
+  el.innerHTML = '<div class="yon-ozet">'
+    + '<div class="yon-ozet-ust"><div><small>Yayında ilan</small><b>' + sayiBicim(st.yayinda) + '</b><em>' + sayiBicim(gercek) + ' gerçek · ' + sayiBicim(test) + ' test</em></div><div><small>Toplam üye</small><b>' + sayiBicim(st.uye) + '</b><em>+' + yeni7 + ' bu hafta · ' + aktif7 + ' aktif</em></div></div>'
+    + '<div class="yon-ozet-alt"><div><b>' + sayiBicim(toplamKredi) + '</b><small>Kredi</small></div><div><b>' + sayiBicim(rapor) + '</b><small>Rapor</small></div><div><b>' + sayiBicim(st.satildi) + '</b><small>Satılan</small></div><div><b>' + sayiBicim(st.sikayet) + '</b><small>Şikayet</small></div></div></div>'
+    + (uyari.length ? '<div class="yon-uyari">' + uyari.map(([m, h]) => '<a href="' + h + '">' + ic('uyari', 15) + '<span>' + m + '</span>' + ic('ok', 14) + '</a>').join('') + '</div>' : '<div class="yon-temiz">' + ic('tik', 15) + 'Bekleyen iş yok</div>')
+    + '<div class="bolum-bas"><h2>Hızlı erişim</h2></div><div class="liste yon-liste">'
+    + satir('kisi', sayiBicim(st.uye), 'Kullanıcılar', '#/yonetim/uyeler', 'p2') + satir('kredi', YON_BEKLEYEN || '', 'Kredi satışları', '#/yonetim/satis', 'p1') + satir('kalkan', onayda || '', 'Doğrulama ve onay', '#/yonetim/dogrulama', 'p3') + satir('bayrak', st.sikayet || '', 'Şikayetler', '#/yonetim/sikayet', 'p1') + satir('yildiz', dopBek || '', 'Öne çıkarma talepleri', '#/yonetim/doping', 'p4') + satir('grafik', '', 'Piyasa m² verisi', '#/yonetim/piyasa', 'p2')
+    + '</div><div class="bolum-bas"><h2>Son üyeler</h2><a href="#/yonetim/uyeler">Tümü</a></div>'
+    + `<div class="liste">${l.slice(0, 5).map(uyeSatir).join('') || '<div class="bos">Üye yok</div>'}</div>`;
 };
 
 const uyeSatir = (u) => `<a href="#/yonetim/uye?id=${u.id}" style="align-items:center"><div class="avatar" style="width:40px;height:40px;font-size:14px">${basHarf(u.ad || u.eposta)}</div>
