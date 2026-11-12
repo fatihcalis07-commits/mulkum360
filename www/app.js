@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '12.1 · 14.11.2026 12:00';
+const SURUM = '12.2 · 14.11.2026 12:45';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -702,8 +702,10 @@ function aramaYap(q) {
 }
 
 function araSekmeHtml(seciliAna) {
-  const s2 = [['', 'Tümü', 'ara'], ['emlak', 'Emlak', ANA.emlak.ikon], ['vasita', 'Vasıta', ANA.vasita.ikon]];
-  return '<div class="ara-sekme" role="tablist">' + s2.map(([k, ad, ik]) => '<button role="tab" aria-selected="' + (seciliAna === k) + '" class="' + (seciliAna === k ? 'secili' : '') + '" data-q=\'' + kac(JSON.stringify({ ana: k, alt: '', islem: '' })) + '\'>' + ic(ik, 18) + ad + '</button>').join('') + '</div>';
+  return '<div class="ara-sekme" role="tablist">' + Object.entries(ANA).map(([k, a]) => {
+    const n = yayinda().filter((i) => i.ana === k).length, sec = seciliAna === k;
+    return '<button role="tab" aria-selected="' + sec + '" class="' + (sec ? 'secili' : '') + '" data-q=\'' + kac(JSON.stringify({ ana: sec ? '' : k, alt: '', islem: '' })) + '\'><span class="as-ikon">' + ic(a.ikon, 22) + '</span><span class="as-yazi"><b>' + a.ad + '</b><small>' + sayiBicim(n) + ' ilan</small></span>' + ic('asagi', 16) + '</button>';
+  }).join('') + '</div>';
 }
 function araYolHtml(o, seciliAna, altlar) {
   const say = (q) => aramaYap({ ...o, ...q, sirala: '' }).length;
@@ -711,7 +713,8 @@ function araYolHtml(o, seciliAna, altlar) {
   if (seciliAna) yol.push([ANA[seciliAna].ad, { ana: seciliAna, alt: '', islem: '' }]);
   if (o.alt && ALT[o.alt]) yol.push([ALT[o.alt].ad, { alt: o.alt, ana: seciliAna, islem: '' }]);
   if (o.islem) yol.push([o.islem, {}]);
-  const sonraki = !seciliAna ? Object.entries(ANA).map(([k, a]) => [a.ad, { ana: k, alt: '' }]) : !o.alt ? altlar.map(([k, a]) => [a.ad, { alt: k, ana: a.ana }]) : seciliAna === 'emlak' && !o.islem ? alanSecenek('emlak', 'islem').map((x) => [x, { islem: x }]) : [];
+  if (!seciliAna) return '';
+  const sonraki = !o.alt ? altlar.map(([k, a]) => [a.ad, { alt: k, ana: a.ana }]) : seciliAna === 'emlak' && !o.islem ? alanSecenek('emlak', 'islem').map((x) => [x, { islem: x }]) : [];
   const dq = (q) => " data-q='" + kac(JSON.stringify(q)) + "'";
   return (sonraki.length ? '<div class="ara-bas">' + (!seciliAna ? 'Kategori seç' : !o.alt ? ANA[seciliAna].ad + ' kategorileri' : 'İşlem türü') + '</div>' : '') + '<div class="ara-yol">' + yol.map(([ad, q], n) => (n < yol.length - 1 ? '<button' + dq(q) + '>' + kac(ad) + '</button>' + ic('ok', 12) : '<b>' + kac(ad) + '</b>')).join('') + '</div>'
     + (sonraki.length ? '<div class="ara-kat">' + sonraki.map(([ad, q]) => { const n = say(q); return n ? '<button' + dq(q) + '><span>' + kac(ad) + '</span><small>' + sayiBicim(n) + '</small>' + ic('ok', 14) + '</button>' : ''; }).join('') + '</div>' : '');
@@ -720,7 +723,7 @@ function araCubukHtml(o, filtreSay) {
   return '<div class="ara-cubuk"><button id="filtreBtn" class="' + (filtreSay ? 'aktif' : '') + '">' + ic('filtre', 17) + 'Filtrele' + (filtreSay ? '<i>' + filtreSay + '</i>' : '') + '</button>'
     + '<label>' + ic('grafik', 17) + '<select id="sirala" aria-label="Sırala"><option value="yeni">En yeni</option><option value="ucuz">En düşük fiyat</option><option value="pahali">En yüksek fiyat</option></select></label>'
     + '<button id="kaydetBtn">' + ic('zil', 17) + 'Kaydet</button>'
-    + '<button id="haritaBtn" class="' + (araHaritaAcik() ? 'aktif' : '') + '" aria-label="Haritayı aç / kapat">' + ic('konum', 17) + '</button></div>';
+    + '<button id="haritaBtn" aria-label="Haritada gör">' + ic('konum', 17) + '</button></div>';
 }
 function araEtiketHtml(o) {
   const ad = { il: 'İl', ilce: 'İlçe', mahalle: 'Mahalle', oda: 'Oda', yas: 'Bina yaşı', kat: 'Kat', kimden: 'Kimden', site: 'Site', asansor: 'Asansör', otopark: 'Otopark', esya: 'Eşya', marka: 'Marka', model: 'Model', kasa: 'Kasa', yakit: 'Yakıt', vites: 'Vites', hasar: 'Boya/değişen', takas: 'Takas', renk: 'Renk', agirhasar: 'Ağır hasar' };
@@ -747,7 +750,6 @@ EKRAN.ara = () => {
     </header>
     <div class="ic" style="padding-top:12px">
       ${araSekmeHtml(seciliAna)}
-      ${araHaritaAcik() ? `<div class="ara-harita-sar"><div id="harp" class="ara-harita"></div><button class="ara-harita-buyut" id="haritaBuyut">${ic('pusula', 15)}Tam ekran</button></div>` : ''}
       ${araYolHtml(o, seciliAna, altlar)}
       ${o.ai ? `<div class="bilgi-k" style="align-items:center">${ic('yildiz', 18)}<div><b>MülkümAI anladı:</b> ${o.ai.split('|').map(kac).join(' · ')}${o.q ? ` · “${kac(o.q)}”` : ''}</div></div>` : ''}
       ${araCubukHtml(o, filtreSay)}
@@ -776,7 +778,7 @@ EKRAN.ara = () => {
   app.querySelectorAll('[data-sil]').forEach((b) => (b.onclick = () => git('#/ara?' + sorguYap({ ...o, ...JSON.parse(b.dataset.sil) }))));
   $('#filtreBtn').onclick = () => filtreSheet(o);
   const tamHarita = () => git('#/harita?' + sorguYap({ ana: seciliAna || 'emlak', islem: o.islem || '', il: o.il || '', ilce: o.ilce || '' }));
-  $('#haritaBtn').onclick = () => { try { localStorage.setItem('araHarita', araHaritaAcik() ? 'kapali' : 'acik'); } catch (_) {} ciz.yerinde = true; ciz(); };
+  $('#haritaBtn').onclick = tamHarita;
   const hb = $('#haritaBuyut'); if (hb) hb.onclick = tamHarita;
   const hk = $('#harp');
   if (hk && typeof harpBagla === 'function') {

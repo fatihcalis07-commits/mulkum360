@@ -698,3 +698,24 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ara-sekme button.secili{background:var(--birincil);color:var(--birincil-yazi);box-shadow:0 8px 18px -10px color-mix(in srgb,var(--birincil) 80%,transparent)}
 .ara-bas{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--murekkep);margin-top:4px}
 .ara-yol{font-size:13.5px}
+
+/* ============ Ara: kurumsal sekmeler ve açılır alt kategoriler ============ */
+.ara-sekme{grid-template-columns:1fr 1fr;gap:10px;padding:0;background:none;border:0;box-shadow:none}
+.ara-sekme button{height:auto;min-height:72px;padding:12px 14px;border-radius:18px;background:var(--yuzey);border:1px solid var(--p-ince);box-shadow:var(--golge);color:var(--murekkep);justify-content:flex-start;gap:12px;text-align:left}
+.ara-sekme .as-ikon{width:44px;height:44px;border-radius:14px;background:var(--ios-gri);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ara-sekme .as-ikon svg{stroke:var(--ios-mavi)}
+.ara-sekme .as-yazi{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.ara-sekme .as-yazi b{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.ara-sekme .as-yazi small{font-size:12px;font-weight:600;color:var(--soluk)}
+.ara-sekme button>svg:last-child{stroke:var(--soluk);transition:transform .2s}
+.ara-sekme button.secili{background:linear-gradient(150deg,var(--t-bas1,#0E1A2D) 0%,var(--t-bas2,#1A3A68) 100%);border-color:transparent;color:#fff;box-shadow:0 14px 28px -14px rgba(9,16,28,.7)}
+.ara-sekme button.secili .as-ikon{background:rgba(255,255,255,.14)}
+.ara-sekme button.secili .as-ikon svg{stroke:var(--t-vurgu,#FFE800)}
+.ara-sekme button.secili .as-yazi small{color:rgba(255,255,255,.7)}
+.ara-sekme button.secili>svg:last-child{stroke:#fff;transform:rotate(180deg)}
+.ara-bas{font-size:19px;font-weight:800;letter-spacing:-.025em;display:flex;align-items:center;gap:10px}
+.ara-bas::before{content:"";width:4px;height:20px;border-radius:2px;background:var(--t-vurgu,#FFC72C)}
+.ara-kat{border-radius:18px}
+.ara-kat button{min-height:52px;font-size:15px}
+.ara-kat button small{min-width:34px;text-align:right}
+.ara-cubuk{top:calc(var(--ust, 0px) + 74px)}
