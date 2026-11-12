@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.6 · 13.11.2026 19:45';
+const SURUM = '11.7 · 13.11.2026 21:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -888,7 +888,7 @@ EKRAN.ilan = (id) => {
   if (typeof sekmeBagla === 'function') sekmeBagla(i);
   if (typeof parselKartiYukle === 'function') parselKartiYukle(i);
   if (typeof videoKartiYukle === 'function') videoKartiYukle(i);
-  if (i.ana === 'vasita') webBagla();
+  if (i.ana === 'vasita') { webBagla(); const tb = app.querySelector('.bilgi-tablo'); if (tb && !f.tuketim) tuketimBul(f.marka, f.model, f.yil, f.yakit, f.motor || f.paket).then((t) => { if (t && tb.isConnected) tb.insertAdjacentHTML('beforeend', '<div><span>Ortalama tüketim</span><b>' + tuketimYazi(t) + '<small class="tuk-kaynak">' + (t.olcum ? 'resmî WLTP · EEA' : 'resmî CO₂ değerinden · EEA') + '</small></b></div>'); }); }
   const acD = $('#acDevam'); if (acD) acD.onclick = () => { const m = $('#acMetin'), k = m.classList.toggle('kisa'); acD.textContent = k ? 'Devamını oku' : 'Daha az göster'; if (k) $('#aciklamaK').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
   const serit = $('#serit');
   if (serit) serit.querySelectorAll('img').forEach((im, n) => (im.onclick = () => fotoGoster(fotolar, n)));
@@ -1755,7 +1755,7 @@ EKRAN.ver = (id) => {
       <label class="alan">Taşınmaz numarası <span style="font-weight:500">(zorunlu)</span><input id="eNo" inputmode="numeric" maxlength="20" value="${kac(t.eids?.no || '')}"></label>
       <label class="alan" id="eYetkiK"${t.eids?.yontem === 'yetkili' ? '' : ' hidden'}>Yetki belge numarası <span style="font-weight:500">(yetkili işletme için)</span><input id="eYetki" maxlength="20" value="${kac(t.eids?.yetki || '')}"></label>` : `<div class="bilgi-k">${ic('belge', 18)}<div>Emlak ilanlarında, yürürlükteki mevzuat gereği ilan sahibinin tapu bilgisiyle doğrulanması istenebilir. Bu doğrulama sunucu bağlantısıyla eklenecek.</div></div>`) : eidsAcik() ? `<div class="bilgi-k">${ic('kalkan', 18)}<div><b>EİDS doğrulaması zorunlu.</b> Taşıt ilanları, ilan verenin aracın sahibi, eşi ya da 1./2. derece akrabası veya yetkili galeri olduğu doğrulandıktan sonra yayına çıkar. Galeriler araç sahibinden e-Devlet üzerinden satış yetkisi almalıdır.</div></div>${eidsTasitAlanlari(t.eids || {}, !!ben()?.ofis)}` : ''}`;
   }
-  app.innerHTML = bas + `<div class="ic" style="padding-bottom:110px">${t.adim > 0 ? `<div id="guc">${gucHtml(t)}</div>` : ''}${govde}<div class="hata-yazi" id="hata" role="alert"></div></div>
+  app.innerHTML = bas + `<div class="ic" style="padding-bottom:110px">${t.adim > 0 ? `<div id="guc">${gucHtml(t)}</div>` : ''}${govde}<div class="hata-yazi" id="hata" role="alert"></div>${t.id ? `<button type="button" class="btn tehlike tam" id="ilanKaldir" style="margin-top:18px">${ic('cop', 18)}İlanı kaldır</button>` : ''}</div>
     <div class="alt-bar"><div class="alt-bar-ic">${t.adim > (t.id ? 1 : 0) ? `<button class="btn sade" id="geriAdim" style="flex:.6">Geri</button>` : ''}<button class="btn" id="ileri">${t.adim === 3 ? (t.id ? 'Değişiklikleri kaydet' : 'İlanı yayınla') : 'Devam et'}</button></div></div>`;
 
   const topla = () => {
@@ -1889,6 +1889,16 @@ EKRAN.ver = (id) => {
   app.querySelectorAll('[data-sil]').forEach((x) => (x.onclick = (e) => { e.stopPropagation(); topla(); t.fotolar.splice(+x.dataset.sil, 1); ciz(); }));
   app.querySelectorAll('.foto-izgara .f').forEach((x, n) => (x.onclick = () => { if (!n) return; topla(); t.fotolar.unshift(t.fotolar.splice(n, 1)[0]); ciz(); toast('Kapak fotoğrafı değişti'); }));
   $('#kapat').onclick = async () => { if (t.adim > 0 && !(await onayla('Çıkılsın mı?', t.id ? 'Kaydedilmemiş değişiklikler silinecek.' : 'Taslak bu oturum boyunca saklanır; dilediğinde devam edebilirsin.', 'Çık'))) return; if (t.id) taslak = null; history.length > 1 ? history.back() : git('#/'); };
+  const ik = $('#ilanKaldir'); if (ik) ik.onclick = () => {
+    const i = ilan(t.id); if (!i) return;
+    const kira = i.alanlar?.islem === 'Kiralık';
+    sheetAc('<h2 style="font-size:19px;font-weight:800">İlanı kaldır</h2><div class="k soluk">Nasıl kaldırmak istiyorsun?</div><div class="liste">'
+      + (i.durum === 'yayinda' ? '<button class="oge" id="kdSatildi" style="align-items:flex-start">' + ic('tik', 20) + '<div class="ara" style="text-align:left"><b>' + (kira ? 'Kiralandı' : 'Satıldı') + ' olarak işaretle</b><div class="k soluk">Yayından kalkar; performansında ve satılanlarda görünür</div></div></button>' : '')
+      + '<button class="oge" id="kdSil" style="align-items:flex-start;color:var(--hata)">' + ic('cop', 20) + '<div class="ara" style="text-align:left"><b>Kalıcı olarak sil</b><div class="k soluk">İlan, fotoğrafları ve konuşmaları silinir; geri alınamaz</div></div></button></div>', (sh) => {
+      const ks = $('#kdSatildi', sh); if (ks) ks.onclick = async () => { sheetKapat(); const fiyat = await satisFiyatiSor(i); if (fiyat === undefined) return; if (await dene(() => ilanDurum(i, 'satildi', fiyat), 'Hayırlı olsun!')) { taslak = null; git('#/ilan/' + i.id); } };
+      $('#kdSil', sh).onclick = async () => { sheetKapat(); if (!(await onayla('İlan silinsin mi?', 'İlan, fotoğrafları ve ona ait konuşmalar kalıcı olarak silinir.', 'Sil', true))) return; if (await dene(() => ilanSil(i.id), 'İlan silindi')) { taslak = null; git('#/hesap'); } };
+    });
+  };
   const gb = $('#geriAdim'); if (gb) gb.onclick = () => { topla(); t.adim--; ciz(); };
   $('#ileri').onclick = async () => {
     topla(); const h = $('#hata'); h.textContent = '';
@@ -1991,9 +2001,39 @@ function paketBagla() {
     } catch (_) {}
   };
   [mk, md, yl].forEach((el) => el && el.addEventListener('change', yukle)); pk.addEventListener('focus', yukle);
-  pk.addEventListener('change', () => { const m = pk.value.match(/\b(\d[.,]\d)\b/); if (m && mt && !mt.value) mt.value = m[1].replace(',', '.'); });
-  yukle();
+  pk.addEventListener('change', () => { const m = pk.value.match(/\b(\d[.,]\d)\b/); if (m && mt && !mt.value) mt.value = m[1].replace(',', '.'); tukOner(); });
+  // Tüketim: EEA resmî verisinden doldurulur; satıcı isterse değiştirir
+  const tk = $('[data-alan=tuketim]'), yk = $('[data-alan=yakit]');
+  const not = document.createElement('small'); not.className = 'tuk-not'; tk?.parentNode.appendChild(not);
+  const tukOner = async () => {
+    if (!tk) return; const t = await tuketimBul(mk.value, md.value, yl?.value, yk?.value, mt?.value || pk.value);
+    if (!t) { not.textContent = ''; return; }
+    if (!tk.value || tk.dataset.oto) { tk.value = String(t.tuketim).replace('.', ','); tk.dataset.oto = '1'; }
+    not.textContent = (t.olcum ? 'Resmî WLTP ölçümü' : 'Resmî CO₂ değerinden hesaplandı') + ' · EEA · ' + tuketimYazi(t);
+  };
+  tk?.addEventListener('input', () => delete tk.dataset.oto);
+  [mk, md, yl, yk, mt].forEach((el) => el && el.addEventListener('change', tukOner));
+  yukle(); tukOner();
 }
+// Resmî yakıt tüketimi: Avrupa Çevre Ajansı (EEA) yeni araç verisi; aynı yıl yoksa ±2 yıl
+const TUK_ON = {};
+async function tuketimBul(marka, model, yil, yakit, motor) {
+  if (!marka || !model) return null;
+  const mk = String(marka).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/^MERCEDES$/, 'MERCEDES-BENZ').replace('İ', 'I');
+  const md = String(model).trim().split(/\s+/)[0].toUpperCase().replace('İ', 'I'), y = +yil || 0;
+  const anahtar = [mk, md, y, yakit, motor].join('|'); if (anahtar in TUK_ON) return TUK_ON[anahtar];
+  let l = [];
+  try { let q = sb.from('arac_tuketim').select('model,yakit,motor,yil,tuketim,en,ek,tur').eq('marka', mk).ilike('model', md + '%'); if (y) q = q.gte('yil', y - 2).lte('yil', y + 2); l = (await q.limit(500)).data || []; } catch (_) {}
+  const yk = { 'LPG & Benzin': ['LPG & Benzin', 'Benzin'], Hibrit: ['Hibrit'], Benzin: ['Benzin'], Dizel: ['Dizel'] }[yakit];
+  if (yk) { const a = l.filter((x) => yk.includes(x.yakit)); if (a.length) l = a; }
+  const mt = String(motor || '').replace(',', '.').match(/\d\.\d/)?.[0];
+  if (mt) { const a = l.filter((x) => x.motor === mt); if (a.length) l = a; }
+  if (y) { const ayni = l.filter((x) => x.yil === y); if (ayni.length) l = ayni; }
+  if (!l.length) return (TUK_ON[anahtar] = null);
+  const v = l.map((x) => +x.tuketim).sort((a, b) => a - b), orta = v[v.length >> 1];
+  return (TUK_ON[anahtar] = { tuketim: orta, en: Math.min(...l.map((x) => +x.en || +x.tuketim)), ek: Math.max(...l.map((x) => +x.ek || +x.tuketim)), olcum: l.some((x) => x.tur === 'olcum'), motorlu: !!mt && l.every((x) => x.motor === mt) });
+}
+const tuketimYazi = (t) => String(t.tuketim).replace('.', ',') + ' L/100 km' + (t.ek - t.en >= 0.6 && !t.motorlu ? ' (' + String(t.en).replace('.', ',') + '–' + String(t.ek).replace('.', ',') + ')' : '');
 // İlan sayfasında boya / değişen kartı
 function hasarGosterKarti(i) {
   const f = i.alanlar || {}, p = parcaCoz(f.parcalar), o = parcaOzet(p), agir = f.agirHasar === 'Var' || f.hasar === 'Ağır hasar kayıtlı';
