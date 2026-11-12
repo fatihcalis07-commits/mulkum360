@@ -44,6 +44,8 @@ async function parselKartiYukle(i) {
 
 // ---------- Konum ----------
 async function ilanKonumu(i) {
+  // Sahibinin haritada işaretlediği konum her şeyden önce gelir
+  if (i.alanlar?.konumDuzey === 'isaret' && +i.alanlar.enlem > 0) return { lat: +i.alanlar.enlem, lon: +i.alanlar.boylam, duzey: 'bina' };
   const f = i.alanlar || {}, anahtar = 'konum3:' + i.id + ':' + [i.il, i.ilce, f.mahalle, f.sokak, f.ada, f.parsel].join('|');
   try { const c = JSON.parse(localStorage.getItem(anahtar) || 'null'); if (c) return c; } catch (_) {}
   // Ada/parsel varsa parselin kendisi: tam konum
@@ -80,7 +82,7 @@ async function konumPanel(i) {
   }
   const d = k.duzey === 'parsel' ? 0.0025 : k.duzey === 'sokak' ? 0.004 : k.duzey === 'mahalle' ? 0.008 : 0.03;
   const bbox = [k.lon - d * 1.4, k.lat - d, k.lon + d * 1.4, k.lat + d].map((x) => x.toFixed(5)).join('%2C');
-  const aciklama = { parsel: `Tapu parseli (TKGM ${kac(f.ada)} ada ${kac(f.parsel)} parsel) gösteriliyor; konum kesindir.`, sokak: 'Sokak düzeyinde yaklaşık konum. Kapı numarası gösterilmez.', mahalle: 'Mahalle merkezi gösteriliyor; tam adres satıcıdan öğrenilir.', ilçe: 'Mahalle haritada bulunamadı; ilçe merkezi gösteriliyor.' }[k.duzey];
+  const aciklama = { bina: 'İlan sahibinin haritada işaretlediği konum. Kapı numarası gösterilmez.', parsel: `Tapu parseli (TKGM ${kac(f.ada)} ada ${kac(f.parsel)} parsel) gösteriliyor; konum kesindir.`, sokak: 'Sokak düzeyinde yaklaşık konum. Kapı numarası gösterilmez.', mahalle: 'Mahalle merkezi gösteriliyor; tam adres satıcıdan öğrenilir.', ilçe: 'Mahalle haritada bulunamadı; ilçe merkezi gösteriliyor.' }[k.duzey];
   kap.innerHTML = `<h3>Konumu</h3>${yol}
     <div class="harita-kutu"><iframe title="İlanın konumu" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${k.lat.toFixed(5)}%2C${k.lon.toFixed(5)}"></iframe></div>
     <div class="k soluk" style="font-size:12px;margin:6px 0 10px">${aciklama} Harita © OpenStreetMap katkıda bulunanlar.</div>
@@ -155,7 +157,7 @@ async function cevrePanel(i) {
   const suz = Object.fromEntries(CEVRE_TUR.map((c) => [c[0], c[4]]));
   veri = veri.map((v) => ({ ...v, l: (v.l || []).filter((y) => !suz[v.ad] || suz[v.ad].test(y.ad)) }));
   const var_ = veri.filter((v) => v.l.length), yok = veri.filter((v) => !v.l.length);
-  kap.innerHTML = `<h3>Çevre</h3><div class="k soluk" style="margin:-4px 0 8px">${{ parsel: 'Tapu parseline', sokak: 'Sokağa', mahalle: 'Mahalle merkezine', ilçe: 'İlçe merkezine' }[k.duzey] || ''} göre en yakın yerler</div>
+  kap.innerHTML = `<h3>Çevre</h3><div class="k soluk" style="margin:-4px 0 8px">${{ bina: 'Mülke', parsel: 'Tapu parseline', sokak: 'Sokağa', mahalle: 'Mahalle merkezine', ilçe: 'İlçe merkezine' }[k.duzey] || ''} göre en yakın yerler</div>
     <div class="cevre-liste">${var_.map((v) => `<div style="align-items:flex-start">${ic(ikon[v.ad], 20, 'var(--vurgu-ikon)')}<div class="ara"><b>${v.ad}</b>${v.l.map((y) => `<span>${kac(y.ad)} · ${mt(y.m)}</span>`).join('')}</div><div class="cevre-m"><b>${mt(v.l[0].m)}</b><span>${sure(v.l[0].m)}</span></div></div>`).join('')}</div>
     ${yok.length ? `<div class="k soluk" style="font-size:12px;margin-top:8px">Yakında bulunamadı: ${yok.map((v) => v.ad.toLocaleLowerCase('tr')).join(', ')}.</div>` : ''}
     <div class="k soluk" style="font-size:12px;margin-top:6px">Kaynak: OpenStreetMap (Photon). Mesafeler kuş uçuşudur; süreler yaklaşıktır.</div>`;

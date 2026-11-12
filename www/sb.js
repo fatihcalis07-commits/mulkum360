@@ -221,7 +221,7 @@ async function ilanKaydet(t, ilerleme) {
     // Adres değişmediyse çözülmüş koordinatlar korunur; değişirse eski konum geçersizdir, silinir ve yeniden çözülür
     if (eski?.alanlar?.enlem && satir.alanlar) {
       const adresAyni = satir.il === eski.il && satir.ilce === eski.ilce && ['mahalle', 'sokak', 'ada', 'parsel'].every((k) => String(satir.alanlar[k] || '') === String(eski.alanlar[k] || ''));
-      if (adresAyni) { const { enlem, boylam, konumDuzey, ...eskiAl } = eski.alanlar; satir.alanlar = { ...eskiAl, ...satir.alanlar, enlem, boylam, konumDuzey }; }
+      if (adresAyni && satir.alanlar?.konumDuzey !== 'isaret') { const { enlem, boylam, konumDuzey, ...eskiAl } = eski.alanlar; satir.alanlar = { ...eskiAl, ...satir.alanlar, enlem, boylam, konumDuzey }; }
     }
     const r = await islem(sb.from('ilanlar').update(satir).eq('id', t.id).select().single());
     const silinen = (eski?.fotolar || []).filter((u) => !fotolar.includes(u)).map(depoYolu).filter(Boolean);

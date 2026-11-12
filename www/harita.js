@@ -91,6 +91,15 @@ function harpAltKart(kap, id) {
 }
 function harpKart(id) { const i = ilan(id); if (!i) return; sheetAc(`<h2 style="font-size:16px;font-weight:800">${kac(i.baslik)}</h2><div style="margin:8px 0">${ilanKart(i)}</div><a class="btn tam" href="#/ilan/${i.id}">İlan detayı</a>`); }
 
+// Harita ilk açılışta yakından başlar: konum izni varsa kullanıcının yeri, yoksa en çok ilanın olduğu ilçe
+async function haritaIlkKonum() {
+  let izin = false;
+  try { const G = window.Capacitor?.Plugins?.Geolocation; if (G) izin = (await G.checkPermissions()).location === 'granted'; else if (navigator.permissions) izin = (await navigator.permissions.query({ name: 'geolocation' })).state === 'granted'; } catch (_) {}
+  if (izin) { await haritaKonum(); if (HARP.kaynak === 'sen') { HARP.z = 14; harpCiz(); return; } }
+  const say = {}; yayinda().filter((i) => i.ana === HARP.ana && +i.alanlar?.enlem > 0 && i.ilce).forEach((i) => { const k = i.il + '|' + i.ilce; say[k] = (say[k] || 0) + 1; });
+  const en = Object.entries(say).sort((a, b) => b[1] - a[1])[0];
+  if (en) { const l = yayinda().filter((i) => i.ana === HARP.ana && i.il + '|' + i.ilce === en[0] && +i.alanlar?.enlem > 0); HARP.lat = l.reduce((t, i) => t + +i.alanlar.enlem, 0) / l.length; HARP.lon = l.reduce((t, i) => t + +i.alanlar.boylam, 0) / l.length; HARP.kaynak = 'secim'; HARP.ad = en[0].split('|').reverse().join(' '); HARP.z = 13; harpCiz(); }
+}
 async function haritaKonum() {
   const y = document.getElementById('hkonum'); if (y) { y.disabled = true; y.textContent = 'Konum alınıyor…'; }
   try {
@@ -134,7 +143,8 @@ EKRAN.harita = () => {
   if (s.il && HARP.ad !== hedefAd) { HARP.kaynak = 'secim'; HARP.ad = hedefAd; HARP.z = s.ilce ? 13 : 8; haritaIlceGit(s.il, s.ilce); }
   const mz = String(s.merkez || '').split(',');
   if (+mz[0] && +mz[1]) { HARP.lat = +mz[0]; HARP.lon = +mz[1]; HARP.kaynak = 'ilan'; HARP.z = 14; }
-  else if (!s.il && HARP.kaynak !== 'sen') { const b = ben(); if (b?.il) { HARP.kaynak = 'secim'; HARP.ad = [b.ilce, b.il].filter(Boolean).join(' '); HARP.z = b.ilce ? 13 : 8; haritaIlceGit(b.il, b.ilce); } }
+  else if (!s.il && !HARP.basladi) { HARP.basladi = true; setTimeout(haritaIlkKonum, 50); }
+  else if (!s.il && HARP.kaynak !== 'sen' && false) { const b = ben(); if (b?.il) { HARP.kaynak = 'secim'; HARP.ad = [b.ilce, b.il].filter(Boolean).join(' '); HARP.z = b.ilce ? 13 : 8; haritaIlceGit(b.il, b.ilce); } }
   const chip = (ad, v, aktif, js) => `<button class="cip ${aktif ? 'secili' : ''}" data-hc="${js}">${ad}</button>`;
   app.innerHTML = ustBar('Harita görünümü') + `<div class="ic">
     <div class="segment" role="tablist">${Object.entries(ANA).map(([k, a]) => `<button role="tab" aria-selected="${k === HARP.ana}" data-hana="${k}">${ic(a.ikon, 16)}${a.ad}</button>`).join('')}</div>

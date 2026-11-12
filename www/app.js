@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.0 · 13.11.2026 13:45';
+const SURUM = '11.1 · 13.11.2026 14:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1710,7 +1710,8 @@ EKRAN.ver = (id) => {
       <label class="alan">İlçe<select id="ilce"><option value="">Seç</option>${t.ilce ? `<option selected>${kac(t.ilce)}</option>` : ''}</select></label></div>
       ${ana === 'emlak' ? `<div class="izgara2"><label class="alan">Mahalle<select id="mahalle" data-bos="${t.ilce ? 'Seç' : 'Önce ilçe seç'}"><option value="">${t.ilce ? 'Seç' : 'Önce ilçe seç'}</option>${t.alanlar.mahalle ? `<option selected>${kac(t.alanlar.mahalle)}</option>` : ''}</select></label>
       <label class="alan">Sokak / cadde <span style="font-weight:500">(isteğe bağlı)</span><input id="sokak" list="sokakOn" maxlength="80" autocomplete="off" placeholder="Yazmaya başla" value="${kac(t.alanlar.sokak || '')}"><datalist id="sokakOn"></datalist></label></div>
-      <div class="k soluk" style="font-size:12px;margin-top:-4px">Kapı numarası yazma; ilanda yalnız sokak adı görünür.</div>` : ''}
+      <div class="k soluk" style="font-size:12px;margin-top:-4px">Kapı numarası yazma; ilanda yalnız sokak adı görünür.</div>
+      <button type="button" class="kart satir konum-isaret${t.alanlar.konumDuzey === 'isaret' ? ' tamam' : ''}" id="konumIsaret">${ic('konum', 22, 'var(--vurgu-ikon)')}<div class="ara" style="text-align:left"><b>${t.alanlar.konumDuzey === 'isaret' ? 'Konum haritada işaretlendi' : 'Haritada tam yerini işaretle'}</b><div class="k soluk">${t.alanlar.konumDuzey === 'isaret' ? 'Değiştirmek için dokun' : 'İlanın haritada binasının üstünde görünür (isteğe bağlı)'}</div></div><span class="ok">›</span></button>` : ''}
       <label class="alan">Fiyat (TL)<input id="fiyat" inputmode="numeric" value="${t.fiyat ? sayiBicim(t.fiyat) : ''}" style="font-weight:800"></label>
       <div id="oneri"></div>
       <label class="alan">Açıklama<textarea id="aciklama" maxlength="3000" placeholder="Durumunu, öne çıkan özelliklerini ve neden sattığını anlat.">${kac(t.aciklama || '')}</textarea></label>
@@ -1842,6 +1843,7 @@ EKRAN.ver = (id) => {
     };
   });
   app.querySelectorAll('[data-alt]').forEach((x) => (x.onclick = () => { if (t.alt && ALT[t.alt].ana !== ALT[x.dataset.alt].ana) t.alanlar = {}; t.alt = x.dataset.alt; t.adim = 1; ciz(); }));
+  const ki = $('#konumIsaret'); if (ki) ki.onclick = () => { topla(); konumIsaretSheet(t); };
   const dd = $('#disDegis'); if (dd) dd.onchange = async () => {
     if (!dd.files.length) return;
     topla(); t.fotolar = []; delete t.disFoto;
@@ -1908,6 +1910,37 @@ EKRAN.ver = (id) => {
   };
 };
 
+// İlan verirken haritada tam konum işaretleme: harita kaydırılır, ortadaki iğne mülkün yeridir
+async function konumIsaretSheet(t) {
+  const al = t.alanlar || (t.alanlar = {});
+  let lat = +al.enlem, lon = +al.boylam, z = 17;
+  if (!(lat > 0)) {
+    z = 16;
+    try { const k = await ilanKonumu({ ...t, ana: 'emlak', alanlar: { ...al, enlem: '', boylam: '' } }); if (k && k.lat) { lat = k.lat; lon = k.lon; } } catch (_) {}
+    if (!(lat > 0)) { lat = 39.1; lon = 35.2; z = 6; }
+  }
+  sheetAc('<h2 style="font-size:19px;font-weight:800">Mülkün yerini işaretle</h2><div class="k soluk">Haritayı kaydır, ortadaki iğneyi binanın üstüne getir. Yakınlaştırmak için + kullan.</div>'
+    + '<div id="kiHarita" class="ki-harita"><div class="ki-karo"></div><div class="ki-igne">' + ic('konum', 34, '#C8553D', 2.2) + '</div><div class="ki-zum"><button type="button" data-z="1">+</button><button type="button" data-z="-1">−</button></div><button type="button" class="ki-ben" id="kiBen">' + ic('konum', 16) + 'Konumum</button></div>'
+    + '<div class="k soluk" style="font-size:12px">Tam adres ve kapı numarası ilanda gösterilmez; harita yalnız binanın çevresini gösterir.</div>'
+    + '<div class="izgara2">' + (al.konumDuzey === 'isaret' ? '<button type="button" class="btn sade" id="kiSil">İşareti kaldır</button>' : '<span></span>') + '<button type="button" class="btn" id="kiKaydet">Bu konumu kullan</button></div>', (s) => {
+    const kap = $('#kiHarita', s), karo = $('.ki-karo', s);
+    const ciz2 = () => {
+      const W = kap.clientWidth || 340, H = kap.clientHeight || 300, n = 2 ** z, p = dunyaPx(lat, lon, z), x0 = p.x - W / 2, y0 = p.y - H / 2;
+      let h = ''; for (let tx = Math.floor(x0 / 256); tx <= Math.floor((x0 + W) / 256); tx++) for (let ty = Math.floor(y0 / 256); ty <= Math.floor((y0 + H) / 256); ty++) h += '<img src="https://tile.openstreetmap.org/' + z + '/' + (((tx % n) + n) % n) + '/' + ty + '.png" alt="" style="position:absolute;left:' + (tx * 256 - x0) + 'px;top:' + (ty * 256 - y0) + 'px;width:256px;height:256px">';
+      karo.innerHTML = h; karo.style.transform = '';
+    };
+    let tut = null;
+    kap.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; tut = { x: e.clientX, y: e.clientY }; kap.setPointerCapture(e.pointerId); });
+    kap.addEventListener('pointermove', (e) => { if (tut) karo.style.transform = 'translate(' + (e.clientX - tut.x) + 'px,' + (e.clientY - tut.y) + 'px)'; });
+    const birak = (e) => { if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; tut = null; const p = dunyaPx(lat, lon, z), q = pxDon(p.x - dx, p.y - dy, z); lat = q.lat; lon = q.lon; ciz2(); };
+    kap.addEventListener('pointerup', birak); kap.addEventListener('pointercancel', () => { tut = null; ciz2(); });
+    s.querySelectorAll('[data-z]').forEach((b) => (b.onclick = () => { z = Math.max(5, Math.min(19, z + +b.dataset.z)); ciz2(); }));
+    $('#kiBen', s).onclick = async () => { try { const G = window.Capacitor?.Plugins?.Geolocation; const p = G ? await G.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 }) : await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(ok, no, { timeout: 8000 })); lat = p.coords.latitude; lon = p.coords.longitude; z = 18; ciz2(); } catch (_) { toast('Konum alınamadı'); } };
+    $('#kiKaydet', s).onclick = () => { if (z < 14) return toast('Biraz daha yakınlaştırıp binanın üstüne getir.'); Object.assign(al, { enlem: Math.round(lat * 1e6) / 1e6, boylam: Math.round(lon * 1e6) / 1e6, konumDuzey: 'isaret' }); sheetKapat(); toast('Konum işaretlendi'); ciz(); };
+    const ks = $('#kiSil', s); if (ks) ks.onclick = () => { delete al.enlem; delete al.boylam; delete al.konumDuzey; sheetKapat(); toast('İşaret kaldırıldı; konum adresten bulunacak'); ciz(); };
+    setTimeout(ciz2, 30);
+  });
+}
 // Yeni ilan yayınlanınca: ilanı güçlendirme önerileri (kredi satışının en doğal anı)
 function yayinSonrasi(i) {
   if (!i || !location.hash.startsWith('#/ilan/')) return;

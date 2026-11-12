@@ -468,3 +468,15 @@ html[data-tema] .yon-ozet{background:radial-gradient(90% 120% at 100% 0%,var(--t
 .harp-alt span{font-size:12px;color:var(--soluk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .harp-alt strong{font-size:17px;font-weight:800;margin-top:auto;letter-spacing:-.02em}
 .harp-alt-x{position:absolute;right:6px;top:6px;width:32px;height:32px;border:0;border-radius:50%;background:var(--yuzey2);color:var(--murekkep);font-size:20px;line-height:1;cursor:pointer}
+
+/* ============ Konum işaretleme ============ */
+.konum-isaret{text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer;border:1.5px dashed color-mix(in srgb,var(--vurgu-ikon) 45%,transparent)!important}
+.konum-isaret.tamam{border-style:solid!important;border-color:var(--guven)!important;background:color-mix(in srgb,var(--guven) 6%,var(--yuzey))}
+.ki-harita{position:relative;height:46vh;min-height:280px;border-radius:18px;overflow:hidden;background:#dfe7ee;touch-action:none;user-select:none}
+.ki-karo{position:absolute;inset:0;will-change:transform}
+.ki-igne{position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);pointer-events:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.ki-igne svg{fill:#fff}
+.ki-zum{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.ki-zum button,.ki-ben{border:0;background:var(--yuzey);color:var(--murekkep);box-shadow:0 4px 12px -4px rgba(9,16,28,.45);cursor:pointer;font:inherit;font-weight:800}
+.ki-zum button{width:42px;height:42px;border-radius:12px;font-size:20px}
+.ki-ben{position:absolute;left:10px;bottom:10px;height:38px;padding:0 12px;border-radius:999px;font-size:13px;display:flex;align-items:center;gap:6px}
