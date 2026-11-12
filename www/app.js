@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.2 · 13.11.2026 01:45';
+const SURUM = '13.3 · 13.11.2026 02:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -35,7 +35,7 @@ const ilan = (id) => S.ilanlar.find((i) => i.id === id);
 const gorunenAd = (k) => { if (!k?.soyadGizle || k.id === S.oturum) return k?.ad || ''; const p = String(k.ad).trim().split(/\s+/); return p.length < 2 ? k.ad : p.slice(0, -1).join(' ') + ' ' + p[p.length - 1][0].toLocaleUpperCase('tr-TR') + '.'; };
 // Emlak ofisi rozeti: firma ya da yetki belgesi beyan eden üyeler
 const kurumAd = (k, ana) => (k?.sektor ? k.sektor === 'galeri' : ana === 'vasita') ? 'Oto galeri' : 'Emlak ofisi';
-const rozet = (k, ana = 'emlak') => k?.dogrulanmis ? `<span class="rozet kurum dogru">${ic('kalkan', 12)}Doğrulanmış ${kurumAd(k, ana) === 'Oto galeri' ? 'galeri' : 'ofis'}</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet kurum">${ic('kalkan', 12)}${kurumAd(k, ana)}</span>` : '';
+const rozet = (k, ana = 'emlak') => k?.anlasmali ? `<span class="rozet kurum anlasmali">${ic('tik', 12)}Anlaşmalı ${k.anlasmali === 'galeri' ? 'Galeri' : 'Ofis'}</span>` : k?.dogrulanmis ? `<span class="rozet kurum dogru">${ic('kalkan', 12)}Doğrulanmış ${kurumAd(k, ana) === 'Oto galeri' ? 'galeri' : 'ofis'}</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet kurum">${ic('kalkan', 12)}${kurumAd(k, ana)}</span>` : '';
 // İlanın kimden olduğu: emlakta ilan sahibinin hesap türü, vasıtada ilandaki alan
 const kimden = (i) => (i.ana === 'emlak' ? (kullanici(i.sahip).ofis ? 'Emlak ofisinden' : 'Sahibinden') : i.alanlar?.kimden || '');
 const basHarf = (ad) => kac(String(ad || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR'));
@@ -2327,7 +2327,7 @@ EKRAN.hesap = () => {
       ${cuzdanKarti(b)}
       <div class="bolum-bas"><h2>İlanlarım</h2>${benim.length ? `<a href="#/ver">+ Yeni ilan</a>` : ''}</div>
       <div class="ciplar"><button class="cip ${sekme === 'yayinda' ? 'secili' : ''}" data-s="yayinda">Yayında · ${benim.filter((i) => i.durum === 'yayinda').length}</button>${eidsAcik() && benim.some((i) => i.durum === 'onayda') ? `<button class="cip ${sekme === 'onayda' ? 'secili' : ''}" data-s="onayda">Doğrulanıyor · ${benim.filter((i) => i.durum === 'onayda').length}</button>` : ''}<button class="cip ${sekme === 'satildi' ? 'secili' : ''}" data-s="satildi">Satıldı / kiralandı · ${benim.filter((i) => i.durum === 'satildi').length}</button>${benim.some((i) => i.durum === 'kaldirildi') ? `<button class="cip ${sekme === 'kaldirildi' ? 'secili' : ''}" data-s="kaldirildi">Yayından kaldırıldı · ${benim.filter((i) => i.durum === 'kaldirildi').length}</button>` : ''}</div>
-      ${sekme === 'kaldirildi' && liste.length ? `<div class="uyari-k">${ic('uyari', 18)}<div>Bu ilanlar şikayet ya da kural ihlali nedeniyle yönetim tarafından yayından kaldırıldı. Düzenleyip destekle iletişime geçebilirsin.</div></div>` : ''}
+      ${sekme === 'kaldirildi' && liste.some((i) => i.alanlar?.uyelikAskida) ? `<a class="uyari-k" href="#/ortaklik" style="text-decoration:none;color:inherit">${ic('uyari', 18)}<div>Üyelik ödemen geciktiği için ilanların beklemeye alındı. Ödeme onaylanınca otomatik olarak yayına döner. Ayrıntı için dokun.</div></a>` : sekme === 'kaldirildi' && liste.length ? `<div class="uyari-k">${ic('uyari', 18)}<div>Bu ilanlar şikayet ya da kural ihlali nedeniyle yönetim tarafından yayından kaldırıldı. Düzenleyip destekle iletişime geçebilirsin.</div></div>` : ''}
       ${liste.length ? (hesapTumu.has(sekme) ? liste : liste.slice(0, 5)).map((i) => {
         const e = emsalDurumu(i);
         const ip = e && e.konum > 0.7 && Date.now() - i.olusturma > 7 * 86400000 ? `<div class="uyari-k" style="margin-top:6px">${ic('grafik', 16)}<div>Fiyatın benzer ilanların üstünde. ${tl(e.orta)} civarı daha çok ilgi görebilir.<br><a href="#/degerle?ilan=${i.id}" style="font-weight:700">Değer raporu al · 1 kredi ›</a></div></div>` : '';
@@ -2360,6 +2360,7 @@ EKRAN.hesap = () => {
         <a class="ayar-d" href="#/metin/kosullar">${ic('yasal', 22)}<span>Yasal bilgiler</span></a>
       </div>`, DILLER.find(([k]) => k === DIL)[1])}
       ${S.yonetici ? `<a class="yon-giris" href="#/yonetim"><span class="yg-ikon">${ic('pano', 22)}</span><div class="ara"><b>Yönetim Paneli</b><div class="k soluk">Kullanıcılar, Kredi Satışları, Şikayetler, Veriler</div></div><span class="rozet" id="yonBekleyen" style="position:static" hidden></span><span class="yg-ok">${ic('ok', 18)}</span></a>` : ''}
+      <div id="ortakKart"></div>
       <div id="eidsKart"></div>
       <button class="btn sade tam" id="cikis">${ic('cikis', 18)}Çıkış yap</button>
       <button class="btn tehlike tam" id="hesapSil">Hesabımı sil</button>
@@ -2410,7 +2411,7 @@ EKRAN.hesap = () => {
     if (await dene(() => ilanKaydet(t, yaz), `Fotoğraflar eklendi (${yeni.length})`)) ciz(); else et.style.pointerEvents = '';
   }));
   $('#cikis').onclick = async () => { if (await onayla('Çıkış yap', 'Bu cihazdaki oturumun kapanacak.', 'Çıkış yap')) { await dene(cikisYap, 'Çıkış yapıldı'); git('#/'); } };
-  eidsHesapKarti();
+  eidsHesapKarti(); ortakHesapKarti();
   { const q = sorgu(); if (q.eids) { history.replaceState(null, '', '#/hesap'); setTimeout(() => eidsDonus(q.eids, q.m), 300); } }
   $('#hesapSil').onclick = async () => {
     if (!(await onayla('Hesabın silinsin mi?', 'Hesabın, ilanların, fotoğrafların, mesajların ve raporların sunucudan kalıcı olarak silinir. Bu işlem geri alınamaz.', 'Hesabımı sil', true))) return;
@@ -2996,7 +2997,7 @@ function ciz() {
   const p = yol.split('/').filter(Boolean);
   // Karşılama ekranı da aynı bağlamalardan geçmeli (Google düğmesi burada da var)
   if (!S.karsilandi && !ben() && !['giris', 'kayit', 'metin', 'ilan', 'uye'].includes(p[0])) { EKRAN.karsilama(); app.querySelectorAll('[data-google]').forEach((x) => (x.onclick = () => googleBasla(x))); aiDugme(); document.getElementById('aiFab').hidden = true; return; }
-  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', bildirimler: 'bildirimler', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', karsilastir: 'karsilastir', firsat: 'firsat', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
+  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', bildirimler: 'bildirimler', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', karsilastir: 'karsilastir', firsat: 'firsat', ortaklik: 'ortaklik', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
   EKRAN[e](p[1]);
   sifreGoz(); saticiOzetDoldur();
   aiDugme();

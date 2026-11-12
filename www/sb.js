@@ -27,10 +27,10 @@ async function profilleriGetir(idler, tazele) {
   idler = [...new Set(idler)].filter((id) => id && (tazele || !S.kullanicilar.some((k) => k.id === id)));
   if (!idler.length) return;
   // Gizlilik sütunları henüz yoksa (veritabanı güncellenmeden) eski alanlarla devam et
-  let r = await sb.from('profiller').select('id,ad,olusturma,soyad_gizle,acik_tel,firma,unvan,hakkinda,yetki_no,dogrulanmis,hesap_turu,sektor,foto').in('id', idler);
+  let r = await sb.from('profiller').select('id,ad,olusturma,soyad_gizle,acik_tel,firma,unvan,hakkinda,yetki_no,dogrulanmis,hesap_turu,sektor,foto,anlasmali').in('id', idler);
   if (r.error) r = await sb.from('profiller').select('id,ad,olusturma').in('id', idler);
   const data = await islem(r);
-  data.forEach((p) => { const y = ({ id: p.id, ad: p.ad, olusturma: ms(p.olusturma), soyadGizle: !!p.soyad_gizle, acikTel: p.acik_tel || '', firma: p.firma || '', unvan: p.unvan || '', hakkinda: p.hakkinda || '', yetkiNo: p.yetki_no || '', dogrulanmis: !!p.dogrulanmis, ofis: p.hesap_turu === 'ofis', sektor: p.hesap_turu === 'ofis' ? (p.sektor || 'emlak') : '', foto: p.foto || '' }); const n = S.kullanicilar.findIndex((k) => k.id === p.id); if (n < 0) S.kullanicilar.push(y); else if (p.id !== S.oturum) S.kullanicilar[n] = y; });
+  data.forEach((p) => { const y = ({ id: p.id, ad: p.ad, olusturma: ms(p.olusturma), soyadGizle: !!p.soyad_gizle, acikTel: p.acik_tel || '', firma: p.firma || '', unvan: p.unvan || '', hakkinda: p.hakkinda || '', yetkiNo: p.yetki_no || '', dogrulanmis: !!p.dogrulanmis, ofis: p.hesap_turu === 'ofis', sektor: p.hesap_turu === 'ofis' ? (p.sektor || 'emlak') : '', foto: p.foto || '', anlasmali: p.anlasmali || '' }); const n = S.kullanicilar.findIndex((k) => k.id === p.id); if (n < 0) S.kullanicilar.push(y); else if (p.id !== S.oturum) S.kullanicilar[n] = y; });
 }
 
 async function veriYukle() {
@@ -68,7 +68,7 @@ async function kisiselYukle(user) {
   S.kullanicilar = S.kullanicilar.filter((k) => k.id !== uid);
   S.kullanicilar.push({
     id: uid, ad: pr?.ad || user.user_metadata?.ad || 'Üye', olusturma: ms(pr?.olusturma || user.created_at), eposta: user.email,
-    firma: pr?.firma || '', unvan: pr?.unvan || '', hakkinda: pr?.hakkinda || '', slogan: pr?.slogan || '', soyadGizle: !!pr?.soyad_gizle, acikTel: pr?.acik_tel || '', yetkiNo: pr?.yetki_no || '', dogrulanmis: !!pr?.dogrulanmis, ofis: pr?.hesap_turu === 'ofis', sektor: pr?.hesap_turu === 'ofis' ? (pr?.sektor || 'emlak') : '', foto: pr?.foto || '',
+    firma: pr?.firma || '', unvan: pr?.unvan || '', hakkinda: pr?.hakkinda || '', slogan: pr?.slogan || '', soyadGizle: !!pr?.soyad_gizle, acikTel: pr?.acik_tel || '', yetkiNo: pr?.yetki_no || '', dogrulanmis: !!pr?.dogrulanmis, ofis: pr?.hesap_turu === 'ofis', sektor: pr?.hesap_turu === 'ofis' ? (pr?.sektor || 'emlak') : '', foto: pr?.foto || '', anlasmali: pr?.anlasmali || '',
     tel: oz?.tel || '', ileti: !!oz?.ileti, kredi: oz?.kredi ?? 0, favoriler: fav.map((f) => f.ilan),
     raporlar: rap.map((r) => ({ id: r.id, no: r.no, zaman: ms(r.zaman), form: r.form, sonuc: r.sonuc }))
   });
