@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.5 · 13.11.2026 11:00';
+const SURUM = '10.6 · 13.11.2026 11:45';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -118,9 +118,10 @@ function baslikDuzelt(kok = document) {
   });
 }
 // Kapak fotoğrafları ekrana yaklaşınca yüklenir (uzun listelerde yüzlerce görsel birden inmesin)
-const bgYukle = (el) => { const u = el.dataset.bg; if (!u) return; el.style.backgroundImage = "url('" + u.replace(/'/g, '%27') + "')"; el.removeAttribute('data-bg'); bgGoz?.unobserve(el); };
+const BG_YUKLU = new Set();
+const bgYukle = (el) => { const u = el.dataset.bg; if (!u) return; BG_YUKLU.add(u); el.style.backgroundImage = "url('" + u.replace(/'/g, '%27') + "')"; el.removeAttribute('data-bg'); bgGoz?.unobserve(el); };
 const bgGoz = 'IntersectionObserver' in window ? new IntersectionObserver((l) => l.forEach((e) => e.isIntersecting && bgYukle(e.target)), { rootMargin: '600px' }) : null;
-const bgIzle = (kok) => [...(kok.matches?.('[data-bg]') ? [kok] : []), ...kok.querySelectorAll('[data-bg]')].forEach((el) => (bgGoz ? bgGoz.observe(el) : bgYukle(el)));
+const bgIzle = (kok) => [...(kok.matches?.('[data-bg]') ? [kok] : []), ...kok.querySelectorAll('[data-bg]')].forEach((el) => (!bgGoz || BG_YUKLU.has(el.dataset.bg) ? bgYukle(el) : bgGoz.observe(el)));
 new MutationObserver((l) => { for (const m of l) for (const n of m.addedNodes) if (n.nodeType === 1) { baslikDuzelt(n); bgIzle(n); } }).observe(document.documentElement, { childList: true, subtree: true });
 // Kartlardaki kalp: ilanı açmadan favoriye ekle/çıkar
 document.addEventListener('click', async (e) => {
@@ -587,7 +588,7 @@ EKRAN.kesfet = () => {
   app.querySelectorAll('[data-ana]').forEach((x) => (x.onclick = () => { S.kesfetAna = x.dataset.ana; ciz(); }));
   $('#menuBtn').onclick = menuAc;
   haberleriYukle();
-  if (Date.now() - sonYukleme > 60000) veriYukle().then(() => { if (location.hash === '' || location.hash === '#/') ciz(); }, () => {});
+  if (Date.now() - sonYukleme > 60000) sessizTazele();
   navCiz('kesfet');
 };
 
@@ -997,7 +998,10 @@ async function haberleriYukle() {
     el.querySelectorAll('[data-hkat]').forEach((x) => (x.onclick = () => { HABER_KAT = x.dataset.hkat; ciz2(); }));
   };
   if (HABERLER) return ciz2();
-  try { const { data } = await sb.functions.invoke('haberler', { body: {} }); HABERLER = (data && data.kategoriler) || { emlak: (data && data.haberler) || [] }; } catch (_) { HABERLER = {}; }
+  // Son haberler cihazda saklanır: açılışta hemen görünür, yenisi arkada gelir (kutu sonradan değişip sayfayı oynatmasın)
+  if (!haberleriYukle.kayit) { haberleriYukle.kayit = true; try { const k2 = await kvAl('haberler'); if (k2 && k2.v) { HABERLER = k2.v; ciz2(); if (Date.now() - k2.z < 3 * 3600000) return; } } catch (_) {} }
+  let yeni = null; try { const { data } = await sb.functions.invoke('haberler', { body: {} }); yeni = (data && data.kategoriler) || { emlak: (data && data.haberler) || [] }; } catch (_) {}
+  if (yeni) { const ayni = JSON.stringify(yeni) === JSON.stringify(HABERLER); HABERLER = yeni; try { kvYaz('haberler', { z: Date.now(), v: yeni }); } catch (_) {} if (ayni) return; } else if (!HABERLER) HABERLER = {};
   ciz2();
 }
 // Keşfet'te her gün değişen kısa ipucu (artık kullanılmıyor; haberler gösteriliyor)
@@ -2645,13 +2649,26 @@ function sifreGoz() {
     s.appendChild(d);
   });
 }
+// Ekranı etkileyen verinin özeti: aynıysa yeniden çizmeye gerek yok
+const ekranImza = () => S.ilanlar.length + '|' + S.ilanlar.reduce((m, i) => Math.max(m, i.guncelleme || i.olusturma || 0), 0) + '|' + S.ilanlar.reduce((t, i) => t + i.fiyat, 0) + '|' + (ben()?.kredi ?? '') + '|' + (S.oturum && ben() ? okunmamis() : 0) + '|' + Object.keys(S.DOPING?.aktif || {}).length + '|' + (S.bildirimler || []).filter((x) => !x.okundu).length + '|' + S.oturum;
+let tazeleniyor = false;
+async function sessizTazele(sonra) {
+  if (tazeleniyor) return; tazeleniyor = true;
+  const once = ekranImza();
+  try { await veriYukle(); } catch (_) { tazeleniyor = false; return; }
+  tazeleniyor = false;
+  sonra && sonra();
+  if (ekranImza() === once) return;
+  if (/^#\/(ver|sohbet|giris|kayit|profil|degerle|ai|toplu|karsilastir|rapor)/.test(location.hash) || !sheetEl.hidden || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return;
+  ciz.yerinde = true; ciz();
+}
 function ciz() {
   const hsh = location.hash;
   // Giriş animasyonu yalnız başka sayfaya geçerken oynar; ilk açılışta ve aynı sayfa tazelenirken oynamaz (yoksa ekran bir an saydamlaşıp titrer)
   document.body.classList.toggle('animsiz', ciz.son === undefined || ciz.son === hsh); ciz.son = hsh;
   GERI_DONUS = YIGIN.length > 1 && YIGIN[YIGIN.length - 2] === hsh;
   if (GERI_DONUS) YIGIN.pop(); else if (YIGIN[YIGIN.length - 1] !== hsh) { YIGIN.push(hsh); if (YIGIN.length > 40) YIGIN.shift(); }
-  const hedefY = GERI_DONUS ? KAYDIR[hsh]?.y || 0 : 0;
+  const hedefY = ciz.yerinde ? scrollY : GERI_DONUS ? KAYDIR[hsh]?.y || 0 : 0; ciz.yerinde = false;
   sheetKapat();
   document.body.classList.remove('navsiz');
   const [yol] = (location.hash.slice(1) || '/').split('?');
@@ -2688,7 +2705,7 @@ async function basla() {
         catch (x) { toast(hataMetni(x)); }
       });
       // Uygulama öne gelince verileri tazele, kayıtlı aramalara gelen ilanları bildir
-      P.App.addListener('resume', () => { if (Date.now() - sonYukleme > 60000) veriYukle().then(() => { aramaBildir(); if (!document.body.classList.contains('navsiz')) ciz(); }, () => {}); });
+      P.App.addListener('resume', () => { if (Date.now() - sonYukleme > 60000) sessizTazele(aramaBildir); });
     }
     if (new URLSearchParams(location.search).get('code')) { await googleDonus(location.href); history.replaceState(null, '', location.pathname + location.hash); S.karsilandi = true; kaydet(); setTimeout(kayitTuruUygula, 500); }
     else {
@@ -2731,6 +2748,6 @@ sb.auth.onAuthStateChange((olay) => {
     sheetKapat(); toast('Şifren yenilendi');
   })), 800);
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - sonYukleme > 60000) veriYukle().then(() => !location.hash.startsWith('#/ver') && ciz(), () => {}); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - sonYukleme > 60000) sessizTazele(); });
 // Tüm betikler (doping.js, satis.js vb.) yüklendikten sonra başla; yoksa ilk veri yüklemesi eksik fonksiyona çarpabiliyor
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', basla); else basla();
