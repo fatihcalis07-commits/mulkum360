@@ -749,3 +749,11 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .kat-alt2 svg{stroke:var(--soluk)}
 .ka-ikon{width:30px;height:30px;border-radius:9px;background:var(--ios-gri);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ka-ikon svg{stroke:var(--ios-mavi)!important}
+
+.ara-kat button{gap:14px;padding:0 16px 0 12px;min-height:56px}
+.ak-ikon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(150deg,color-mix(in srgb,var(--birincil) 12%,var(--yuzey)),color-mix(in srgb,var(--birincil) 4%,var(--yuzey)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--birincil) 16%,transparent)}
+.ara-kat .ak-ikon svg{stroke:var(--vurgu-ikon,#1064BC)}
+.ara-kat button>span:nth-child(2){flex:1}
+.ara-kat small{min-width:38px;padding:3px 9px;border-radius:999px;background:var(--yuzey2);text-align:center}
+.kat-liste{margin-top:4px}
+.ara-kat .ak-ikon{flex:0 0 38px!important;width:38px}
