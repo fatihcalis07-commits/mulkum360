@@ -854,3 +854,20 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .th-durum.odendi{background:color-mix(in srgb,#0F9D58 14%,var(--yuzey));color:#0F7A45}
 .th-durum.gecikti{background:color-mix(in srgb,#C8553D 14%,var(--yuzey));color:#B4432E}
 .th-durum.bekliyor{background:color-mix(in srgb,#FFC72C 22%,var(--yuzey));color:#8A6200}
+
+/* Tanıtım ödülleri */
+.odul-giris{display:flex;align-items:center;gap:14px;padding:16px 16px 16px 14px;text-decoration:none;color:var(--murekkep)}
+.odul-giris .ara{flex:1;min-width:0}.odul-giris b{font-size:15.5px;font-weight:750}
+.odul-giris .k.soluk{font-size:12.5px;margin-top:2px}
+.odul-giris .og-ikon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(150deg,#C98A00,#FFC72C);box-shadow:0 10px 20px -12px rgba(201,138,0,.7)}
+.odul-giris .og-ikon svg{stroke:#fff}
+.odul-giris .yg-ok{flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--yuzey2)}
+.odul-giris .yg-ok svg{stroke:var(--soluk);width:16px;height:16px}
+.davet-kart{display:flex;flex-direction:column;gap:12px;text-align:center}
+.davet-kart>small{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soluk)}
+.dk-kod{font-size:30px;font-weight:800;letter-spacing:.18em;padding:12px;border-radius:16px;background:var(--yuzey2);border:1.5px dashed var(--p-ince);font-variant-numeric:tabular-nums}
+.davet-kart .k{text-align:left}
+.gorev-kural{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;background:var(--yuzey2);font-size:13px;line-height:1.5}
+.gorev-kural>b{font-size:13.5px}
+.gorev-kural span{padding-left:14px;position:relative}
+.gorev-kural span::before{content:'';position:absolute;left:2px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--soluk)}

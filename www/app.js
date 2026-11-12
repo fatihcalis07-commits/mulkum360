@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.3 · 13.11.2026 02:30';
+const SURUM = '13.4 · 13.11.2026 03:15';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -505,7 +505,7 @@ EKRAN.kayit = () => {
   app.innerHTML = ustBar('Üye ol') + `<form class="ic" id="f" novalidate>
     <div class="alan">Hesap türü<div class="tur-sec"><button type="button" class="secili" data-tur="bireysel">${ic('kisi', 22)}<b>Bireysel</b><small>Kendi evimi, aracımı satıyorum ya da arıyorum</small></button><button type="button" data-tur="emlak">${ic('ev', 22)}<b>Emlak ofisi</b><small>Portföy, müşteri ve randevu yönetiyorum</small></button><button type="button" data-tur="galeri">${ic('araba', 22)}<b>Oto galeri</b><small>Araç alıp satıyorum, stok ve müşteri yönetiyorum</small></button></div><input type="hidden" name="tur" value="bireysel"></div>
     <div id="ofisAlan" hidden><div class="izgara2"><label class="alan">Firma adı<input name="firma" maxlength="80"></label><label class="alan">Yetki belgesi no <span style="font-weight:500">(isteğe bağlı)</span><input name="yetkiNo" maxlength="20"></label></div></div>
-    <label class="alan">Davet kodu <span style="font-weight:500">(varsa; ikinize de 3 kredi)</span><input name="davet" maxlength="8" autocapitalize="characters" value="${kac(sorgu().davet || '')}"></label>
+    <label class="alan">Davet kodu <span style="font-weight:500">(varsa; hesabın doğrulanınca ikinize de kredi)</span><input name="davet" maxlength="8" autocapitalize="characters" value="${kac(sorgu().davet || '')}"></label>
     ${googleDugme()}<div class="ayrac">veya e-postayla</div>
     <label class="alan">Ad soyad<input name="ad" autocomplete="name" required></label>
     <label class="alan">E-posta<input name="eposta" type="email" autocomplete="email" required></label>
@@ -1211,21 +1211,20 @@ async function davetUygula(kod) {
     const d = await islem(sb.rpc('davet_kullan', { p_kod: kod }));
     try { localStorage.removeItem('davetKodu'); } catch (_) {}
     if (d && d.kredi != null) ben().kredi = d.kredi;
-    toast('Davet hediyesi: 3 kredi hesabına yüklendi'); return true;
+    toast(d?.durum === 'odullendi' ? `Davet hediyesi: ${d.miktar} kredi hesabına yüklendi` : `Davet kodun kaydedildi. ${d?.kosul === 'telefon' ? 'Telefonunu doğrulayınca' : d?.kosul === 'ilan' ? 'İlk ilanın yayına çıkınca' : 'Hesabın doğrulanınca'} kredi hediyen yüklenecek.`); return true;
   } catch (x) {
     if (!/giriş/.test(x.message)) { try { localStorage.removeItem('davetKodu'); } catch (_) {} }
     toast(hataMetni(x)); return false;
   }
 }
-const davetMetni = () => DAVET_METNI + `\nDavet kodum: ${(ben()?.id || '').slice(0, 8).toUpperCase()} (üye olurken Davet kodu kutusuna yaz; ikimize de 3 kredi)`;
+const davetMetni = () => DAVET_METNI + `\nÜye olurken davet kodumu yaz: ${(ben()?.id || '').slice(0, 8).toUpperCase()}\nhttps://mulkum360.com/www/#/kayit?davet=${(ben()?.id || '').slice(0, 8).toUpperCase()}\nHesabını doğrulayınca ikimize de kredi hediye.`;
 
 // ---------- Emlak ofisleri: davet ve toplu ilan yükleme ----------
 const DAVET_METNI = `Merhaba, evini, arsanı ya da aracını Mülküm360'ta ücretsiz ilan verebilirsin.
 • Başka sitedeki ilanını bağlantıyla aktar, MülkümAI açıklamasını yazsın
 • Evinin ya da aracının değerini ücretsiz öğren (TCMB, TÜİK ve TSB kasko verisiyle)
 • PDF değer raporu (yeni üyeye 1 rapor hediye)
-• Emlak ofisleri ve galeriler için kurumsal profil, toplu ilan yükleme ve ajanda
-Uygulama: https://fatihcalis07-commits.github.io/mulkum360/`;
+• Emlak ofisleri ve galeriler için kurumsal profil, toplu ilan yükleme ve ajanda`;
 
 // Excel'in "CSV olarak kaydet" çıktısı: ; ya da , ayraçlı, tırnaklı alanlar desteklenir
 function csvOku(metin) {
@@ -2339,7 +2338,7 @@ EKRAN.hesap = () => {
       ${b.ofis ? '' : `<a class="kart satir" href="#/profil" style="text-decoration:none;color:inherit">${ic('kalkan', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Emlak ofisi ya da galeri misin?</b><div class="k soluk">Hesabını kurumsala çevir; panel, toplu yükleme ve kurumsal rozet açılsın</div></div><span class="ok">›</span></a>`}
       ${b.ofis ? katla('Kurumsal hesap', 'ofis', `<div class="liste">
         ${menuSatir('#/panel', 'ofis', 'Ofis paneli')}
-        <button class="oge" id="davet">${ic('paylas', 20)}Davet et, ikiniz de 3 kredi kazanın<span class="ok">›</span></button>
+        <button class="oge" id="davet">${ic('paylas', 20)}Davet et, kredi kazan<span class="ok">›</span></button>
         ${Date.now() - b.olusturma < 7 * 86400000 ? `<button class="oge" id="davetKod">${ic('kredi', 20)}Davet kodum var<span class="ok">›</span></button>` : ''}
         ${b.firma || b.yetkiNo ? '' : menuSatir('#/profil', 'kalkan', 'Kurumsal rozet başvurusu')}
       </div>`) : ''}
@@ -2360,6 +2359,7 @@ EKRAN.hesap = () => {
         <a class="ayar-d" href="#/metin/kosullar">${ic('yasal', 22)}<span>Yasal bilgiler</span></a>
       </div>`, DILLER.find(([k]) => k === DIL)[1])}
       ${S.yonetici ? `<a class="yon-giris" href="#/yonetim"><span class="yg-ikon">${ic('pano', 22)}</span><div class="ara"><b>Yönetim Paneli</b><div class="k soluk">Kullanıcılar, Kredi Satışları, Şikayetler, Veriler</div></div><span class="rozet" id="yonBekleyen" style="position:static" hidden></span><span class="yg-ok">${ic('ok', 18)}</span></a>` : ''}
+      <div id="odulKart"></div>
       <div id="ortakKart"></div>
       <div id="eidsKart"></div>
       <button class="btn sade tam" id="cikis">${ic('cikis', 18)}Çıkış yap</button>
@@ -2390,7 +2390,7 @@ EKRAN.hesap = () => {
     if (await dene(() => ilanSil(x.dataset.ilansil), 'İlan silindi')) ciz();
   }));
   $('#tema').onclick = temaDegis; { const pb = $('#palet'); if (pb) pb.onclick = paletSecimi; } app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil)));
-  const dv = $('#davet'); if (dv) dv.onclick = () => paylas(davetMetni());
+  const dv = $('#davet'); if (dv) dv.onclick = () => git('#/tanitim');
   $('#kvPaylas').onclick = () => paylas(`${b.ad}${b.firma ? ' · ' + b.firma : ''}\nMülküm360'taki ilanlarım: ${S.ilanlar.filter((i) => i.sahip === b.id && i.durum === 'yayinda').length} ilan\nUygulama: https://fatihcalis07-commits.github.io/mulkum360/`);
   const dk = $('#davetKod'); if (dk) dk.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:800">Davet kodu</h2><div class="k soluk">Seni davet eden kişinin 8 haneli kodunu yaz; ikinize de 3 kredi yüklenir.</div><label class="alan">Kod<input id="dkKod" maxlength="8" autocapitalize="characters"></label><button class="btn tam" id="dkGonder">Kullan</button>`, (s) => {
     $('#dkGonder', s).onclick = async () => { const k = $('#dkKod', s).value.trim(); if (k.length !== 8) return toast('Kod 8 karakter olmalı.'); if (await davetUygula(k)) { sheetKapat(); ciz(); } };
@@ -2411,7 +2411,7 @@ EKRAN.hesap = () => {
     if (await dene(() => ilanKaydet(t, yaz), `Fotoğraflar eklendi (${yeni.length})`)) ciz(); else et.style.pointerEvents = '';
   }));
   $('#cikis').onclick = async () => { if (await onayla('Çıkış yap', 'Bu cihazdaki oturumun kapanacak.', 'Çıkış yap')) { await dene(cikisYap, 'Çıkış yapıldı'); git('#/'); } };
-  eidsHesapKarti(); ortakHesapKarti();
+  eidsHesapKarti(); ortakHesapKarti(); odulHesapKarti();
   { const q = sorgu(); if (q.eids) { history.replaceState(null, '', '#/hesap'); setTimeout(() => eidsDonus(q.eids, q.m), 300); } }
   $('#hesapSil').onclick = async () => {
     if (!(await onayla('Hesabın silinsin mi?', 'Hesabın, ilanların, fotoğrafların, mesajların ve raporların sunucudan kalıcı olarak silinir. Bu işlem geri alınamaz.', 'Hesabımı sil', true))) return;
@@ -2997,7 +2997,7 @@ function ciz() {
   const p = yol.split('/').filter(Boolean);
   // Karşılama ekranı da aynı bağlamalardan geçmeli (Google düğmesi burada da var)
   if (!S.karsilandi && !ben() && !['giris', 'kayit', 'metin', 'ilan', 'uye'].includes(p[0])) { EKRAN.karsilama(); app.querySelectorAll('[data-google]').forEach((x) => (x.onclick = () => googleBasla(x))); aiDugme(); document.getElementById('aiFab').hidden = true; return; }
-  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', bildirimler: 'bildirimler', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', karsilastir: 'karsilastir', firsat: 'firsat', ortaklik: 'ortaklik', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
+  const e = { '': 'kesfet', endeksler: 'endeksler', ara: 'ara', ilan: 'ilan', ver: 'ver', mesajlar: 'mesajlar', sohbet: 'sohbet', hesap: 'hesap', favori: 'favori', kayitli: 'kayitli', bildirimler: 'bildirimler', giris: 'giris', kayit: 'kayit', profil: 'profil', degerle: 'degerle', rapor: 'rapor', raporlar: 'raporlar', metin: 'metin', yonetim: 'yonetim', kategori: 'kategori', karsilastir: 'karsilastir', firsat: 'firsat', ortaklik: 'ortaklik', tanitim: 'tanitim', kredi: 'kredi', ai: 'ai', uye: 'uye', toplu: 'toplu', panel: 'panel', bankakredi: 'bankakredi', yardim: 'yardim', performans: 'performans', proje: 'proje', danisman: 'danisman', harita: 'harita' }[p[0] || ''] || 'kesfet';
   EKRAN[e](p[1]);
   sifreGoz(); saticiOzetDoldur();
   aiDugme();
