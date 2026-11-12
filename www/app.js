@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.8 · 13.11.2026 22:00';
+const SURUM = '11.9 · 14.11.2026 10:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -702,6 +702,33 @@ function aramaYap(q) {
   return gercekOnce(dopingSirala(l));
 }
 
+function araYolHtml(o, seciliAna, altlar) {
+  const say = (q) => aramaYap({ ...o, ...q, sirala: '' }).length;
+  const yol = [['Tümü', { ana: '', alt: '', islem: '' }]];
+  if (seciliAna) yol.push([ANA[seciliAna].ad, { ana: seciliAna, alt: '', islem: '' }]);
+  if (o.alt && ALT[o.alt]) yol.push([ALT[o.alt].ad, { alt: o.alt, ana: seciliAna, islem: '' }]);
+  if (o.islem) yol.push([o.islem, {}]);
+  const sonraki = !seciliAna ? Object.entries(ANA).map(([k, a]) => [a.ad, { ana: k, alt: '' }]) : !o.alt ? altlar.map(([k, a]) => [a.ad, { alt: k, ana: a.ana }]) : seciliAna === 'emlak' && !o.islem ? alanSecenek('emlak', 'islem').map((x) => [x, { islem: x }]) : [];
+  const dq = (q) => " data-q='" + kac(JSON.stringify(q)) + "'";
+  return '<div class="ara-yol">' + yol.map(([ad, q], n) => (n < yol.length - 1 ? '<button' + dq(q) + '>' + kac(ad) + '</button>' + ic('ok', 12) : '<b>' + kac(ad) + '</b>')).join('') + '</div>'
+    + (sonraki.length ? '<div class="ciplar ara-kat">' + sonraki.map(([ad, q]) => { const n = say(q); return n ? '<button class="cip"' + dq(q) + '>' + kac(ad) + ' <small>' + sayiBicim(n) + '</small></button>' : ''; }).join('') + '</div>' : '');
+}
+function araCubukHtml(o, filtreSay) {
+  return '<div class="ara-cubuk"><button id="filtreBtn" class="' + (filtreSay ? 'aktif' : '') + '">' + ic('filtre', 17) + 'Filtrele' + (filtreSay ? '<i>' + filtreSay + '</i>' : '') + '</button>'
+    + '<label>' + ic('grafik', 17) + '<select id="sirala" aria-label="Sırala"><option value="yeni">En yeni</option><option value="ucuz">En düşük fiyat</option><option value="pahali">En yüksek fiyat</option></select></label>'
+    + '<button id="kaydetBtn">' + ic('zil', 17) + 'Kaydet</button>'
+    + '<button id="haritaBtn" class="' + (araHaritaAcik() ? 'aktif' : '') + '" aria-label="Haritayı aç / kapat">' + ic('konum', 17) + '</button></div>';
+}
+function araEtiketHtml(o) {
+  const ad = { il: 'İl', ilce: 'İlçe', mahalle: 'Mahalle', oda: 'Oda', yas: 'Bina yaşı', kat: 'Kat', kimden: 'Kimden', site: 'Site', asansor: 'Asansör', otopark: 'Otopark', esya: 'Eşya', marka: 'Marka', model: 'Model', kasa: 'Kasa', yakit: 'Yakıt', vites: 'Vites', hasar: 'Boya/değişen', takas: 'Takas', renk: 'Renk', agirhasar: 'Ağır hasar' };
+  const yalin = ['il', 'ilce', 'mahalle', 'marka', 'model', 'oda', 'yakit', 'vites'];
+  const aralik = (a, b, bir) => (o[a] || o[b] ? [[a, b], (o[a] ? sayiBicim(+o[a]) : '…') + ' – ' + (o[b] ? sayiBicim(+o[b]) : '…') + ' ' + bir] : null);
+  const l = [...Object.keys(ad).filter((k) => o[k]).map((k) => [[k], (yalin.includes(k) ? '' : ad[k] + ': ') + o[k]]), aralik('min', 'max', 'TL'), aralik('yilmin', 'yilmax', 'model'), aralik('kmmin', 'kmmax', 'km'), o.aidatmax ? [['aidatmax'], 'Aidat ≤ ' + sayiBicim(+o.aidatmax)] : null].filter(Boolean);
+  if (!l.length) return '';
+  const ds = (ks) => " data-sil='" + kac(JSON.stringify(Object.fromEntries(ks.map((k) => [k, ''])))) + "'";
+  return '<div class="ciplar ara-etiket">' + l.map(([ks, yazi]) => '<button class="cip"' + ds(ks) + '>' + kac(yazi) + ' <b>×</b></button>').join('')
+    + (l.length > 1 ? '<button class="cip ara-temizle"' + ds([...Object.keys(ad), 'min', 'max', 'yilmin', 'yilmax', 'kmmin', 'kmmax', 'aidatmax']) + '>Tümünü temizle</button>' : '') + '</div>';
+}
 const araHaritaAcik = () => { try { return localStorage.getItem('araHarita') !== 'kapali'; } catch (_) { return true; } };
 EKRAN.ara = () => {
   const o = sorgu(), l = aramaYap(o);
@@ -716,15 +743,11 @@ EKRAN.ara = () => {
     </header>
     <div class="ic" style="padding-top:12px">
       ${araHaritaAcik() ? `<div class="ara-harita-sar"><div id="harp" class="ara-harita"></div><button class="ara-harita-buyut" id="haritaBuyut">${ic('pusula', 15)}Tam ekran</button></div>` : ''}
-      <div class="ciplar">
-        <button class="cip ${filtreSay ? 'secili' : ''}" id="filtreBtn">${ic('filtre', 16)}Filtre${filtreSay ? ' · ' + filtreSay : ''}</button><button class="cip ${araHaritaAcik() ? 'secili' : ''}" id="haritaBtn">${ic('konum', 16)}Harita</button>
-        ${cip('Tümü', { secili: !o.ana && !o.alt, q: { ana: '', alt: '' } })}${cip('Emlak', { secili: o.ana === 'emlak' && !o.alt, q: { ana: 'emlak', alt: '' } })}${cip('Vasıta', { secili: o.ana === 'vasita' && !o.alt, q: { ana: 'vasita', alt: '' } })}
-      </div>
-      <div class="ciplar">${altlar.map(([k, a]) => cip(a.ad, { secili: o.alt === k, q: { alt: o.alt === k ? '' : k, ana: a.ana } })).join('')}</div>
+      ${araYolHtml(o, seciliAna, altlar)}
       ${o.ai ? `<div class="bilgi-k" style="align-items:center">${ic('yildiz', 18)}<div><b>MülkümAI anladı:</b> ${o.ai.split('|').map(kac).join(' · ')}${o.q ? ` · “${kac(o.q)}”` : ''}</div></div>` : ''}
-      <div class="satir"><div class="ara k soluk" style="font-weight:600;white-space:nowrap">${sayiBicim(l.length)} ilan</div>
-        <select id="sirala" aria-label="Sırala" class="cip" style="appearance:auto"><option value="yeni">En yeni</option><option value="ucuz">En düşük fiyat</option><option value="pahali">En yüksek fiyat</option></select>
-        <button class="cip" id="kaydetBtn">${ic('zil', 16)}Aramayı kaydet</button></div>
+      ${araCubukHtml(o, filtreSay)}
+      ${araEtiketHtml(o)}
+      <div class="ara-sonuc"><b>${sayiBicim(l.length)}</b> ilan</div>
       ${l.length ? l.slice(0, ilkAdet).map((i) => ilanSatir(i)).join('') + (l.length > ilkAdet ? '<div id="dahaFazla" style="height:1px"></div>' : '') : bosDurum('ara', 'Sonuç bulunamadı', 'Filtreleri azaltmayı ya da farklı kelimeler denemeyi dene. Aramayı kaydedersen yeni ilan gelince haber veririz.')}
     </div>`;
   // Listenin kalanı sona yaklaşıldıkça eklenir
@@ -743,6 +766,7 @@ EKRAN.ara = () => {
   $('#sirala').onchange = (e) => git('#/ara?' + sorguYap({ ...o, sirala: e.target.value }));
   $('#araF').onsubmit = (e) => { e.preventDefault(); akilliAra(e.target.q.value, { ana: o.ana, alt: o.alt, sirala: o.sirala }); };
   app.querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => git('#/ara?' + sorguYap({ ...o, ...JSON.parse(b.dataset.q) }))));
+  app.querySelectorAll('[data-sil]').forEach((b) => (b.onclick = () => git('#/ara?' + sorguYap({ ...o, ...JSON.parse(b.dataset.sil) }))));
   $('#filtreBtn').onclick = () => filtreSheet(o);
   const tamHarita = () => git('#/harita?' + sorguYap({ ana: seciliAna || 'emlak', islem: o.islem || '', il: o.il || '', ilce: o.ilce || '' }));
   $('#haritaBtn').onclick = () => { try { localStorage.setItem('araHarita', araHaritaAcik() ? 'kapali' : 'acik'); } catch (_) {} ciz.yerinde = true; ciz(); };
@@ -774,7 +798,7 @@ function filtreSheet(o) {
   const sayi = (ad, ad2, ph, ek = '') => `<label class="fs-satir"><span>${ad2}</span><input name="${ad}" inputmode="numeric" placeholder="${ph}" value="${kac(o[ad] || '')}" ${ek}></label>`;
   const grup = (baslik, ic2) => `<div class="fs-grup"><div class="fs-baslik">${baslik}</div><div class="fs-liste">${ic2}</div></div>`;
   const aktif = ['kimden', 'il', 'ilce', 'mahalle', 'min', 'max', 'islem', 'oda', 'yas', 'site', 'asansor', 'otopark', 'esya', 'aidatmax', 'yilmin', 'kmmax', 'yakit', 'vites', 'kat', 'marka', 'model', 'yilmax', 'kmmin', 'kasa', 'hasar', 'takas', 'renk', 'agirhasar'].filter((k) => o[k]).length;
-  sheetAc(`<div class="fs-ust"><h2 style="font-size:19px;font-weight:800;margin:0">Filtrele</h2>${aktif ? `<span class="fs-say">${aktif} filtre</span>` : ''}</div><form id="ff" class="fs-form">
+  sheetAc(`<div class="fs-ust"><button type="button" class="fs-kapat" aria-label="Kapat">×</button><h2 style="font-size:19px;font-weight:800;margin:0">Filtrele</h2>${aktif ? `<span class="fs-say">${aktif} filtre</span>` : ''}</div><form id="ff" class="fs-form">
     ${grup('Konum', sec('il', 'İl', ILLER) + `<label class="fs-satir"><span>İlçe</span><select name="ilce" data-bos="Farketmez"><option value="">Farketmez</option>${o.ilce ? `<option selected>${kac(o.ilce)}</option>` : ''}</select></label><label class="fs-satir"><span>Mahalle</span><select name="mahalle" data-bos="Farketmez"><option value="">Farketmez</option>${o.mahalle ? `<option selected>${kac(o.mahalle)}</option>` : ''}</select></label>`)}
     ${grup('Fiyat (TL)', `<div class="fs-satir fs-ikili"><input name="min" inputmode="numeric" placeholder="En az" value="${kac(o.min || '')}"><i>–</i><input name="max" inputmode="numeric" placeholder="En çok" value="${kac(o.max || '')}"></div>`)}
     ${ana !== 'vasita' ? grup('Emlak', sec('islem', 'İşlem', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Sezonluk', 'Devren']) + sec('oda', 'Oda sayısı', alanSecenek('emlak', 'oda')) + sec('yas', 'Bina yaşı', YAS_GRUPLARI) + sec('kat', 'Bulunduğu kat', ONERI.kat) + sec('kimden', 'Kimden', ['Sahibinden', 'Emlak ofisinden']))
@@ -783,7 +807,11 @@ function filtreSheet(o) {
       + grup('Model yılı', `<div class="fs-satir fs-ikili"><input name="yilmin" inputmode="numeric" placeholder="En eski" value="${kac(o.yilmin || '')}"><i>–</i><input name="yilmax" inputmode="numeric" placeholder="En yeni" value="${kac(o.yilmax || '')}"></div>`)
       + grup('Kilometre', `<div class="fs-satir fs-ikili"><input name="kmmin" inputmode="numeric" placeholder="En az" value="${kac(o.kmmin || '')}"><i>–</i><input name="kmmax" inputmode="numeric" placeholder="En çok" value="${kac(o.kmmax || '')}"></div>`)
       + grup('Teknik ve durum', sec('yakit', 'Yakıt', alanSecenek('vasita', 'yakit')) + sec('vites', 'Vites', alanSecenek('vasita', 'vites')) + sec('agirhasar', 'Ağır hasar kayıtlı', ['Evet', 'Hayır']) + sec('hasar', 'Boya / değişen', alanSecenek('vasita', 'hasar')) + `<label class="fs-satir"><span>Renk</span><input name="renk" maxlength="20" placeholder="Farketmez" value="${kac(o.renk || '')}"></label>` + sec('takas', 'Takas', alanSecenek('vasita', 'takas')) + (ana === 'vasita' ? sec('kimden', 'Kimden', ['Sahibinden', 'Galeriden']) : '')) : ''}
-    <div class="fs-alt"><button type="button" class="btn sade" id="temizle">Temizle</button><button class="btn">Sonuçları göster</button></div></form>`, (s) => {
+    <div class="fs-alt"><button type="button" class="btn sade" id="temizle">Temizle</button><button class="btn" id="fsGoster">Sonuçları göster</button></div></form>`, (s) => {
+    s.classList.add('tam');
+    $('.fs-kapat', s).onclick = sheetKapat;
+    const fsSay = () => { const v = Object.fromEntries(new FormData($('#ff', s))); ['min', 'max', 'yilmin', 'yilmax', 'kmmin', 'kmmax', 'aidatmax'].forEach((k) => v[k] && (v[k] = v[k].replace(/\D/g, ''))); const n = aramaYap({ ...o, ...v }).length, b = $('#fsGoster', s); b.textContent = n ? sayiBicim(n) + ' sonucu göster' : 'Sonuç yok'; b.disabled = !n; };
+    $('#ff', s).addEventListener('input', fsSay); $('#ff', s).addEventListener('change', fsSay); setTimeout(fsSay, 0);
     konumSecBagla($('[name=il]', s), $('[name=ilce]', s), $('[name=mahalle]', s));
     aracModelBagla($('[name=marka]', s), $('[name=model]', s), 'Farketmez');
     $('#temizle', s).onclick = () => { sheetKapat(); git('#/ara?' + sorguYap({ q: o.q, ana: o.ana, alt: o.alt })); };

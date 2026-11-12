@@ -626,3 +626,27 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .arac-sema{width:158px;filter:drop-shadow(0 10px 14px rgba(9,16,28,.18))}
 .arac-sema.dokun path[data-parca]{cursor:pointer;transition:fill .15s}
 .arac-sema.dokun path[data-parca]:active{opacity:.8}
+
+/* ============ Arama (alışılmış akış) ============ */
+.ara-yol{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:13px;color:var(--soluk);margin-top:2px}
+.ara-yol button{border:0;background:none;padding:4px 2px;font:inherit;font-weight:600;color:var(--vurgu-koyu,#1064BC);cursor:pointer}
+.ara-yol b{color:var(--murekkep);font-weight:700;padding:4px 2px}
+.ara-yol svg{opacity:.5}
+.ara-kat .cip small{font-size:11px;font-weight:600;color:var(--soluk);margin-left:2px}
+.ara-cubuk{position:sticky;top:calc(var(--ust, 0px) + 72px);z-index:8;display:grid;grid-template-columns:1.25fr 1.35fr 1fr auto;background:var(--yuzey);border:1px solid var(--p-ince);border-radius:14px;box-shadow:var(--golge);overflow:hidden}
+.ara-cubuk>*{display:flex;align-items:center;justify-content:center;gap:6px;height:46px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:650;color:var(--murekkep);cursor:pointer;border-left:1px solid var(--p-ince);padding:0 10px;min-width:0}
+.ara-cubuk>*:first-child{border-left:0}
+.ara-cubuk select{border:0;background:none;font:inherit;font-weight:650;color:var(--murekkep);min-width:0;width:100%;padding:0;appearance:none;-webkit-appearance:none;text-overflow:ellipsis}
+.ara-cubuk svg{flex-shrink:0;stroke:var(--vurgu-ikon,#1064BC)}
+.ara-cubuk .aktif{color:var(--vurgu-koyu,#1064BC)}
+.ara-cubuk i{font-style:normal;min-width:20px;height:20px;border-radius:999px;background:var(--birincil);color:var(--birincil-yazi);font-size:11px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+.ara-etiket .cip{background:color-mix(in srgb,var(--birincil) 8%,var(--yuzey))!important;border-color:color-mix(in srgb,var(--birincil) 30%,transparent)!important;color:var(--murekkep)!important;font-size:12.5px}
+.ara-etiket .cip b{margin-left:4px;color:var(--soluk)}
+.ara-etiket .ara-temizle{background:none!important;border-color:transparent!important;color:var(--hata,#C0392B)!important}
+.ara-sonuc{font-size:13px;color:var(--soluk)}
+.ara-sonuc b{color:var(--murekkep);font-size:15px}
+.sheet.tam{max-height:100dvh;height:100dvh;border-radius:0;padding-top:calc(10px + var(--ust, 0px))}
+.sheet.tam .tutamak{display:none}
+.fs-ust{display:flex;align-items:center;gap:10px}
+.fs-kapat{width:40px;height:40px;border:0;border-radius:50%;background:var(--yuzey2);font-size:22px;line-height:1;color:var(--murekkep);cursor:pointer;flex-shrink:0}
+.sheet.tam .fs-alt{position:sticky;bottom:0;background:var(--zemin);padding:12px 0 calc(6px + var(--alt));margin-top:auto}
