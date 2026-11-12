@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.7 · 13.11.2026 21:00';
+const SURUM = '11.8 · 13.11.2026 22:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1953,19 +1953,49 @@ EKRAN.ver = (id) => {
 // ---------- Vasıta: boya / değişen şeması, ağır hasar, tramer, paket önerileri ----------
 const ARAC_PARCA = { onTampon: 'Ön tampon', kaput: 'Kaput', tavan: 'Tavan', bagaj: 'Bagaj', arkaTampon: 'Arka tampon', solOnCamurluk: 'Sol ön çamurluk', solOnKapi: 'Sol ön kapı', solArkaKapi: 'Sol arka kapı', solArkaCamurluk: 'Sol arka çamurluk', sagOnCamurluk: 'Sağ ön çamurluk', sagOnKapi: 'Sağ ön kapı', sagArkaKapi: 'Sağ arka kapı', sagArkaCamurluk: 'Sağ arka çamurluk' };
 const parcaCoz = (v) => { try { const o = typeof v === 'string' ? JSON.parse(v || '{}') : v || {}; return o && typeof o === 'object' ? o : {}; } catch (_) { return {}; } };
+// Gerçekçi üstten görünüm: farlar, aynalar, camlar, tekerlekler; parçalar kaporta biçiminde
+const PARCA_RENK = { l: ['#B8C0CC', '#5B6472'], b: ['#F2B705', '#8A6516'], d: ['#E0604F', '#7A2418'] };
+const PARCA_YOL = {
+  onTampon: 'M58 16 Q100 6 142 16 L146 30 Q100 22 54 30 Z',
+  kaput: 'M54 34 Q100 26 146 34 L150 126 Q100 120 50 126 Z',
+  solOnCamurluk: 'M44 40 Q47 34 51 34 L48 126 L40 126 L40 66 Z',
+  sagOnCamurluk: 'M156 40 Q153 34 149 34 L152 126 L160 126 L160 66 Z',
+  solOnKapi: 'M40 132 L58 132 L58 208 L40 208 Z',
+  solArkaKapi: 'M40 212 L58 212 L58 282 L40 282 Z',
+  sagOnKapi: 'M142 132 L160 132 L160 208 L142 208 Z',
+  sagArkaKapi: 'M142 212 L160 212 L160 282 L142 282 Z',
+  tavan: 'M66 172 Q100 166 134 172 L134 250 Q100 256 66 250 Z',
+  bagaj: 'M54 290 Q100 284 146 290 L144 326 Q100 334 56 326 Z',
+  solArkaCamurluk: 'M40 288 L50 288 L52 330 Q44 326 40 312 Z',
+  sagArkaCamurluk: 'M160 288 L150 288 L148 330 Q156 326 160 312 Z',
+  arkaTampon: 'M54 334 Q100 344 146 334 L142 350 Q100 360 58 350 Z'
+};
 function aracSema(p, dokunulur) {
-  const kutu = { onTampon: [44, 8, 112, 22, 11], kaput: [50, 34, 100, 72, 10], tavan: [54, 136, 92, 96, 12], bagaj: [50, 262, 100, 54, 10], arkaTampon: [44, 320, 112, 22, 11], solOnCamurluk: [18, 38, 28, 68, 8], solOnKapi: [18, 110, 28, 74, 6], solArkaKapi: [18, 188, 28, 70, 6], solArkaCamurluk: [18, 262, 28, 54, 8], sagOnCamurluk: [154, 38, 28, 68, 8], sagOnKapi: [154, 110, 28, 74, 6], sagArkaKapi: [154, 188, 28, 70, 6], sagArkaCamurluk: [154, 262, 28, 54, 8] };
-  const renk = { b: '#F2B705', d: '#E0604F' };
-  return '<svg class="arac-sema' + (dokunulur ? ' dokun' : '') + '" viewBox="0 0 200 350" role="img" aria-label="Araç parça şeması">'
-    + '<rect x="58" y="110" width="84" height="24" rx="6" fill="#CFE3F5" opacity=".7"/><rect x="60" y="234" width="80" height="24" rx="6" fill="#CFE3F5" opacity=".7"/>'
-    + Object.entries(kutu).map(([k, [x, y, w, h, r]]) => '<rect data-parca="' + k + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + r + '" fill="' + (renk[p[k]] || '#EEF1F5') + '" stroke="' + (p[k] ? '#0B1B33' : '#B6BFCC') + '" stroke-width="1.4"><title>' + ARAC_PARCA[k] + '</title></rect>').join('')
-    + '<text x="100" y="26" text-anchor="middle" font-size="9" fill="#6B7280" pointer-events="none">ÖN</text><text x="100" y="336" text-anchor="middle" font-size="9" fill="#6B7280" pointer-events="none">ARKA</text></svg>';
+  const parca = (k) => { const r = PARCA_RENK[p[k]]; return '<path data-parca="' + k + '" d="' + PARCA_YOL[k] + '" fill="' + (r ? r[0] : '#EDF1F6') + '" stroke="' + (r ? r[1] : '#A7B1BF') + '" stroke-width="1.3" stroke-linejoin="round"><title>' + ARAC_PARCA[k] + '</title></path>'; };
+  return '<svg class="arac-sema' + (dokunulur ? ' dokun' : '') + '" viewBox="0 0 200 372" role="img" aria-label="Araç parça şeması">'
+    + '<defs><linearGradient id="asCam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9CCE3"/><stop offset="1" stop-color="#7E99BC"/></linearGradient></defs>'
+    // tekerlekler ve gövde gölgesi
+    + '<rect x="26" y="70" width="16" height="46" rx="6" fill="#23262C"/><rect x="158" y="70" width="16" height="46" rx="6" fill="#23262C"/><rect x="26" y="262" width="16" height="46" rx="6" fill="#23262C"/><rect x="158" y="262" width="16" height="46" rx="6" fill="#23262C"/>'
+    + '<path d="M58 12 Q100 0 142 12 L162 60 L164 140 L164 250 L160 336 Q100 372 40 336 L36 250 L36 140 L38 60 Z" fill="#DCE2EA"/>'
+    // aynalar
+    + '<path d="M40 136 L28 132 Q24 140 28 146 L40 144 Z" fill="#2C3038"/><path d="M160 136 L172 132 Q176 140 172 146 L160 144 Z" fill="#2C3038"/>'
+    + Object.keys(PARCA_YOL).map(parca).join('')
+    // camlar (tıklanmaz)
+    + '<path d="M58 132 Q100 120 142 132 L136 168 Q100 160 64 168 Z" fill="url(#asCam)" pointer-events="none"/>'
+    + '<path d="M64 254 Q100 262 136 254 L140 286 Q100 278 60 286 Z" fill="url(#asCam)" pointer-events="none"/>'
+    + '<path d="M60 172 L64 172 L64 250 L60 250 Z M136 172 L140 172 L140 250 L136 250 Z" fill="#9FB3CC" pointer-events="none"/>'
+    // farlar ve stoplar
+    + '<path d="M58 20 Q66 16 76 17 L74 24 Q64 24 57 26 Z" fill="#FFF6D2" stroke="#C9B26A" stroke-width=".6" pointer-events="none"/><path d="M142 20 Q134 16 124 17 L126 24 Q136 24 143 26 Z" fill="#FFF6D2" stroke="#C9B26A" stroke-width=".6" pointer-events="none"/>'
+    + '<path d="M58 342 L78 344 L77 350 L60 348 Z" fill="#D64541" pointer-events="none"/><path d="M142 342 L122 344 L123 350 L140 348 Z" fill="#D64541" pointer-events="none"/>'
+    + '<text x="100" y="368" text-anchor="middle" font-size="8.5" font-weight="700" letter-spacing="1.5" fill="#8A93A3" pointer-events="none">ARKA</text></svg>';
 }
-const parcaOzet = (p) => { const b = Object.keys(ARAC_PARCA).filter((k) => p[k] === 'b').map((k) => ARAC_PARCA[k]), d = Object.keys(ARAC_PARCA).filter((k) => p[k] === 'd').map((k) => ARAC_PARCA[k]); return { b, d }; };
+const parcaOzet = (p) => { const s2 = (v) => Object.keys(ARAC_PARCA).filter((k) => p[k] === v).map((k) => ARAC_PARCA[k]); return { l: s2('l'), b: s2('b'), d: s2('d') }; };
+const HASAR_LEJANT = '<div class="hasar-lejant"><span><i style="background:#EDF1F6;border:1px solid #A7B1BF"></i>Orijinal</span><span><i style="background:#B8C0CC"></i>Lokal boyalı</span><span><i style="background:#F2B705"></i>Boyalı</span><span><i style="background:#E0604F"></i>Değişen</span></div>';
+const parcaListe = (o) => (o.d.length ? '<b>Değişen (' + o.d.length + '):</b> ' + o.d.map(kac).join(', ') + '<br>' : '') + (o.b.length ? '<b>Boyalı (' + o.b.length + '):</b> ' + o.b.map(kac).join(', ') + '<br>' : '') + (o.l.length ? '<b>Lokal boyalı (' + o.l.length + '):</b> ' + o.l.map(kac).join(', ') : '');
 function hasarKarti(t) {
   const al = t.alanlar, p = parcaCoz(al.parcalar), agir = al.agirHasar === 'Var' || al.hasar === 'Ağır hasar kayıtlı';
-  return '<div class="kart hasar-k"><h3>Boya, değişen ve hasar</h3><div class="k soluk">Parçaya dokun: bir kez boyalı, iki kez değişen, üçüncüde yeniden orijinal.</div>'
-    + '<div class="hasar-govde">' + aracSema(p, true) + '<div class="hasar-yan"><div class="hasar-lejant"><span><i style="background:#EEF1F5;border:1px solid #B6BFCC"></i>Orijinal</span><span><i style="background:#F2B705"></i>Boyalı</span><span><i style="background:#E0604F"></i>Değişen</span></div><div class="k" id="hasarOzet"></div></div></div>'
+  return '<div class="kart hasar-k"><h3>Boya, değişen ve hasar</h3><div class="k soluk">Parçaya dokun: lokal boyalı → boyalı → değişen → yeniden orijinal.</div>'
+    + '<div class="hasar-govde">' + aracSema(p, true) + '<div class="hasar-yan">' + HASAR_LEJANT + '<div class="k" id="hasarOzet"></div></div></div>'
     + '<input type="hidden" data-alan="parcalar" value="' + kac(JSON.stringify(p)) + '"><input type="hidden" data-alan="hasar" value="' + kac(al.hasar || 'Hatasız') + '"><input type="hidden" data-alan="agirHasar" value="' + (agir ? 'Var' : 'Yok') + '">'
     + '<div class="alan alan-tam">Ağır hasar kaydı<div class="secim"><button type="button" data-agir="Yok" class="' + (agir ? '' : 'secili') + '">Yok</button><button type="button" data-agir="Var" class="' + (agir ? 'secili' : '') + '">Var</button></div></div>'
     + '<label class="alan">Tramer kaydı (TL) <span style="font-weight:500">(isteğe bağlı)</span><input data-alan="tramer" inputmode="numeric" placeholder="örn. 25.000" value="' + kac(al.tramer ? sayiBicim(+al.tramer) : '') + '"></label></div>';
@@ -1975,10 +2005,10 @@ function hasarBagla() {
   const gp = $('[data-alan=parcalar]', kap), gh = $('[data-alan=hasar]', kap), ga = $('[data-alan=agirHasar]', kap);
   const guncelle = () => {
     const p = parcaCoz(gp.value), o = parcaOzet(p);
-    gh.value = ga.value === 'Var' ? 'Ağır hasar kayıtlı' : o.d.length ? 'Değişen parça var' : o.b.length ? 'Boyalı parça var' : 'Hatasız';
-    $('#hasarOzet', kap).innerHTML = o.b.length || o.d.length ? (o.d.length ? '<b>Değişen (' + o.d.length + '):</b> ' + o.d.map(kac).join(', ') + '<br>' : '') + (o.b.length ? '<b>Boyalı (' + o.b.length + '):</b> ' + o.b.map(kac).join(', ') : '') : 'Boya ve değişen yok: <b>hatasız</b>.';
+    gh.value = ga.value === 'Var' ? 'Ağır hasar kayıtlı' : o.d.length ? 'Değişen parça var' : o.b.length || o.l.length ? 'Boyalı parça var' : 'Hatasız';
+    $('#hasarOzet', kap).innerHTML = o.b.length || o.d.length || o.l.length ? parcaListe(o) : 'Boya ve değişen yok: <b>hatasız</b>.';
   };
-  kap.querySelectorAll('[data-parca]').forEach((r) => (r.onclick = () => { const p = parcaCoz(gp.value), k = r.dataset.parca, y = p[k] === 'b' ? 'd' : p[k] === 'd' ? '' : 'b'; if (y) p[k] = y; else delete p[k]; gp.value = JSON.stringify(p); r.setAttribute('fill', y === 'b' ? '#F2B705' : y === 'd' ? '#E0604F' : '#EEF1F5'); r.setAttribute('stroke', y ? '#0B1B33' : '#B6BFCC'); try { navigator.vibrate?.(8); } catch (_) {} guncelle(); }));
+  kap.querySelectorAll('[data-parca]').forEach((r) => (r.onclick = () => { const p = parcaCoz(gp.value), k = r.dataset.parca, y = { '': 'l', l: 'b', b: 'd', d: '' }[p[k] || '']; if (y) p[k] = y; else delete p[k]; gp.value = JSON.stringify(p); const rk = PARCA_RENK[y]; r.setAttribute('fill', rk ? rk[0] : '#EDF1F6'); r.setAttribute('stroke', rk ? rk[1] : '#A7B1BF'); try { navigator.vibrate?.(8); } catch (_) {} guncelle(); }));
   kap.querySelectorAll('[data-agir]').forEach((b) => (b.onclick = () => { ga.value = b.dataset.agir; kap.querySelectorAll('[data-agir]').forEach((x) => x.classList.toggle('secili', x === b)); guncelle(); }));
   const tr = $('[data-alan=tramer]', kap); tr.oninput = () => { const n = tr.value.replace(/\D/g, '').slice(0, 9); tr.value = n ? sayiBicim(+n) : ''; };
   guncelle();
@@ -2038,9 +2068,9 @@ const tuketimYazi = (t) => String(t.tuketim).replace('.', ',') + ' L/100 km' + (
 function hasarGosterKarti(i) {
   const f = i.alanlar || {}, p = parcaCoz(f.parcalar), o = parcaOzet(p), agir = f.agirHasar === 'Var' || f.hasar === 'Ağır hasar kayıtlı';
   if (!f.parcalar && !f.tramer && !agir && !f.hasar) return '';
-  const durum = agir ? ['Ağır hasar kayıtlı', 'var(--hata,#C0392B)'] : o.d.length ? [o.d.length + ' değişen' + (o.b.length ? ', ' + o.b.length + ' boyalı' : ''), '#C2410C'] : o.b.length ? [o.b.length + ' boyalı parça', '#B45309'] : f.parcalar || f.hasar === 'Hatasız' ? ['Hatasız', 'var(--guven)'] : [f.hasar || '', 'var(--murekkep)'];
+  const bl = o.b.length + o.l.length, durum = agir ? ['Ağır hasar kayıtlı', 'var(--hata,#C0392B)'] : o.d.length ? [o.d.length + ' değişen' + (bl ? ', ' + bl + ' boyalı' : ''), '#C2410C'] : bl ? [bl + ' boyalı parça', '#B45309'] : f.parcalar || f.hasar === 'Hatasız' ? ['Hatasız', 'var(--guven)'] : [f.hasar || '', 'var(--murekkep)'];
   return '<div class="kart hasar-k"><h3 style="margin:0">Boya, değişen ve hasar</h3>' + (f.parcalar ? '' : '<div class="hasar-durum" style="--hd:' + durum[1] + '">' + kac(durum[0]) + '</div>')
-    + (f.parcalar ? '<div class="hasar-govde">' + aracSema(p, false) + '<div class="hasar-yan"><div class="hasar-lejant"><span><i style="background:#EEF1F5;border:1px solid #B6BFCC"></i>Orijinal</span><span><i style="background:#F2B705"></i>Boyalı</span><span><i style="background:#E0604F"></i>Değişen</span></div><div class="k">' + (o.d.length ? '<b>Değişen:</b> ' + o.d.map(kac).join(', ') + '<br>' : '') + (o.b.length ? '<b>Boyalı:</b> ' + o.b.map(kac).join(', ') : '') + (!o.b.length && !o.d.length ? 'Boya ve değişen yok.' : '') + '</div></div></div>' : '')
+    + (f.parcalar ? '<div class="hasar-govde">' + aracSema(p, false) + '<div class="hasar-yan">' + HASAR_LEJANT + '<div class="k">' + (o.b.length || o.d.length || o.l.length ? parcaListe(o) : 'Boya ve değişen yok.') + '</div></div></div>' : '')
     + '<div class="bilgi-tablo" style="margin-top:8px"><div><span>Ağır hasar kaydı</span><b>' + (agir ? 'Var' : 'Yok') + '</b></div>' + (f.tramer ? '<div><span>Tramer kaydı</span><b>' + sayiBicim(+f.tramer) + ' TL</b></div>' : '') + '</div><div class="k soluk" style="margin-top:6px">Satıcı beyanıdır; almadan önce ekspertiz ve hasar sorgusu yaptır.</div></div>';
 }
 // İlan verirken haritada tam konum işaretleme: harita kaydırılır, ortadaki iğne mülkün yeridir

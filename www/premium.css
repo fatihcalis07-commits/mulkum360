@@ -622,3 +622,7 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 
 .tuk-not{font-size:11.5px;color:var(--guven);font-weight:600}
 .tuk-kaynak{display:block;font-size:10.5px;font-weight:500;color:var(--soluk)}
+
+.arac-sema{width:158px;filter:drop-shadow(0 10px 14px rgba(9,16,28,.18))}
+.arac-sema.dokun path[data-parca]{cursor:pointer;transition:fill .15s}
+.arac-sema.dokun path[data-parca]:active{opacity:.8}
