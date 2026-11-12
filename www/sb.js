@@ -48,7 +48,7 @@ async function veriYukle() {
   else { S.sohbetler = []; S.kayitliAramalar = []; S.yonetici = false; }
   sonYukleme = Date.now();
   // Bir sonraki açılış için son veri (cihazda kalır; çıkışta silinir)
-  setTimeout(() => { try { kvYaz('onbellek', { surum: 1, zaman: Date.now(), oturum: S.oturum, ilanlar: S.ilanlar, kullanicilar: S.kullanicilar, sohbetler: S.sohbetler, kayitliAramalar: S.kayitliAramalar, favSayilari: S.favSayilari, yonetici: !!S.yonetici, bildirimler: S.bildirimler || [] }); } catch (_) {} }, 1500);
+  setTimeout(() => { try { kvYaz('onbellek', { surum: 1, zaman: Date.now(), oturum: S.oturum, ilanlar: S.ilanlar, kullanicilar: S.kullanicilar, sohbetler: S.sohbetler, kayitliAramalar: S.kayitliAramalar, favSayilari: S.favSayilari, yonetici: !!S.yonetici, bildirimler: S.bildirimler || [], doping: S.DOPING || null }); } catch (_) {} }, 1500);
   canliBaglan();
 }
 

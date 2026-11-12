@@ -182,10 +182,31 @@ function trendSvg(t) {
 
 // Arazi kullanımı: 1 km yarıçapta OpenStreetMap landuse/leisure/natural alanları, merkezi daire içindekiler toplanır
 const ARAZI_GRUP = [['Konut', /^residential$/], ['Ticaret', /^(commercial|retail)$/], ['Sanayi', /^industrial$/], ['Yeşil alan', /^(park|garden|forest|wood|scrub|grass|recreation_ground|playground|pitch|meadow|village_green|cemetery_no)$/], ['Tarım', /^(farmland|orchard|vineyard|farmyard|greenhouse_horticulture|plant_nursery)$/], ['İnşaat / boş arazi', /^(construction|brownfield|greenfield)$/], ['Eğitim / sağlık / kamu', /^(education|religious|institutional|military|cemetery)$/], ['Su', /^(water|basin|reservoir|beach)$/]];
+// Arazi kullanımı görseli: 1 km'lik dairenin haritası (alanlar kullanım türüne göre boyalı) + halka grafik ve oranlar
+const ARAZI_RENK = { 'Konut': '#E9B44C', 'Ticaret': '#E0604F', 'Sanayi': '#8F6FC1', 'Yeşil alan': '#4FB07A', 'Tarım': '#B9C76A', 'İnşaat / boş arazi': '#C9A27E', 'Eğitim / sağlık / kamu': '#5B8DEF', 'Su': '#58B4E0', 'Diğer': '#A9B1BC' };
+function araziGorsel(ar) {
+  const renk = (ad) => ARAZI_RENK[ad] || '#A9B1BC', vr = (n) => String(n.toFixed(1)).replace('.', ',');
+  const top = ar.l.reduce((s, x) => s + x.yuzde, 0), kalan = Math.round(Math.max(0, 100 - top) * 10) / 10;
+  const dil = [...ar.l.map((x) => ({ ad: x.ad, y: x.yuzde, c: renk(x.ad) })), ...(kalan >= 0.5 ? [{ ad: 'Yol ve sınıflandırılmamış', y: kalan, c: '#E3E6EC' }] : [])];
+  const Rr = 56, C = 2 * Math.PI * Rr, tum = dil.reduce((s, d) => s + d.y, 0) || 1; let ofs = 0;
+  const halka = '<svg width="150" height="150" viewBox="0 0 150 150" style="flex-shrink:0">' + dil.map((d) => { const u = (d.y / tum) * C, s = '<circle cx="75" cy="75" r="' + Rr + '" fill="none" stroke="' + d.c + '" stroke-width="22" stroke-dasharray="' + u.toFixed(2) + ' ' + (C - u).toFixed(2) + '" stroke-dashoffset="' + (-ofs).toFixed(2) + '" transform="rotate(-90 75 75)"/>'; ofs += u; return s; }).join('')
+    + '<text x="75" y="73" text-anchor="middle" font-size="19" font-weight="700" fill="#0B1B33">%' + vr(ar.l[0].yuzde) + '</text><text x="75" y="88" text-anchor="middle" font-size="9.5" fill="#5B5F68">' + kac(ar.l[0].ad) + '</text></svg>';
+  const lejant = '<div class="r-arazi-lejant">' + dil.map((d) => '<div><i style="background:' + d.c + '"></i><span>' + kac(d.ad) + '</span><b>%' + vr(d.y) + '</b></div>').join('') + '</div>';
+  let harita = '';
+  if (ar.p && ar.p.length) {
+    const o = 150 / 1000, pt = (n) => { let s = ''; for (let i = 0; i < n.length; i += 2) s += (150 + n[i] * o).toFixed(1) + ',' + (150 - n[i + 1] * o).toFixed(1) + ' '; return s; };
+    harita = '<svg class="r-arazi-harita" width="300" height="300" viewBox="0 0 300 300" style="flex-shrink:0"><defs><clipPath id="arzK"><circle cx="150" cy="150" r="148"/></clipPath></defs><circle cx="150" cy="150" r="148" fill="#F1F3F6"/><g clip-path="url(#arzK)">'
+      + ar.p.map((x) => '<polygon points="' + pt(x.n) + '" fill="' + renk(x.g) + '" fill-opacity=".88" stroke="#fff" stroke-width=".7"/>').join('')
+      + '</g><circle cx="150" cy="150" r="74" fill="none" stroke="#0B1B33" stroke-opacity=".4" stroke-dasharray="4 4"/><circle cx="150" cy="150" r="148" fill="none" stroke="#0B1B33" stroke-opacity=".55" stroke-width="1.2"/>'
+      + '<rect x="132" y="68" width="36" height="13" rx="6.5" fill="#fff" fill-opacity=".85"/><text x="150" y="78" text-anchor="middle" font-size="9" font-weight="700" fill="#0B1B33">500 m</text><rect x="134" y="5" width="32" height="13" rx="6.5" fill="#fff" fill-opacity=".85"/><text x="150" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="#0B1B33">1 km</text>'
+      + '<circle cx="150" cy="150" r="6" fill="#C8553D" stroke="#fff" stroke-width="2.2"/></svg>';
+  }
+  return '<div class="r-kutu r-arazi' + (harita ? '' : ' haritasiz') + '">' + harita + '<div class="r-arazi-sag">' + halka + lejant + '</div></div>';
+}
 async function araziKullanimi(k) {
   const j = await overpass(`[out:json][timeout:25];(way(around:1000,${k.lat},${k.lon})["landuse"];way(around:1000,${k.lat},${k.lon})["leisure"~"^(park|garden|playground|pitch|recreation_ground)$"];way(around:1000,${k.lat},${k.lon})["natural"~"^(wood|scrub|water|beach)$"];);out geom;`);
   if (!j) return null;
-  const kx = Math.cos((k.lat * Math.PI) / 180) * 111320, ky = 110570, top = {};
+  const kx = Math.cos((k.lat * Math.PI) / 180) * 111320, ky = 110570, top = {}, parca = [];
   for (const e of j.elements || []) {
     const g = e.geometry; if (!g || g.length < 4) continue;
     const p = g.map((n) => [(n.lon - k.lon) * kx, (n.lat - k.lat) * ky]);
@@ -195,11 +216,13 @@ async function araziKullanimi(k) {
     a = Math.min(Math.abs(a) / 2, Math.PI * 1e6);
     const t = e.tags || {}, deger = t.landuse || t.leisure || t.natural || '';
     const grup = (ARAZI_GRUP.find(([, re]) => re.test(deger)) || ['Diğer'])[0];
-    top[grup] = (top[grup] || 0) + a;
+    top[grup] = (top[grup] || 0) + a; parca.push({ g: grup, a, p });
   }
   const daire = Math.PI * 1e6, l = Object.entries(top).map(([ad, a]) => ({ ad, yuzde: Math.round((a / daire) * 1000) / 10 })).filter((x) => x.yuzde >= 0.5).sort((x, y) => y.yuzde - x.yuzde);
   const toplam = l.reduce((s, x) => s + x.yuzde, 0);
-  return { l, haritali: Math.min(100, Math.round(toplam)) };
+  // Harita için en büyük 140 alan, köşeleri seyreltilmiş (rapor kaydı küçük kalsın)
+  const pp = parca.sort((x, y) => y.a - x.a).slice(0, 140).map((x) => { const adim = Math.ceil(x.p.length / 22), n = []; x.p.forEach((q, i) => { if (i % adim === 0) n.push(Math.round(q[0]), Math.round(q[1])); }); return { g: x.g, n }; });
+  return { l, haritali: Math.min(100, Math.round(toplam)), p: pp };
 }
 function raporSayfalari2(f, h) {
   const sayfalar = [], emlak = f.ana === 'emlak', c = h.cevre;
@@ -220,8 +243,8 @@ function raporSayfalari2(f, h) {
   // Arazi kullanımı (1 km)
   const ar = h.arazi;
   if (emlak && ar && ar.l.length) {
-    sayfalar.push(`${rBaslik('Arazi Kullanımı (1 km çevre)')}<div class="r-kutu">${cubukSvg(ar.l.map((x) => ({ ad: x.ad, deger: x.yuzde })))}</div>
-      <div class="r-not">1 km yarıçaplı dairenin (3,14 km²) hangi oranının hangi kullanıma ayrıldığı. Haritada işaretlenmiş alanlar daireyi yaklaşık %${ar.haritali} oranında kaplıyor; kalan kısım yollar ve sınıflandırılmamış alanlardır. Kaynak: OpenStreetMap arazi kullanım verisi. Resmî imar durumu için belediyenin e-imar sistemine bakın.</div>`);
+    sayfalar.push(`${rBaslik('Arazi Kullanımı (1 km çevre)')}${araziGorsel(ar)}
+      <div class="r-not">${ar.p && ar.p.length ? 'Harita, mülkün (kırmızı nokta) 1 km çevresindeki alanları kullanım türüne göre boyar; kesikli halka 500 metreyi gösterir. ' : ''}1 km yarıçaplı dairenin (3,14 km²) hangi oranının hangi kullanıma ayrıldığı. Haritada işaretlenmiş alanlar daireyi yaklaşık %${ar.haritali} oranında kaplıyor; kalan kısım yollar ve sınıflandırılmamış alanlardır. Kaynak: OpenStreetMap arazi kullanım verisi. Resmî imar durumu için belediyenin e-imar sistemine bakın.</div>`);
   }
   // A · Toplu taşıma ve ulaşım
   if (emlak && c && !c.hata) {

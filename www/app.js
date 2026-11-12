@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.2 · 13.11.2026 07:00';
+const SURUM = '10.3 · 13.11.2026 09:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -236,7 +236,7 @@ function aiDugme() {
     d = document.createElement('button'); d.id = 'aiFab'; d.setAttribute('aria-label', 'MülkümAI asistan');
     d.innerHTML = `${ic('yildiz', 22, '#fff')}<span>AI</span>`; document.body.appendChild(d);
     let k = null; try { k = JSON.parse(localStorage.getItem('aiKonum')); } catch (_) {}
-    const yerlestir = (x, y) => { x = Math.max(8, Math.min(innerWidth - 64, x)); y = Math.max(60, Math.min(innerHeight - 140, y)); d.style.left = x + 'px'; d.style.top = y + 'px'; return { x, y }; };
+    const yerlestir = (x, y) => { x = Math.max(8, Math.min(innerWidth - 64, x)); y = Math.max(110, Math.min(innerHeight - 140, y)); d.style.left = x + 'px'; d.style.top = y + 'px'; return { x, y }; };
     k ? yerlestir(k.x, k.y) : yerlestir(innerWidth - 68, innerHeight - 160);
     let bas = null, oynadi = false;
     d.addEventListener('pointerdown', (e) => { bas = { x: e.clientX, y: e.clientY, l: d.offsetLeft, t: d.offsetTop }; oynadi = false; d.setPointerCapture(e.pointerId); });
@@ -709,7 +709,7 @@ EKRAN.ara = () => {
     </header>
     <div class="ic" style="padding-top:12px">
       <div class="ciplar">
-        <button class="cip ${filtreSay ? 'secili' : ''}" id="filtreBtn">${ic('filtre', 16)}Filtre${filtreSay ? ' · ' + filtreSay : ''}</button>
+        <button class="cip ${filtreSay ? 'secili' : ''}" id="filtreBtn">${ic('filtre', 16)}Filtre${filtreSay ? ' · ' + filtreSay : ''}</button><button class="cip" id="haritaBtn">${ic('konum', 16)}Harita</button>
         ${cip('Tümü', { secili: !o.ana && !o.alt, q: { ana: '', alt: '' } })}${cip('Emlak', { secili: o.ana === 'emlak' && !o.alt, q: { ana: 'emlak', alt: '' } })}${cip('Vasıta', { secili: o.ana === 'vasita' && !o.alt, q: { ana: 'vasita', alt: '' } })}
       </div>
       <div class="ciplar">${altlar.map(([k, a]) => cip(a.ad, { secili: o.alt === k, q: { alt: o.alt === k ? '' : k, ana: a.ana } })).join('')}</div>
@@ -736,6 +736,7 @@ EKRAN.ara = () => {
   $('#araF').onsubmit = (e) => { e.preventDefault(); akilliAra(e.target.q.value, { ana: o.ana, alt: o.alt, sirala: o.sirala }); };
   app.querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => git('#/ara?' + sorguYap({ ...o, ...JSON.parse(b.dataset.q) }))));
   $('#filtreBtn').onclick = () => filtreSheet(o);
+  $('#haritaBtn').onclick = () => git('#/harita?' + sorguYap({ ana: seciliAna || 'emlak', islem: o.islem || '', il: o.il || '', ilce: o.ilce || '' }));
   $('#kaydetBtn').onclick = async () => {
     if (girisGerek('Aramayı kaydetmek için giriş yap')) return;
     const q = sorguYap({ ...o, sirala: '' });
@@ -827,6 +828,7 @@ EKRAN.ilan = (id) => {
       </div></div>
       ${i.ana === 'emlak' && f.ada && f.parsel ? `<div class="kart" id="parselK"><h3>Ada / Parsel (TKGM)</h3><div class="bilgi-tablo"><div><span>Ada / parsel</span><b>${kac(f.ada)} / ${kac(f.parsel)}</b></div></div><div class="k soluk" style="margin-top:6px">Tapu ve Kadastro kayıtları yükleniyor…</div></div>` : ''}
       <a class="kart satir" href="#/uye/${s.id}" style="text-decoration:none;color:inherit">${avatarHtml(s, 44)}<div class="ara"><b>${kac(gorunenAd(s))}</b> ${rozet(s, i.ana)}${s.firma ? `<div class="k">${kac(s.firma)}</div>` : ''}<div class="k soluk">${s.olusturma ? 'Üyelik: ' + new Date(s.olusturma).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) + ' · ' : ''}${S.ilanlar.filter((x) => x.sahip === s.id && x.durum === 'yayinda').length} ilan${s.acikTel ? ' · ' + kac(s.acikTel) : ''}</div><div class="k soluk" data-sozet="${s.id}"></div></div><span class="ok">›</span></a>
+      ${!sahip && !satildi && s.acikTel ? `<div class="izgara2"><a class="btn wa-btn" href="${waBaglanti(s.acikTel, i)}" target="_blank" rel="noopener">${WA_SVG}WhatsApp'tan yaz</a><a class="btn cizgili" href="tel:${kac(telTemiz(s.acikTel))}">${ic('telefon', 18)}Ara</a></div>` : ''}
       </div>
       <div data-panel="aciklama" hidden>
         ${i.aciklama ? `<div class="kart"><h3>Açıklama</h3><div class="aciklama-metin">${kac(i.aciklama)}</div></div>` : bosDurum('belge', 'Açıklama yazılmamış', 'Satıcı bu ilana açıklama eklememiş. Merak ettiklerini mesajla sorabilirsin.')}
@@ -872,9 +874,7 @@ EKRAN.ilan = (id) => {
   const serit = $('#serit');
   if (serit) serit.querySelectorAll('img').forEach((im, n) => (im.onclick = () => fotoGoster(fotolar, n)));
   if (serit && $('#sayac')) serit.onscroll = () => ($('#sayac').textContent = Math.round(serit.scrollLeft / serit.clientWidth) + 1 + ' / ' + fotolar.length);
-  $('#paylas').onclick = () => paylas(`${i.baslik} — ${tl(i.fiyat)}${f.islem === 'Kiralık' ? ' / ay' : ''} (${[i.ilce, i.il].filter(Boolean).join(', ')})
-İlan no: ${i.no || i.id.slice(-6).toUpperCase()}
-https://fatihcalis07-commits.github.io/mulkum360/www/#/ilan/${i.id}`);
+  $('#paylas').onclick = () => ilanPaylasSheet(i);
   const fv = $('#fav'); if (fv) fv.onclick = async () => { await favDegis(id); fv.innerHTML = ic('kalp', 20, favMi(id) ? 'var(--vurgu)' : 'currentColor'); };
   const mj = $('#mesaj'); if (mj) mj.onclick = async () => { if (girisGerek('Mesaj göndermek için giriş yap')) return; const s = await dene(() => sohbetGetir(i)); if (s) git('#/sohbet/' + s.id); };
   const tk = $('#teklif'); if (tk) tk.onclick = async () => { if (girisGerek('Teklif vermek için giriş yap')) return; const s = await dene(() => sohbetGetir(i)); if (s) teklifSheet(s); };
@@ -923,6 +923,27 @@ https://fatihcalis07-commits.github.io/mulkum360/www/#/ilan/${i.id}`);
   };
 };
 
+// İlan paylaşımı: bağlantı kopyalama ve sosyal ağlar
+const WEB_ADRES = 'https://fatihcalis07-commits.github.io/mulkum360/www/';
+function ilanPaylasSheet(i) {
+  const url = WEB_ADRES + '#/ilan/' + i.id, f = i.alanlar || {}, e = encodeURIComponent;
+  const metin = i.baslik + ' — ' + tl(i.fiyat) + (f.islem === 'Kiralık' ? ' / ay' : '') + ' (' + [i.ilce, i.il].filter(Boolean).join(', ') + ')';
+  const ag = [
+    ['WhatsApp', '#25D366', 'https://wa.me/?text=' + e(metin + '\n' + url), WA_SVG],
+    ['X', '#000000', 'https://twitter.com/intent/tweet?text=' + e(metin) + '&url=' + e(url), '<b style="font-size:19px">X</b>'],
+    ['Facebook', '#1877F2', 'https://www.facebook.com/sharer/sharer.php?u=' + e(url), '<b style="font-size:22px">f</b>'],
+    ['LinkedIn', '#0A66C2', 'https://www.linkedin.com/sharing/share-offsite/?url=' + e(url), '<b style="font-size:17px">in</b>'],
+    ['E-posta', '#14202F', 'mailto:?subject=' + e(metin) + '&body=' + e(url), ic('eposta', 22, '#fff')]
+  ];
+  sheetAc('<h2 style="font-size:19px;font-weight:800">Bu ilanı paylaş</h2>'
+    + '<div class="satir" style="gap:12px"><div class="paylas-kapak"' + (kapak(i) ? ' data-bg="' + kac(kapak(i)) + '"' : '') + '></div><div class="ara" style="min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + kac(i.baslik) + '</b><span class="k soluk">' + tl(i.fiyat) + ' · İlan no ' + (i.no || i.id.slice(-6).toUpperCase()) + '</span></div></div>'
+    + '<div class="paylas-link"><span>' + kac(url.replace('https://', '')) + '</span><button class="btn kucuk" id="plKopya">Bağlantıyı kopyala</button></div>'
+    + '<div class="k soluk" style="font-weight:650">Sosyal medyada paylaş</div><div class="paylas-ag">' + ag.map(([ad, renk, h, simge]) => '<a href="' + kac(h) + '" target="_blank" rel="noopener" aria-label="' + ad + '" style="background:' + renk + '">' + simge + '</a>').join('') + '</div>'
+    + '<button class="btn sade tam" id="plDiger">' + ic('paylas', 18) + 'Diğer paylaşım seçenekleri</button>', (s) => {
+    $('#plKopya', s).onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Bağlantı kopyalandı'); } catch (_) { paylas(metin + '\n' + url); } };
+    $('#plDiger', s).onclick = () => { sheetKapat(); paylas(metin + '\nİlan no: ' + (i.no || i.id.slice(-6).toUpperCase()) + '\n' + url); };
+  });
+}
 // Tam ekran fotoğraf: kaydırarak gez, dokununca kapanır
 function fotoGoster(l, bas = 0) {
   const el = document.createElement('div');
@@ -2117,7 +2138,8 @@ function kartvizit(b, benim, favAlan) {
 const katla = (baslik, ik, icerik, ozet = '', acik = false) => `<details class="katla"${acik ? ' open' : ''}><summary>${ic(ik, 20)}<span class="ara">${baslik}</span>${ozet ? `<small>${ozet}</small>` : ''}${ic('asagi', 18)}</summary><div class="katla-ic">${icerik}</div></details>`;
 const menuSatir = (h, ik, ad, say) =>`<a href="${h}">${ic(ik, 20)}${ad}<span class="ok">${say ? say + ' ' : ''}›</span></a>`;
 function temaDegis() { S.tema = S.tema === 'koyu' ? 'acik' : 'koyu'; temaUygula(); kaydet(); ciz(); }
-const PALETLER = [['prestij', 'Prestij', 'Lacivert · altın — kurumsal', ['#0B1B33', '#FFC72C']], ['vitrin', 'Vitrin', 'Gök mavisi · sarı — pazar yeri', ['#558ED2', '#FFE800', '#1064BC']], ['alev', 'Alev', 'Kırmızı · turkuaz — cesur', ['#F03245', '#00A699']]];
+const PALETLER = [['prestij', 'Kurumsal', 'Lacivert · mavi · sarı — varsayılan', ['#132238', '#1064BC', '#FFE800']], ['antrasit', 'Antrasit Altın', 'Antrasit · mat altın — lüks konut', ['#1C1F26', '#C9A24B', '#F3E3B8']], ['zumrut', 'Zümrüt', 'Koyu yeşil · zümrüt · şampanya', ['#0F3D34', '#1D8A6B', '#E6C98A']], ['safir', 'Safir', 'Gece mavisi · safir · gümüş', ['#0A1F44', '#2456D6', '#DCE4F5']], ['bordo', 'Bordo', 'Bordo · gül kurusu · eskitme altın', ['#4A1220', '#8E2A3E', '#D6B36A']], ['grafit', 'Grafit', 'Grafit · turuncu — sportif', ['#15181B', '#3A3F47', '#E4572E']], ['vitrin', 'Vitrin', 'Gök mavisi · sarı — pazar yeri', ['#558ED2', '#FFE800', '#1064BC']]];
+const TEMA_RENK = { vitrin: '#558ED2', antrasit: '#15171C', zumrut: '#0A2E27', safir: '#081833', bordo: '#3A0E19', grafit: '#0E1012' };
 function paletSec(kod) { S.palet = kod; temaUygula(); kaydet(); sheetKapat(); ciz(); }
 function paletSecimi() {
   sheetAc(`<h2 style="font-size:19px;font-weight:800">Tema</h2><div class="k soluk" style="margin:4px 0 12px">Renk paleti ve yazı tipi. Koyu tema her paletle çalışır; değer raporları her zaman kurumsal görünür.</div>` +
@@ -2128,9 +2150,10 @@ function paletSecimi() {
 }
 function temaUygula() {
   document.documentElement.classList.toggle('koyu', S.tema === 'koyu');
+  if (!PALETLER.some(([k]) => k === S.palet)) S.palet = 'prestij'; // kaldırılan tema (Alev) seçiliyse Kurumsal
   const p = S.palet && S.palet !== 'prestij' ? S.palet : '';
   if (p) document.documentElement.dataset.tema = p; else document.documentElement.removeAttribute('data-tema');
-  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = { vitrin: '#558ED2', alev: '#F03245' }[S.palet] || '#1B2A41';
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = TEMA_RENK[S.palet] || '#132238';
 }
 
 EKRAN.profil = () => {
@@ -2152,10 +2175,11 @@ EKRAN.profil = () => {
       <label class="alan">Slogan<input name="slogan" maxlength="120" value="${kac(b.slogan || '')}"></label>
       <label class="alan">Hakkımda<textarea name="hakkinda" maxlength="1500">${kac(b.hakkinda || '')}</textarea></label>
       <div class="hata-yazi" id="ph"></div><button class="btn">Kaydet</button></div></form>
-    <form class="ic" id="sf" style="padding-top:0"><div class="kart" style="display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">Şifre değiştir</h3>
+    <form class="ic" id="sf" style="padding-top:0"><details class="katla"><summary>${ic('kilit', 20)}<span class="ara">Şifre değiştir</span>${ic('asagi', 18)}</summary><div class="katla-ic" style="display:flex;flex-direction:column;gap:12px">
       <label class="alan">Mevcut şifre<input name="eski" type="password" autocomplete="current-password"></label>
       <label class="alan">Yeni şifre<input name="yeni" type="password" autocomplete="new-password"><small>En az 8 karakter, bir rakam.</small></label>
-      <div class="hata-yazi" id="sh"></div><button class="btn koyu">Şifreyi değiştir</button></div></form>`;
+      <label class="alan">Yeni şifre (tekrar)<input name="yeni2" type="password" autocomplete="new-password"></label>
+      <div class="hata-yazi" id="sh"></div><button class="btn koyu">Şifreyi değiştir</button></div></details></form>`;
   app.querySelectorAll('[data-ht]').forEach((x) => (x.onclick = () => { app.querySelectorAll('[data-ht]').forEach((y) => y.classList.toggle('secili', y === x)); $('[name=ht]').value = x.dataset.ht; }));
   const oi = $('#ofisIste'); if (oi) oi.onclick = () => dene(() => dogrulamaIste('emlakci'), 'Talebin alındı; yetki belgen kontrol edilince rozetin güncellenecek');
   $('#pf').onsubmit = async (e) => {
@@ -2170,6 +2194,8 @@ EKRAN.profil = () => {
   $('#sf').onsubmit = async (e) => {
     e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)), h = $('#sh'); h.textContent = '';
     if (v.yeni.length < 8 || !/\d/.test(v.yeni)) return hataGoster(h, 'Yeni şifre en az 8 karakter olmalı ve rakam içermeli.');
+    if (v.yeni !== v.yeni2) return hataGoster(h, 'Yeni şifreyi iki kutuya da aynı yaz.');
+    if (!v.eski) return hataGoster(h, 'Mevcut şifreni yaz.');
     try { await sifreDegistir(b, v.eski, v.yeni); e.target.reset(); toast('Şifren değiştirildi'); } catch (x) { h.textContent = x.message.startsWith('Mevcut') ? x.message : hataMetni(x); }
   };
   navCiz('hesap');
@@ -2644,7 +2670,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheetEl
 async function basla() {
   setTimeout(() => piyasaRefYukle(), 1500);
   await yukle();
-  const uTema = new URLSearchParams(location.search).get('tema'); if (['prestij', 'vitrin', 'alev'].includes(uTema)) S.palet = uTema; // test/derin bağlantı: ?tema=vitrin
+  const uTema = new URLSearchParams(location.search).get('tema'); if (PALETLER.some(([k]) => k === uTema)) S.palet = uTema; // test/derin bağlantı: ?tema=vitrin
   temaUygula();
   app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak ve Vasıtada Yapay Zekâ</div><div class="acilis-cipler"><span>Değer Raporu</span><span>MülkümDeko</span><span>MülkümVideo</span></div></div>
     <div class="acilis-alt"><div class="acilis-cubuk"><span></span></div><div class="acilis-not">Hayalindekine bir adım</div></div></div>`;
@@ -2669,14 +2695,16 @@ async function basla() {
       try {
         const o = await kvAl('onbellek'), { data: { session } } = await sb.auth.getSession();
         if (o && o.surum === 1 && Date.now() - o.zaman < 3 * 86400000 && (o.oturum || null) === (session?.user?.id || null) && o.ilanlar?.length) {
-          Object.assign(S, { ilanlar: o.ilanlar, kullanicilar: o.kullanicilar || [], sohbetler: o.sohbetler || [], kayitliAramalar: o.kayitliAramalar || [], favSayilari: o.favSayilari || {}, yonetici: !!o.yonetici, bildirimler: o.bildirimler || [], oturum: o.oturum || null });
+          Object.assign(S, { ilanlar: o.ilanlar, kullanicilar: o.kullanicilar || [], sohbetler: o.sohbetler || [], kayitliAramalar: o.kayitliAramalar || [], favSayilari: o.favSayilari || {}, yonetici: !!o.yonetici, bildirimler: o.bildirimler || [], oturum: o.oturum || null }); if (o.doping) S.DOPING = o.doping;
           if (!S.oturum || ben()) hizli = true; else S.oturum = null;
         }
       } catch (_) {}
       if (hizli) {
-        const yenile = veriYukle();
+        sonYukleme = Date.now();
+        const imza = () => S.ilanlar.length + '|' + S.ilanlar.reduce((m, i) => Math.max(m, i.guncelleme || i.olusturma || 0), 0) + '|' + (ben()?.kredi ?? '') + '|' + (S.oturum && ben() ? okunmamis() : 0) + '|' + Object.keys(S.DOPING?.aktif || {}).length + '|' + (S.bildirimler || []).filter((x) => !x.okundu).length;
+        const once = imza(), yenile = veriYukle();
         await acilisBekle(); ciz();
-        yenile.then(() => { if (!/^#\/(ver|sohbet|giris|kayit|profil|degerle|ai|toplu|karsilastir)/.test(location.hash) && sheetEl.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) ciz(); aramaBildir(); if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {}); }, () => {});
+        yenile.then(() => { if (imza() !== once && !/^#\/(ver|sohbet|giris|kayit|profil|degerle|ai|toplu|karsilastir)/.test(location.hash) && sheetEl.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) ciz(); aramaBildir(); if (S.oturum && BLD) panelGetir().then((l) => { if (!PANEL) { PANEL = l; PANEL.sahip = S.oturum; } gorevHatirlatKur(); }, () => {}); }, () => {});
         return;
       }
       await veriYukle();

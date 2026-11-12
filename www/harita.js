@@ -107,9 +107,12 @@ function harpSecimAc(k) {
 EKRAN.harita = () => {
   const s = sorgu();
   if (s.ana && ANA[s.ana]) HARP.ana = s.ana;
+  if (s.islem !== undefined) HARP.islem = s.islem;
+  const hedefAd = [s.ilce, s.il].filter(Boolean).join(' ');
+  if (s.il && HARP.ad !== hedefAd) { HARP.kaynak = 'secim'; HARP.ad = hedefAd; HARP.z = s.ilce ? 13 : 8; haritaIlceGit(s.il, s.ilce); }
   const mz = String(s.merkez || '').split(',');
   if (+mz[0] && +mz[1]) { HARP.lat = +mz[0]; HARP.lon = +mz[1]; HARP.kaynak = 'ilan'; HARP.z = 14; }
-  else if (HARP.kaynak !== 'sen') { const b = ben(); if (b?.il) { HARP.kaynak = 'secim'; HARP.ad = [b.ilce, b.il].filter(Boolean).join(' '); HARP.z = b.ilce ? 13 : 8; haritaIlceGit(b.il, b.ilce); } }
+  else if (!s.il && HARP.kaynak !== 'sen') { const b = ben(); if (b?.il) { HARP.kaynak = 'secim'; HARP.ad = [b.ilce, b.il].filter(Boolean).join(' '); HARP.z = b.ilce ? 13 : 8; haritaIlceGit(b.il, b.ilce); } }
   const chip = (ad, v, aktif, js) => `<button class="cip ${aktif ? 'secili' : ''}" data-hc="${js}">${ad}</button>`;
   app.innerHTML = ustBar('Harita görünümü') + `<div class="ic">
     <div class="segment" role="tablist">${Object.entries(ANA).map(([k, a]) => `<button role="tab" aria-selected="${k === HARP.ana}" data-hana="${k}">${ic(a.ikon, 16)}${a.ad}</button>`).join('')}</div>
