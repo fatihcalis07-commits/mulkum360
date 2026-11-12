@@ -77,8 +77,10 @@ function harpCiz() {
 function harpListe(hazir) {
   const yer = document.getElementById('harpListe'); if (!yer) return;
   const { liste } = hazir ? { liste: hazir } : haritaAday();
-  yer.innerHTML = liste.length ? liste.map(({ i, m }) => `<div style="display:flex;flex-direction:column;gap:6px">${ilanSatir(i, `<div class="perf"><span>${ic('konum', 12)} ${m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : m + ' m'}</span><span>${tl(i.fiyat)}</span></div>`)}<div class="izgara3"><a class="btn sade kucuk" href="#/ilan/${i.id}">İncele</a><button class="btn sade kucuk" data-hgit="${i.id}">Buraya git</button></div></div>`).join('')
+  const gor = HARP.tumu ? liste : liste.slice(0, 7);
+  yer.innerHTML = liste.length ? gor.map(({ i, m }) => `<div style="display:flex;flex-direction:column;gap:6px">${ilanSatir(i, `<div class="perf"><span>${ic('konum', 12)} ${m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : m + ' m'}</span><span>${tl(i.fiyat)}</span></div>`)}<div class="izgara3"><a class="btn sade kucuk" href="#/ilan/${i.id}">İncele</a><button class="btn sade kucuk" data-hgit="${i.id}">Buraya git</button></div></div>`).join('') + (liste.length > 7 && !HARP.tumu ? `<button class="btn sade tam ara-tumu" id="harpTumu">${liste.length - 7} ilan daha · Tümünü göster</button>` : '')
     : `<div class="k soluk" style="padding:10px 2px">Bu merkez ve filtrede konumu çözülmüş ilan yok. Yarıçapı kaldırın ya da haritayı kaydırın.</div>`;
+  const ht = document.getElementById('harpTumu'); if (ht) ht.onclick = () => { HARP.tumu = true; harpListe(hazir); };
   yer.querySelectorAll('[data-hgit]').forEach((b) => (b.onclick = () => { const i = ilan(b.dataset.hgit); HARP.lat = +i.alanlar.enlem; HARP.lon = +i.alanlar.boylam; HARP.z = Math.max(HARP.z, 15); harpCiz(); scrollTo({ top: 0, behavior: 'smooth' }); }));
 }
 
@@ -152,7 +154,7 @@ function harpBagla(kap) {
   kap.addEventListener('wheel', (e) => { e.preventDefault(); HARP.z = Math.max(4, Math.min(18, HARP.z + (e.deltaY > 0 ? -1 : 1))); harpCiz(); }, { passive: false });
 }
 EKRAN.harita = () => {
-  HARP.liste = null;
+  HARP.liste = null; HARP.tumu = false;
   const s = sorgu();
   if (s.ana && ANA[s.ana]) HARP.ana = s.ana;
   if (s.islem !== undefined) HARP.islem = s.islem;
