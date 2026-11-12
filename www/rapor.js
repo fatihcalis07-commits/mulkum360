@@ -255,13 +255,13 @@ EKRAN.rapor = (id) => {
   rRaporNo = r.no + ' · ' + tarih; rBolumNo = 0;
   // Başlıklar: taşınmazda "Satılık Konut Değerleme Raporu", vasıtada "Araç Değerleme Raporu"
   const kapakUst = emlak ? (kira ? 'Kiralık ' : 'Satılık ') + tur : 'Araç', kapakEtiket = emlak ? 'MülkümAI · Taşınmaz Değerleme' : 'MülkümAI · Araç Değerleme';
-  rRaporAd = (emlak ? tur : 'Araç') + ' Değerleme Raporu';
+  rRaporAd = 'Mülküm Değerleme Raporu · ' + (emlak ? tur : 'Araç');
   const konumYazi = emlak ? [f.adres, f.ilce, f.il].filter(Boolean).join(', ') : [f.marka, f.model, f.paket, f.yil].filter(Boolean).join(' ');
   const hucre = (ad, v) => (v ? '<div><small>' + ad + '</small><b>' + v + '</b></div>' : '');
   const kapak = '<section class="r-sayfa r-kapak2">'
     + '<div class="r-k-ust"><div class="r-k-bar"><div class="r-logo"><img src="logo.png" alt="">mülküm<span>360</span></div><div class="r-k-no">Rapor No ' + kac(r.no) + '</div></div>'
     + '<div class="r-k-etiket">' + kapakEtiket + '</div>'
-    + '<h1>' + kac(kapakUst) + '<br>Değerleme Raporu</h1>'
+    + '<h1>Mülküm<br>Değerleme Raporu</h1><div class="r-k-tur">' + kac(kapakUst) + '</div>'
     + '<div class="r-k-konum">' + kac(konumYazi || '—') + '</div></div>'
     + '<div class="r-k-orta"><div class="r-k-foto">' + (h.kapak ? '<img src="' + h.kapak + '" alt="" crossorigin="anonymous">' : '<div class="r-foto-yok">' + ic(ALT[f.alt]?.ikon || 'ev', 72, '#C9D2E0', 1.3) + '</div>') + '</div>'
     + '<div class="r-k-deger"><small>' + (kira ? 'Tahmini aylık kira' : emlak ? 'Tahmini piyasa değeri' : 'Tahmini araç değeri') + '</small><b>' + tl(h.orta) + '</b><span>' + tl(h.alt) + ' – ' + tl(h.ust) + '</span>'
@@ -387,7 +387,7 @@ async function pdfOlustur(el, ad) {
       pdf.addImage(tuval.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297);
     }
     kopya.remove(); kopya = null;
-    pdf.setProperties({ title: ad.replace('.pdf', ''), creator: 'Mülküm360', subject: 'MülkümAI Elektronik Değerleme Raporu' });
+    pdf.setProperties({ title: ad.replace('.pdf', ''), creator: 'Mülküm360', subject: 'Mülküm Değerleme Raporu' });
     const P = window.Capacitor?.Plugins;
     if (window.Capacitor?.isNativePlatform?.() && P?.Filesystem && P?.Share) {
       const yaz = await P.Filesystem.writeFile({ path: ad, data: pdf.output('datauristring').split(',')[1], directory: 'CACHE' });

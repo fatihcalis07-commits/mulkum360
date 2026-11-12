@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.4 · 13.11.2026 18:30';
+const SURUM = '11.5 · 13.11.2026 19:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2419,7 +2419,7 @@ EKRAN.degerle = () => {
       ${h.genis ? `<div class="uyari-k">${ic('uyari', 18)}<div>${kac(v.il)} için yeterli ilan olmadığından (${h.ilSayi ?? 0}) <b>Türkiye geneli</b> emsallerle hesaplandı. Bölge farkı büyük olabilir; sonucu ön fikir olarak değerlendir.</div></div>` : ''}
       <div class="izgara3">${VADE.map(([ad, sure, k], n) => `<div class="kart" style="padding:10px;${n === 1 ? 'border-color:var(--vurgu);background:var(--vurgu-acik)' : ''}"><div class="k soluk" style="font-weight:700">${ad}</div><div class="k soluk">${sure}</div><b style="font-size:14px">${tl(h[k])}</b></div>`).join('')}</div>
       <div class="k soluk" style="text-align:center">Vade fiyatları hedeftir; ${v.islem === 'Kiralık' ? 'kiralama' : 'satış'} süresi garanti edilmez.</div>
-      <button class="btn tam" id="raporAl">${ic('belge', 18, '#fff')}MülkümAI PDF raporu · 1 kredi</button>
+      <button class="btn tam" id="raporAl">${ic('belge', 18, '#fff')}Mülküm Değerleme Raporu (PDF) · 1 kredi</button>
       <div class="k soluk" style="text-align:center">${ben() ? 'Kredin: ' + (ben().kredi ?? 0) + ' · <a href="#/kredi">Kredi yükle</a>' : 'Yeni üyelere 1 rapor kredisi hediye'}</div>
       ${v.ana === 'emlak' && !v.haric ? `<a class="btn cizgili tam" href="#/ver" id="ilanaCevir">Bu bilgilerle ilan ver</a>` : ''}`;
     if (v._kasko) { el.querySelector('.deger-k')?.insertAdjacentHTML('afterend', v._kasko); delete v._kasko; }
@@ -2459,7 +2459,7 @@ EKRAN.degerle = () => {
         v._sahaFoto = sahaFoto;
         v.aidat = v.aidat.replace(/\D/g, ''); v.vade = v.vade.replace(/\D/g, ''); v.pesinat = v.pesinat.replace(/\D/g, ''); v.faiz = v.faiz.replace(',', '.').replace(/[^\d.]/g, '');
       }
-      if (!(await onayla('MülkümAI raporu', `Rapor oluşturulunca 1 kredi düşülür. Kalan kredin: ${kalan}.`, 'Raporu oluştur'))) return;
+      if (!(await onayla('Mülküm Değerleme Raporu', `Rapor oluşturulunca 1 kredi düşülür. Kalan kredin: ${kalan}.`, 'Raporu oluştur'))) return;
       const pr = raporIlerleme(v.ana === 'emlak');
       try {
         const em = h.emsal.slice(0, 8);

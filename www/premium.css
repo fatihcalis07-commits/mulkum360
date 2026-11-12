@@ -609,3 +609,11 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 
 .r-k-ust::after{background:#FFC72C;right:auto;width:110px;height:3px;border-radius:2px;bottom:160px}
 .r-k-ust{background:linear-gradient(135deg,#081424 0%,#0F2140 52%,#1B4C90 100%)}
+
+.r-k-etiket{margin-top:52px}
+.r-k-tur{display:inline-block;margin-top:14px;padding:6px 14px;border-radius:999px;background:rgba(255,199,44,.16);border:1px solid rgba(255,199,44,.55);color:#FFC72C;font-size:13px;font-weight:700;letter-spacing:.04em}
+.r-k-konum{margin-top:12px}
+.r-k-ust::after{display:none}
+.r-k-etiket{margin-top:38px}
+.r-kapak2 h1{font-size:44px}
+.r-k-konum{font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
