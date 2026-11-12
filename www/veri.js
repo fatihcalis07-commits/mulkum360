@@ -34,6 +34,8 @@ const altlari = (ana) => Object.keys(ALT).filter((k) => ALT[k].ana === ana);
 const MARKALAR = typeof ARAC_MODELLER !== 'undefined' ? [...new Set([...Object.keys(ARAC_MODELLER), 'Jeep', 'Yamaha', 'Kawasaki', 'Bajaj', 'Iveco'])].sort((a, b) => a.localeCompare(b, 'tr')) : ['Volkswagen'];
 
 // Alan tanımı: [anahtar, etiket, tür, seçenekler?, zorunlu?]
+// Alan seçenekleri adla alınır (sıra numarasıyla değil; yeni alan eklenince kaymasın)
+const alanSecenek = (ana, k) => (ALANLAR[ana].find(([x]) => x === k) || [])[3] || [];
 const ALANLAR = {
   emlak: [
     ['islem', 'İşlem', 'sec', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Sezonluk', 'Devren'], true],

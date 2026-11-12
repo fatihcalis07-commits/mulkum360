@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '11.5 · 13.11.2026 19:00';
+const SURUM = '11.6 · 13.11.2026 19:45';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -777,12 +777,12 @@ function filtreSheet(o) {
   sheetAc(`<div class="fs-ust"><h2 style="font-size:19px;font-weight:800;margin:0">Filtrele</h2>${aktif ? `<span class="fs-say">${aktif} filtre</span>` : ''}</div><form id="ff" class="fs-form">
     ${grup('Konum', sec('il', 'İl', ILLER) + `<label class="fs-satir"><span>İlçe</span><select name="ilce" data-bos="Farketmez"><option value="">Farketmez</option>${o.ilce ? `<option selected>${kac(o.ilce)}</option>` : ''}</select></label><label class="fs-satir"><span>Mahalle</span><select name="mahalle" data-bos="Farketmez"><option value="">Farketmez</option>${o.mahalle ? `<option selected>${kac(o.mahalle)}</option>` : ''}</select></label>`)}
     ${grup('Fiyat (TL)', `<div class="fs-satir fs-ikili"><input name="min" inputmode="numeric" placeholder="En az" value="${kac(o.min || '')}"><i>–</i><input name="max" inputmode="numeric" placeholder="En çok" value="${kac(o.max || '')}"></div>`)}
-    ${ana !== 'vasita' ? grup('Emlak', sec('islem', 'İşlem', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Sezonluk', 'Devren']) + sec('oda', 'Oda sayısı', ALANLAR.emlak[2][3]) + sec('yas', 'Bina yaşı', YAS_GRUPLARI) + sec('kat', 'Bulunduğu kat', ONERI.kat) + sec('kimden', 'Kimden', ['Sahibinden', 'Emlak ofisinden']))
+    ${ana !== 'vasita' ? grup('Emlak', sec('islem', 'İşlem', ['Satılık', 'Kiralık', 'Günlük Kiralık', 'Sezonluk', 'Devren']) + sec('oda', 'Oda sayısı', alanSecenek('emlak', 'oda')) + sec('yas', 'Bina yaşı', YAS_GRUPLARI) + sec('kat', 'Bulunduğu kat', ONERI.kat) + sec('kimden', 'Kimden', ['Sahibinden', 'Emlak ofisinden']))
       + grup('Özellikler', sec('site', 'Site içinde', ['Evet', 'Hayır']) + sec('asansor', 'Asansör', ['Var', 'Yok']) + sec('otopark', 'Otopark', ['Kapalı', 'Açık', 'Yok']) + sec('esya', 'Eşya', ['Eşyasız', 'Eşyalı']) + sayi('aidatmax', 'En çok aidat (TL)', 'Farketmez', `list="on-aidat" autocomplete="off"`) + `<datalist id="on-aidat">${ONERI.aidat.map((x) => `<option value="${x}">`).join('')}</datalist>`) : ''}
-    ${ana !== 'emlak' ? grup('Araç', sec('marka', 'Marka', MARKALAR) + `<label class="fs-satir"><span>Model / seri</span><select name="model"><option value="">Farketmez</option>${o.model ? `<option selected>${kac(o.model)}</option>` : ''}</select></label>` + sec('kasa', 'Kasa tipi', ALANLAR.vasita[6][3]))
+    ${ana !== 'emlak' ? grup('Araç', sec('marka', 'Marka', MARKALAR) + `<label class="fs-satir"><span>Model / seri</span><select name="model"><option value="">Farketmez</option>${o.model ? `<option selected>${kac(o.model)}</option>` : ''}</select></label>` + sec('kasa', 'Kasa tipi', alanSecenek('vasita', 'kasa')))
       + grup('Model yılı', `<div class="fs-satir fs-ikili"><input name="yilmin" inputmode="numeric" placeholder="En eski" value="${kac(o.yilmin || '')}"><i>–</i><input name="yilmax" inputmode="numeric" placeholder="En yeni" value="${kac(o.yilmax || '')}"></div>`)
       + grup('Kilometre', `<div class="fs-satir fs-ikili"><input name="kmmin" inputmode="numeric" placeholder="En az" value="${kac(o.kmmin || '')}"><i>–</i><input name="kmmax" inputmode="numeric" placeholder="En çok" value="${kac(o.kmmax || '')}"></div>`)
-      + grup('Teknik ve durum', sec('yakit', 'Yakıt', ALANLAR.vasita[4][3]) + sec('vites', 'Vites', ALANLAR.vasita[5][3]) + sec('agirhasar', 'Ağır hasar kayıtlı', ['Evet', 'Hayır']) + sec('hasar', 'Boya / değişen', ALANLAR.vasita[8][3]) + `<label class="fs-satir"><span>Renk</span><input name="renk" maxlength="20" placeholder="Farketmez" value="${kac(o.renk || '')}"></label>` + sec('takas', 'Takas', ALANLAR.vasita[9][3]) + (ana === 'vasita' ? sec('kimden', 'Kimden', ['Sahibinden', 'Galeriden']) : '')) : ''}
+      + grup('Teknik ve durum', sec('yakit', 'Yakıt', alanSecenek('vasita', 'yakit')) + sec('vites', 'Vites', alanSecenek('vasita', 'vites')) + sec('agirhasar', 'Ağır hasar kayıtlı', ['Evet', 'Hayır']) + sec('hasar', 'Boya / değişen', alanSecenek('vasita', 'hasar')) + `<label class="fs-satir"><span>Renk</span><input name="renk" maxlength="20" placeholder="Farketmez" value="${kac(o.renk || '')}"></label>` + sec('takas', 'Takas', alanSecenek('vasita', 'takas')) + (ana === 'vasita' ? sec('kimden', 'Kimden', ['Sahibinden', 'Galeriden']) : '')) : ''}
     <div class="fs-alt"><button type="button" class="btn sade" id="temizle">Temizle</button><button class="btn">Sonuçları göster</button></div></form>`, (s) => {
     konumSecBagla($('[name=il]', s), $('[name=ilce]', s), $('[name=mahalle]', s));
     aracModelBagla($('[name=marka]', s), $('[name=model]', s), 'Farketmez');
@@ -843,7 +843,7 @@ EKRAN.ilan = (id) => {
         <div><span>İlan tarihi</span><b>${new Date(i.olusturma).toLocaleDateString('tr-TR')}</b></div>
         <div><span>Kategori</span><b>${ALT[i.alt].ad}</b></div>
         ${i.ana === 'emlak' ? `<div><span>Kimden</span><b>${kimden(i)}</b></div>` : ''}
-        ${tanim.filter(([k]) => f[k] !== undefined && f[k] !== '').map(([k, ad]) => `<div><span>${ad}</span><b>${kac(k === 'km' ? sayiBicim(f[k]) : k === 'tramer' ? sayiBicim(+f[k]) + ' TL' : k === 'tuketim' ? f[k] + ' L/100 km' : k === 'muayene' && !isNaN(new Date(f[k])) ? new Date(f[k]).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : f[k])}${k.startsWith('m2') ? ' ㎡' : ''}</b></div>`).join('')}
+        ${tanim.filter(([k]) => f[k] !== undefined && f[k] !== '' && !(i.ana === 'vasita' && ['hasar', 'tramer'].includes(k))).map(([k, ad]) => `<div><span>${ad}</span><b>${kac(k === 'km' ? sayiBicim(f[k]) : k === 'tramer' ? sayiBicim(+f[k]) + ' TL' : k === 'tuketim' ? f[k] + ' L/100 km' : k === 'muayene' && !isNaN(new Date(f[k])) ? new Date(f[k]).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : f[k])}${k.startsWith('m2') ? ' ㎡' : ''}</b></div>`).join('')}
         ${f.mahalle ? `<div><span>Mahalle</span><b>${kac(f.mahalle)}</b></div>` : ''}${f.sokak ? `<div><span>Sokak / cadde</span><b>${kac(f.sokak)}</b></div>` : ''}
       </div></div>
       ${i.ana === 'emlak' && f.ada && f.parsel ? `<div class="kart" id="parselK"><h3>Ada / Parsel (TKGM)</h3><div class="bilgi-tablo"><div><span>Ada / parsel</span><b>${kac(f.ada)} / ${kac(f.parsel)}</b></div></div><div class="k soluk" style="margin-top:6px">Tapu ve Kadastro kayıtları yükleniyor…</div></div>` : ''}
@@ -1257,7 +1257,7 @@ function satirIlan(bas, r) {
   const alanlar = { islem: islemHam.includes('kira') ? 'Kiralık' : islemHam.includes('devren') ? 'Devren' : 'Satılık' };
   ['oda', 'kat', 'isitma', 'mahalle'].forEach((k) => al(k) && (alanlar[k] = al(k)));
   ['m2brut', 'm2net', 'binaYasi'].forEach((k) => { const v = al(k).replace(/[^\d]/g, ''); if (v) alanlar[k] = v; });
-  if (tipHam && ALANLAR.emlak[0][3].includes(tipHam)) alanlar.tip = tipHam;
+  if (tipHam && alanSecenek('emlak', 'islem').includes(tipHam)) alanlar.tip = tipHam;
   let baslik = buyukHarfDuzelt(al('baslik')).slice(0, 80);
   if (baslik.length < 10) baslik = [alanlar.oda, alanlar.islem, tipHam || 'Daire', al('ilce')].filter(Boolean).join(' ').slice(0, 80);
   const hata = !(fiyat > 0) ? 'fiyat yok' : !il ? 'il tanınmadı' : baslik.length < 10 ? 'başlık kısa' : '';
@@ -1999,7 +1999,7 @@ function hasarGosterKarti(i) {
   const f = i.alanlar || {}, p = parcaCoz(f.parcalar), o = parcaOzet(p), agir = f.agirHasar === 'Var' || f.hasar === 'Ağır hasar kayıtlı';
   if (!f.parcalar && !f.tramer && !agir && !f.hasar) return '';
   const durum = agir ? ['Ağır hasar kayıtlı', 'var(--hata,#C0392B)'] : o.d.length ? [o.d.length + ' değişen' + (o.b.length ? ', ' + o.b.length + ' boyalı' : ''), '#C2410C'] : o.b.length ? [o.b.length + ' boyalı parça', '#B45309'] : f.parcalar || f.hasar === 'Hatasız' ? ['Hatasız', 'var(--guven)'] : [f.hasar || '', 'var(--murekkep)'];
-  return '<div class="kart hasar-k"><div class="satir"><h3 class="ara" style="margin:0">Boya, değişen ve hasar</h3><b style="color:' + durum[1] + ';font-size:13.5px">' + kac(durum[0]) + '</b></div>'
+  return '<div class="kart hasar-k"><h3 style="margin:0">Boya, değişen ve hasar</h3>' + (f.parcalar ? '' : '<div class="hasar-durum" style="--hd:' + durum[1] + '">' + kac(durum[0]) + '</div>')
     + (f.parcalar ? '<div class="hasar-govde">' + aracSema(p, false) + '<div class="hasar-yan"><div class="hasar-lejant"><span><i style="background:#EEF1F5;border:1px solid #B6BFCC"></i>Orijinal</span><span><i style="background:#F2B705"></i>Boyalı</span><span><i style="background:#E0604F"></i>Değişen</span></div><div class="k">' + (o.d.length ? '<b>Değişen:</b> ' + o.d.map(kac).join(', ') + '<br>' : '') + (o.b.length ? '<b>Boyalı:</b> ' + o.b.map(kac).join(', ') : '') + (!o.b.length && !o.d.length ? 'Boya ve değişen yok.' : '') + '</div></div></div>' : '')
     + '<div class="bilgi-tablo" style="margin-top:8px"><div><span>Ağır hasar kaydı</span><b>' + (agir ? 'Var' : 'Yok') + '</b></div>' + (f.tramer ? '<div><span>Tramer kaydı</span><b>' + sayiBicim(+f.tramer) + ' TL</b></div>' : '') + '</div><div class="k soluk" style="margin-top:6px">Satıcı beyanıdır; almadan önce ekspertiz ve hasar sorgusu yaptır.</div></div>';
 }
@@ -2358,11 +2358,11 @@ EKRAN.degerle = () => {
       <div class="izgara2">${sec('il', 'İl', ILLER)}<label class="alan">İlçe<select name="ilce"><option value="">Seç</option>${d.ilce ? `<option selected>${kac(d.ilce)}</option>` : ''}</select></label></div>
       <div class="izgara2"><label class="alan">Mahalle <span style="font-weight:500">(isteğe bağlı)</span><select name="mahalle" data-bos="${d.ilce ? 'Farketmez' : 'Önce ilçe seç'}"><option value="">${d.ilce ? 'Farketmez' : 'Önce ilçe seç'}</option>${d.mahalle ? `<option selected>${kac(d.mahalle)}</option>` : ''}</select></label>
       <label class="alan">Sokak / cadde <span style="font-weight:500">(isteğe bağlı)</span><input name="sokak" id="sokak" list="sokakOn" maxlength="80" autocomplete="off" placeholder="Yazmaya başla" value="${kac(d.sokak || '')}"><datalist id="sokakOn">${d.sokak ? `<option value="${kac(d.sokak)}">` : ''}</datalist></label></div>
-      <div class="izgara3"><label class="alan">Net ㎡<input name="m2net" inputmode="numeric" list="on-m2net" autocomplete="off" value="${kac(d.m2net || '')}"></label><datalist id="on-m2net">${ONERI.m2net.map((o) => `<option value="${o}">`).join('')}</datalist>${sec('oda', 'Oda', ALANLAR.emlak[2][3])}${sec('binaYasi', 'Bina yaşı', YAS_GRUPLARI.includes(String(d.binaYasi ?? '')) || !d.binaYasi ? YAS_GRUPLARI : [String(d.binaYasi), ...YAS_GRUPLARI])}</div>
+      <div class="izgara3"><label class="alan">Net ㎡<input name="m2net" inputmode="numeric" list="on-m2net" autocomplete="off" value="${kac(d.m2net || '')}"></label><datalist id="on-m2net">${ONERI.m2net.map((o) => `<option value="${o}">`).join('')}</datalist>${sec('oda', 'Oda', alanSecenek('emlak', 'oda'))}${sec('binaYasi', 'Bina yaşı', YAS_GRUPLARI.includes(String(d.binaYasi ?? '')) || !d.binaYasi ? YAS_GRUPLARI : [String(d.binaYasi), ...YAS_GRUPLARI])}</div>
       ${sec('kat', 'Bulunduğu kat', ONERI.kat.includes(d.kat) || !d.kat ? ONERI.kat : [d.kat, ...ONERI.kat])}
       <div class="kart" id="elEmsalK"></div>`
       : `<div class="izgara2">${sec('marka', 'Marka', MARKALAR.includes(d.marka) || !d.marka ? MARKALAR : [d.marka, ...MARKALAR])}<label class="alan">Model<select name="model"><option value="">Seç</option>${d.model ? `<option selected>${kac(d.model)}</option>` : ''}</select></label></div>
-      <div class="izgara3"><label class="alan">Yıl<input name="yil" inputmode="numeric" value="${kac(d.yil || '')}"></label><label class="alan">Km<input name="km" inputmode="numeric" value="${kac(d.km || '')}"></label>${sec('hasar', 'Hasar', ALANLAR.vasita[8][3])}</div>`}
+      <div class="izgara3"><label class="alan">Yıl<input name="yil" inputmode="numeric" value="${kac(d.yil || '')}"></label><label class="alan">Km<input name="km" inputmode="numeric" value="${kac(d.km || '')}"></label>${sec('hasar', 'Hasar', alanSecenek('vasita', 'hasar'))}</div>`}
       <div class="hata-yazi" id="dh"></div><button class="btn tam">${ic('grafik', 18, '#fff')}Değeri hesapla</button></form>
     <div id="sonuc"></div>
     <div class="k soluk" style="line-height:1.5">Emlakta hesap, mahalle ve ilçe piyasa verisi ile aynı ilçedeki benzer Mülküm360 ilanlarından yapılır; vasıtada TSB kasko değeri ve benzer ilanlar kullanılır. Bilgilendirme amaçlıdır; SPK lisanslı değerleme raporu yerine geçmez.</div>
@@ -2375,7 +2375,7 @@ EKRAN.degerle = () => {
     k.querySelectorAll('[data-elsil]').forEach((b) => (b.onclick = () => { elListe.splice(+b.dataset.elsil, 1); elCiz(); }));
     $('#elEkle').onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:800">Emsal ekle</h2><form id="ef" class="ic" style="padding:0">
       <div class="izgara2"><label class="alan">Fiyat (TL)<input name="fiyat" inputmode="numeric" required></label><label class="alan">Net ㎡<input name="m2net" inputmode="numeric" required></label></div>
-      <div class="izgara2"><label class="alan">Oda<select name="oda"><option value="">—</option>${ALANLAR.emlak[2][3].map((x) => `<option>${x}</option>`).join('')}</select></label><label class="alan">Mahalle<input name="mahalle" maxlength="60"></label></div>
+      <div class="izgara2"><label class="alan">Oda<select name="oda"><option value="">—</option>${alanSecenek('emlak', 'oda').map((x) => `<option>${x}</option>`).join('')}</select></label><label class="alan">Mahalle<input name="mahalle" maxlength="60"></label></div>
       <label class="alan">Not (kaynak)<input name="not" maxlength="60" placeholder="örn. komşu site, Ekim 2026"></label><button class="btn tam">Ekle</button></form>`, (s) => ($('#ef', s).onsubmit = (e) => { e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)); v.fiyat = +v.fiyat.replace(/\D/g, ''); v.m2net = +v.m2net.replace(/\D/g, ''); if (!(v.fiyat > 0 && v.m2net > 0)) return toast('Fiyat ve m² gerekli.'); elListe.push(v); sheetKapat(); elCiz(); }));
   };
   elCiz();
