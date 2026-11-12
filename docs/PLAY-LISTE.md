@@ -61,7 +61,7 @@ Uygulama ve ilan vermek ücretsizdir. Değer raporu gibi AI özellikleri kredi i
 ⚖️ ŞEFFAFLIK VE GÜVENLİK
 Gerçek olmayan ilanlara karşı inceleme süreci, ilan ve profilleri şikâyet etme, uygulama içinden hesap ve verilerini silme imkânı.
 
-📬 İletişim: fatihcalis07@gmail.com · mulkum360.com
+📬 İletişim: +90 542 689 19 82 · mulkum360.app
 ```
 
 ## 4) Uygulama içi satın almalar (aynı sekmeden tanıtılacak)
