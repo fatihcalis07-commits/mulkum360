@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '10.0 · 13.11.2026 05:30';
+const SURUM = '10.1 · 13.11.2026 06:15';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -190,7 +190,8 @@ const YAS_GRUPLARI = ['0', '1', '2', '3', '4', '5-10', '11-15', '16-20', '21-25'
 // Bina yaşı artık "5-10" gibi grup olabilir; hesaplar için sayıya çevir (grup ortası, "31 ve üzeri" = 35)
 function yasSayi(y) { if (y === '' || y == null) return NaN; const s = String(y); if (/üzeri/.test(s)) return 35; const m = s.match(/^(\d+)\s*-\s*(\d+)$/); return m ? (+m[1] + +m[2]) / 2 : +s.replace(/[^\d]/g, ''); }
 function yasGrubu(y) { if (YAS_GRUPLARI.includes(String(y))) return String(y); y = yasSayi(y); if (isNaN(y)) return ''; return y <= 4 ? String(Math.round(y)) : y <= 10 ? '5-10' : y <= 15 ? '11-15' : y <= 20 ? '16-20' : y <= 25 ? '21-25' : y <= 30 ? '26-30' : '31 ve üzeri'; }
-const yayinda = () => S.ilanlar.filter((i) => i.durum === 'yayinda' && (!i.ornek || S.yonetici || i.sahip === S.oturum));
+const TEST_GORUNUR = true; // false yapılırsa test ilanları yalnız yöneticiye ve sahibine görünür
+const yayinda = () => S.ilanlar.filter((i) => i.durum === 'yayinda' && (TEST_GORUNUR || !i.ornek || S.yonetici || i.sahip === S.oturum));
 const gercekOnce = (l) => (l.some((i) => i.ornek) ? [...l.filter((i) => !i.ornek), ...l.filter((i) => i.ornek)] : l);
 const kapak = (i) => { const a = (i.fotolar && i.fotolar[0]) || ''; return a && i.alanlar?.kapakK && i.alanlar.kapakKk === a ? i.alanlar.kapakK : a; };
 function fotoKutu(i, boy = 40) {
@@ -2645,8 +2646,8 @@ async function basla() {
   await yukle();
   const uTema = new URLSearchParams(location.search).get('tema'); if (['prestij', 'vitrin', 'alev'].includes(uTema)) S.palet = uTema; // test/derin bağlantı: ?tema=vitrin
   temaUygula();
-  app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak Ve Vasıtada Yapay Zekâ Destekli İlan</div></div>
-    <div class="acilis-alt"><div class="acilis-cubuk"><span></span></div><div class="acilis-not">Değer Raporu · MülkümDeko · MülkümVideo</div></div></div>`;
+  app.innerHTML = `<div class="acilis"><div class="acilis-orta"><img src="logo.png" alt="" class="acilis-logo"><div class="acilis-ad">mülküm<b>360</b></div><div class="acilis-slogan">Emlak ve Vasıtada Yapay Zekâ</div><div class="acilis-cipler"><span>Değer Raporu</span><span>MülkümDeko</span><span>MülkümVideo</span></div></div>
+    <div class="acilis-alt"><div class="acilis-cubuk"><span></span></div><div class="acilis-not">Hayalindekine bir adım</div></div></div>`;
   try {
     const P = window.Capacitor?.Plugins;
     if (P?.App && !basla.dinleniyor) {

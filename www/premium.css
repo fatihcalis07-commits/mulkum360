@@ -266,3 +266,57 @@ html[data-tema] header.ust:not(.ust-hero){background-image:radial-gradient(120% 
 .kiyas-satir>div{overflow-wrap:break-word}
 .kiyas-satir b{white-space:nowrap;font-size:12.5px;letter-spacing:-.03em}
 .sheet .yildiz-sec button.dolu{color:#E0A100!important}
+
+/* ============ Sayfa ustleri (2. tur) ============ */
+html header.ust:not(.ust-hero):not(.kartvizit){border-radius:0 0 22px 22px;padding:calc(12px + var(--ust)) 16px 14px;gap:12px;min-height:calc(66px + var(--ust));box-shadow:0 16px 34px -20px rgba(9,16,28,.7)!important;overflow:hidden}
+header.ust:not(.ust-hero):not(.kartvizit)::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,0) 40%,rgba(255,255,255,.06) 52%,rgba(255,255,255,0) 64%);pointer-events:none}
+header.ust:not(.ust-hero):not(.kartvizit)::after,.hero::after{content:"";position:absolute;left:12%;right:12%;bottom:0;height:1px;background:linear-gradient(90deg,rgba(255,232,0,0),rgba(255,232,0,.6),rgba(255,232,0,0));pointer-events:none}
+header.ust>*{position:relative;z-index:1}
+.hero{position:relative}
+header.ust h1{font-size:18.5px;font-weight:750;letter-spacing:-.02em;line-height:1.2}
+header.ust .ikon-btn,header.ust.ust-hero .ikon-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.10);border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);transition:transform .14s var(--p-yay),background .15s}
+header.ust .ikon-btn:active{transform:scale(.92);background:rgba(255,255,255,.2)}
+header.ust .ikon-btn svg{width:20px;height:20px}
+header.ust .arama-kutu{border-radius:999px;height:44px;padding:0 16px}
+header.ust .kredi-hap{height:40px;padding:0 14px;border-radius:999px;font-weight:750;box-shadow:0 8px 18px -8px rgba(255,232,0,.65)}
+header.ust .soluk{opacity:.72;color:#fff!important}
+html header.ust.ust-hero{padding:calc(10px + var(--ust)) 16px 8px;gap:8px}
+.hero{padding:10px 18px 24px;border-radius:0 0 30px 30px;gap:16px;box-shadow:0 20px 40px -24px rgba(9,16,28,.75)}
+.hero-selam{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:650;color:rgba(255,255,255,.62)}
+.hero-baslik{font-size:30px;line-height:1.08}
+.hero .arama-kutu,.hero .ai-arama{border-radius:20px;box-shadow:0 14px 30px -14px rgba(0,0,0,.55)}
+
+/* ============ Acilis ekrani ============ */
+.acilis{background:radial-gradient(80% 50% at 50% 34%,rgba(40,130,225,.55) 0%,rgba(40,130,225,0) 70%),radial-gradient(60% 40% at 50% 100%,rgba(255,232,0,.10) 0%,rgba(255,232,0,0) 70%),linear-gradient(180deg,#0B1626 0%,#122440 55%,#0E1A2D 100%);overflow:hidden}
+.acilis::before{content:"";position:absolute;left:50%;top:38%;width:560px;height:560px;transform:translate(-50%,-50%);border-radius:50%;background:repeating-radial-gradient(circle,rgba(255,255,255,.07) 0 1px,rgba(255,255,255,0) 1px 54px);-webkit-mask-image:radial-gradient(circle,#000 20%,transparent 70%);mask-image:radial-gradient(circle,#000 20%,transparent 70%);pointer-events:none}
+.acilis-orta{gap:0;position:relative}
+.acilis-logo{width:104px;height:104px;border-radius:30px;box-shadow:0 0 0 1px rgba(255,255,255,.14),0 0 0 9px rgba(255,255,255,.05),0 30px 60px -20px rgba(0,0,0,.75),0 0 70px rgba(255,232,0,.18)}
+.acilis-ad{font-size:38px;letter-spacing:-.03em;margin-top:26px;line-height:1}
+.acilis-slogan{margin-top:12px;font-size:11.5px;font-weight:650;letter-spacing:.2em;text-transform:uppercase;opacity:.66}
+.acilis-cipler{display:flex;gap:8px;margin-top:26px;flex-wrap:wrap;justify-content:center}
+.acilis-cipler span{font-size:11.5px;font-weight:650;letter-spacing:.02em;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);color:rgba(255,255,255,.88)}
+.acilis-alt{max-width:180px;gap:14px;position:relative}
+.acilis-cubuk{height:3px;background:rgba(255,255,255,.12)}
+.acilis-not{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.5}
+
+/* ============ Karsilama ekrani ============ */
+.karsilama{position:relative;overflow:hidden}
+.karsilama::before{content:"";position:absolute;right:-180px;top:-180px;width:520px;height:520px;border-radius:50%;background:repeating-radial-gradient(circle,rgba(255,255,255,.07) 0 1px,rgba(255,255,255,0) 1px 48px);-webkit-mask-image:radial-gradient(circle,#000 25%,transparent 70%);mask-image:radial-gradient(circle,#000 25%,transparent 70%);pointer-events:none}
+.karsilama>*{position:relative}
+.karsilama img{width:72px;height:72px;border-radius:22px;box-shadow:0 0 0 1px rgba(255,255,255,.14),0 0 0 7px rgba(255,255,255,.05),0 24px 44px -18px rgba(0,0,0,.7)}
+.karsilama h1{font-size:38px;line-height:1.04;margin-top:6px}
+.karsilama h1 b{color:#FFE800}
+.karsilama p{color:rgba(255,255,255,.72)}
+.karsilama .madde{padding:14px;border-radius:18px;background:rgba(255,255,255,.055);box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);align-items:center}
+.karsilama .madde span{width:40px;height:40px;border-radius:13px;background:rgba(255,232,0,.12);box-shadow:inset 0 0 0 1px rgba(255,232,0,.28);color:#FFE95C}
+.karsilama .madde b{font-size:15px;letter-spacing:-.01em}
+.karsilama .btn{height:54px;border-radius:16px;font-size:15.5px}
+.karsilama{gap:14px;padding-top:calc(36px + var(--ust))}
+.karsilama .madde{padding:12px 14px}
+.karsilama h1{font-size:35px}
+.karsilama img{width:64px;height:64px;border-radius:20px}
+.acilis-cipler{gap:6px}
+.acilis-cipler span{padding:6px 10px;font-size:11px}
+.karsilama{gap:12px;padding-top:calc(28px + var(--ust));padding-bottom:calc(20px + var(--alt))}
+.karsilama .btn{height:50px}
+.karsilama p{font-size:14px}
