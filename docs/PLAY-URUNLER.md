@@ -55,14 +55,14 @@ Kaynak: `uyelik_paket` tablosu. Play Console → **Ürünler → Abonelikler**. 
 
 | Abonelik ürün kimliği | Ad | Temel plan süresi | Fiyat (KDV dahil) |
 |---|---|---|---|
-| `ortak_emlak_aylik` | Business Partner Emlak Aylık | 1 ay (P1M) | 1.500 ₺ |
-| `ortak_emlak_3ay` | Business Partner Emlak 3 Aylık | 3 ay (P3M) | 3.990 ₺ |
-| `ortak_emlak_yillik` | Business Partner Emlak Yıllık | 1 yıl (P1Y) | 14.400 ₺ |
-| `ortak_galeri_aylik` | Business Partner Galeri Aylık | 1 ay (P1M) | 1.000 ₺ |
-| `ortak_galeri_3ay` | Business Partner Galeri 3 Aylık | 3 ay (P3M) | 2.690 ₺ |
-| `ortak_galeri_yillik` | Business Partner Galeri Yıllık | 1 yıl (P1Y) | 9.600 ₺ |
+| `ortak_emlak_aylik` | Business Partner Emlak Aylık | 1 ay (P1M) | 1.799,99 ₺ |
+| `ortak_emlak_3ay` | Business Partner Emlak 3 Aylık | 3 ay (P3M) | 3.999,99 ₺ |
+| `ortak_emlak_yillik` | Business Partner Emlak Yıllık | 1 yıl (P1Y) | 14.999,99 ₺ |
+| `ortak_galeri_aylik` | Business Partner Galeri Aylık | 1 ay (P1M) | 1.499,99 ₺ |
+| `ortak_galeri_3ay` | Business Partner Galeri 3 Aylık | 3 ay (P3M) | 2.999,99 ₺ |
+| `ortak_galeri_yillik` | Business Partner Galeri Yıllık | 1 yıl (P1Y) | 9.999,99 ₺ |
 
-**DURUM (13.11.2026): Play Console'da oluşturuldu ve ETKİN.** Uygulama: Mülküm360 (`com.mulkum360.app`, uygulama kimliği 4973990726276854087, geliştirici hesabı "Tahmin Arenası", kişisel). 13.5 AAB dahili test kanalına taslak olarak yüklendi (yayınlanmadı). Her paketin tek temel planı var (`aylik` / `3ay` / `yillik`), otomatik yenileme, 7 gün ek süre, satış yalnız Türkiye. Play fiyatları KDV dahil: 1.499,99 / 3.989,99 / 14.399,99 / 999,99 / 2.689,99 / 9.599,99 TL (Play'e vergisiz tutar girilir, %20 KDV'yi kendisi ekler; ondalık için virgül kullan, nokta binlik sayılıyor). `uyelik_paket.fiyat` bu rakamlarla eşitlendi.
+**DURUM (13.11.2026): Play Console'da oluşturuldu ve ETKİN.** Uygulama: Mülküm360 (`com.mulkum360.app`, uygulama kimliği 4973990726276854087, geliştirici hesabı "Tahmin Arenası", kişisel). 13.5 AAB dahili test kanalına taslak olarak yüklendi (yayınlanmadı). Her paketin tek temel planı var (`aylik` / `3ay` / `yillik`), otomatik yenileme, 7 gün ek süre, satış yalnız Türkiye. Play fiyatları KDV dahil (13.11 güncellendi): Emlak 1.799,99 / 3.999,99 / 14.999,99, Galeri 1.499,99 / 2.999,99 / 9.999,99 TL. Play'e vergisiz tutar girilir (%20 KDV'yi kendisi ekler) ve TRY fiyatını sonu 9,99 olan en yakın tutara yuvarlar; kuruşsuz fiyat yazdırılamıyor. Vergisiz girilen: 1500 / 3333,33 / 12500 / 1250 / 2500 / 8333,33. Ondalık için virgül kullan, nokta binlik sayılıyor. Uygulamada da aynı tutar (kuruşlu) gösterilir; fiyat etiketi tahsil edilenle aynı olmalı. `uyelik_paket.fiyat` bu rakamlarla eşitlendi.
 
 - **Ücretsiz deneme teklifi EKLEME.** İlk 3 ay ücretsiz dönem bizim sistemimizde (kart istenmez). Paket seçimi ücretsiz dönemin son 7 gününde açılır.
 - Ek süre (grace period) önerisi: 7 gün; hesap askıya alma (account hold): varsayılan. Ek süre boyunca ilanlar yayında kalır, askıda kalınca beklemeye alınır.
