@@ -885,3 +885,19 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .tur-sec input:checked+span{border-color:var(--murekkep);color:var(--murekkep);background:var(--yuzey2)}
 .karma-kart{display:flex;flex-direction:column;gap:8px}
 .karma-kart>b{font-size:15.5px}
+
+/* Business Partner başvuru adımları */
+.bp-adim{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.bp-adim>b{flex:1;height:2px;background:var(--p-ince);border-radius:2px}
+.bp-adim>div{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--soluk)}
+.bp-adim i{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;border:1.5px solid var(--p-ince)}
+.bp-adim .simdi{color:var(--murekkep)}.bp-adim .simdi i{background:var(--murekkep);border-color:var(--murekkep);color:var(--yuzey,#fff)}
+.bp-adim .tamam i{background:var(--guven);border-color:var(--guven)}.bp-adim .tamam i svg{stroke:#fff}
+.bp-tur{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0 8px}
+.bp-tur button{min-height:44px;border-radius:12px;border:1.5px solid var(--p-ince);background:none;font:inherit;font-size:13px;font-weight:700;color:var(--soluk);cursor:pointer}
+.bp-tur button.secili{border-color:var(--murekkep);color:var(--murekkep);background:var(--yuzey2)}
+.bp-sozlesme{max-height:46vh;overflow:auto;padding:12px 14px;border-radius:14px;background:var(--yuzey2);font-size:13px;line-height:1.6}
+.bp-ozet{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bp-ozet>div{padding:10px;border-radius:12px;background:var(--yuzey2);min-width:0}
+.bp-ozet small{display:block;font-size:11px;font-weight:700;color:var(--soluk);text-transform:uppercase;letter-spacing:.05em}
+.bp-ozet b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

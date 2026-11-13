@@ -109,7 +109,7 @@ async function ortakHesapKarti() {
 EKRAN.ortaklik = async () => {
   if (girisGerek()) return;
   const b = ben();
-  app.innerHTML = ustBar('İş Ortaklığı') + '<div class="ic" id="ortakIc"><div class="kart soluk">Yükleniyor…</div></div>';
+  app.innerHTML = ustBar('Business Partner') + '<div class="ic" id="ortakIc"><div class="kart soluk">Yükleniyor…</div></div>';
   navCiz('hesap');
   const el = document.getElementById('ortakIc');
   const [o, a] = await Promise.all([ortakBen(), uyelikAyar()]);
@@ -120,32 +120,7 @@ EKRAN.ortaklik = async () => {
     <div class="oh-madde"><i>${ic('tik', 16)}</i>Aylık, 3 aylık veya yıllık paket; Google Play ile ödeme, istediğin zaman iptal</div></div>`;
   if (!b?.ofis) { el.innerHTML = tanitim + bosDurum('kisi', 'Kurumsal Hesap Gerekli', 'İş ortaklığı emlak ofisleri ve oto galeriler içindir. Profil ayarlarından hesap türünü "Emlak ofisi" ya da "Oto galeri" yap.', '<a class="btn" href="#/profil">Profil Ayarları</a>'); return; }
 
-  if (!o || o.durum === 'red' || o.durum === 'iptal') {
-    el.innerHTML = tanitim + (o?.durum === 'red' ? `<div class="uyari-k">${ic('uyari', 18)}<div>Önceki başvurun onaylanmadı${o.karar_notu ? ': ' + kac(o.karar_notu) : ''}. Bilgileri düzeltip yeniden başvurabilirsin.</div></div>` : '')
-      + `<form class="kart" id="ortakForm" style="display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">Başvuru</h3>
-        <label class="alan">Ticaret unvanı<input name="unvan" required minlength="3" maxlength="160" value="${kac(o?.unvan || b.firma || '')}"></label>
-        <label class="alan">Vergi / TC kimlik no<input name="vergi" required inputmode="numeric" maxlength="11" value="${kac(o?.vergi_no || '')}"></label>
-        <div class="alan">Ortaklık türü<div class="tur-sec">${[['emlak', 'Emlak Ofisi'], ['galeri', 'Oto Galeri'], ['karma', 'Emlak + Galeri']].map(([v, t]) => `<label><input type="radio" name="tur" value="${v}" ${(o?.tur || (galeri ? 'galeri' : 'emlak')) === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div></div>
-        <label class="alan" id="ofYetki1"><span id="ofYetki1Ad"></span><input name="yetki" required maxlength="30" value="${kac(o?.yetki_belge_no || b.yetkiNo || '')}"></label>
-        <label class="alan" id="ofYetki2" hidden>İkinci el taşıt ticareti yetki belgesi no<input name="yetki2" maxlength="30" value="${kac(o?.yetki_belge_no2 || '')}"></label>
-        <div class="k soluk" id="ofKarmaNot" hidden>Emlak + Galeri ortaklığında iki yetki belgesi de gerekir. Paketler aylık ${paraTl(a.karma_aylik ?? 2999.99)}'den başlar.</div>
-        <label class="satir k" style="align-items:flex-start"><input type="checkbox" name="kabul" style="width:22px;height:22px;flex-shrink:0"><span style="line-height:1.5"><a href="#/metin/ortaklik">İş Ortaklığı Sözleşmesi</a>'ni okudum, kabul ediyorum.</span></label>
-        <button class="btn tam">Başvur</button></form>`;
-    const turGuncelle = () => { const t = $('#ortakForm').querySelector('[name=tur]:checked')?.value || 'emlak';
-      $('#ofYetki1Ad').textContent = t === 'galeri' ? 'İkinci el taşıt ticareti yetki belgesi no' : 'Taşınmaz ticareti yetki belgesi no';
-      $('#ofYetki2').hidden = $('#ofKarmaNot').hidden = t !== 'karma'; };
-    $('#ortakForm').querySelectorAll('[name=tur]').forEach((r) => (r.onchange = turGuncelle)); turGuncelle();
-    $('#ortakForm').onsubmit = async (e) => {
-      e.preventDefault(); const f = new FormData(e.target);
-      const tur = f.get('tur') || 'emlak', yetki2 = String(f.get('yetki2') || '').trim();
-      if (tur === 'karma' && yetki2.length < 4) return toast('Emlak + Galeri için taşıt ticareti yetki belgesi no gerekli.');
-      const vergi = String(f.get('vergi')).replace(/\D/g, '');
-      if (!/^\d{10,11}$/.test(vergi)) return toast('Vergi no 10, TC kimlik no 11 haneli olmalı.');
-      if (!f.get('kabul')) return toast('Devam etmek için sözleşmeyi kabul et.');
-      if (await dene(async () => { const { error } = await sb.rpc('ortak_basvur', { p_tur: tur, p_unvan: f.get('unvan'), p_vergi: vergi, p_yetki: f.get('yetki'), p_surum: ORTAK_SOZLESME_SURUM, p_yetki2: tur === 'karma' ? yetki2 : null }); if (error) throw error; }, 'Başvurun alındı')) EKRAN.ortaklik();
-    };
-    return;
-  }
+  if (!o || o.durum === 'red' || o.durum === 'iptal') { ortakBasvuruAdim(el, b, o, a, 1, { tur: o?.tur || (galeri ? 'galeri' : 'emlak') }); return; }
   if (o.durum === 'basvuru') {
     el.innerHTML = tanitim + `<div class="kart ortak-durum"><span class="od-rozet bekliyor">İnceleniyor</span><b>${kac(o.unvan)}</b><div class="k soluk">Başvuru: ${gunAy(o.sozlesme_onay)} · Yetki belgesi: ${kac(o.yetki_belge_no)}</div><div class="k soluk">Yetki belgen Ticaret Bakanlığı kayıtlarından kontrol edildikten sonra onaylanır. Onayda bildirim gelir.</div></div>`;
     return;
@@ -178,6 +153,67 @@ EKRAN.ortaklik = async () => {
   el.querySelectorAll('[data-abone]').forEach((x) => (x.onclick = () => ortakAboneOl(paketler.find((p) => p.id === x.dataset.abone), o)));
   const k = $('#ibanKopya'); if (k) k.onclick = () => { try { navigator.clipboard.writeText(a.iban.replace(/\s/g, '')); toast('IBAN kopyalandı'); } catch (_) {} };
 };
+
+// ---------- Başvuru: 1) Paketler  2) Doğrulama  3) Sözleşme ----------
+const ORTAK_TUR_SECENEK = [['emlak', 'Emlak Ofisi', 'Konut, arsa, işyeri ilanları'], ['galeri', 'Oto Galeri', 'Otomobil, motosiklet, ticari araç ilanları'], ['karma', 'Emlak + Galeri', 'İki alanda tek ortaklık']];
+async function ortakBasvuruAdim(el, b, o, a, adim, v) {
+  const ay = a.ucretsiz_ay ?? 3;
+  const adimlar = ['Paketler', 'Doğrulama', 'Sözleşme'];
+  const ust = `<div class="bp-adim">${adimlar.map((t, i) => `<div class="${i + 1 < adim ? 'tamam' : i + 1 === adim ? 'simdi' : ''}"><i>${i + 1 < adim ? ic('tik', 14) : i + 1}</i><span>${t}</span></div>`).join('<b></b>')}</div>`;
+  const red = o?.durum === 'red' && adim === 1 ? `<div class="uyari-k">${ic('uyari', 18)}<div>Önceki başvurun onaylanmadı${o.karar_notu ? ': ' + kac(o.karar_notu) : ''}. Bilgileri düzeltip yeniden başvurabilirsin.</div></div>` : '';
+  const git = (n, ek) => ortakBasvuruAdim(el, b, o, a, n, { ...v, ...ek });
+
+  if (adim === 1) {
+    const listeler = await Promise.all(ORTAK_TUR_SECENEK.map(([t]) => uyelikPaketleri(t)));
+    el.innerHTML = ust + red + `<div class="ortak-hero"><b>Business Partner</b><span>İlk ${ay} ay ücretsiz, kart bilgisi istenmez. Ücretsiz dönem bitmeden paketini seçersin; istediğin zaman iptal.</span>
+        <div class="oh-madde"><i>${ic('tik', 16)}</i>Profilinde ve ilanlarında "Anlaşmalı" rozeti</div>
+        <div class="oh-madde"><i>${ic('tik', 16)}</i>EİDS doğrulamalı ilanlarla güvenilir vitrin</div>
+        <div class="oh-madde"><i>${ic('tik', 16)}</i>Aylık, 3 aylık veya yıllık paket; Google Play ile ödeme</div></div>
+      <div class="bp-tur">${ORTAK_TUR_SECENEK.map(([t, ad]) => `<button class="${v.tur === t ? 'secili' : ''}" data-tur="${t}">${ad}</button>`).join('')}</div>
+      <div class="k soluk" style="margin:-2px 0 10px">${kac(ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[2])}${v.tur === 'karma' ? ' · iki yetki belgesi gerekir' : ''}</div>
+      ${paketKartlari(listeler[ORTAK_TUR_SECENEK.findIndex((x) => x[0] === v.tur)], listeler[ORTAK_TUR_SECENEK.findIndex((x) => x[0] === v.tur)], true)}
+      <button class="btn tam" id="bpIleri">${ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[1]} ile Devam Et</button>
+      <div class="k soluk" style="text-align:center;margin-top:8px">Ödeme şimdi alınmaz. Önce işletmeni doğrularız, ücretsiz dönem onaydan sonra başlar.</div>`;
+    el.querySelectorAll('[data-tur]').forEach((x) => (x.onclick = () => git(1, { tur: x.dataset.tur })));
+    $('#bpIleri').onclick = () => git(2);
+    return;
+  }
+
+  if (adim === 2) {
+    const karma = v.tur === 'karma', galeriT = v.tur === 'galeri';
+    el.innerHTML = ust + `<form class="kart" id="bpDogrula" style="display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">İşletme Doğrulama</h3>
+        <div class="k soluk">Seçilen: <b>${kac(ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[1])}</b>. Yetki belgen Ticaret Bakanlığı kayıtlarından (TTBS) kontrol edilir.</div>
+        <label class="alan">Ticaret unvanı<input name="unvan" required minlength="3" maxlength="160" value="${kac(v.unvan ?? o?.unvan ?? b.firma ?? '')}"></label>
+        <label class="alan">Vergi / TC kimlik no<input name="vergi" required inputmode="numeric" maxlength="11" value="${kac(v.vergi ?? o?.vergi_no ?? '')}"></label>
+        <label class="alan">${galeriT ? 'İkinci el taşıt ticareti yetki belgesi no' : 'Taşınmaz ticareti yetki belgesi no'}<input name="yetki" required maxlength="30" value="${kac(v.yetki ?? o?.yetki_belge_no ?? b.yetkiNo ?? '')}"></label>
+        ${karma ? `<label class="alan">İkinci el taşıt ticareti yetki belgesi no<input name="yetki2" required maxlength="30" value="${kac(v.yetki2 ?? o?.yetki_belge_no2 ?? '')}"></label>` : ''}
+        <div class="izgara2"><button type="button" class="btn sade" id="bpGeri">Geri</button><button class="btn">Devam Et</button></div></form>`;
+    const f = $('#bpDogrula');
+    const topla = () => { const d = new FormData(f); return { unvan: String(d.get('unvan') || '').trim(), vergi: String(d.get('vergi') || '').replace(/\D/g, ''), yetki: String(d.get('yetki') || '').trim(), yetki2: String(d.get('yetki2') || '').trim() }; };
+    $('#bpGeri').onclick = () => git(1, topla());
+    f.onsubmit = (e) => {
+      e.preventDefault(); const d = topla();
+      if (d.unvan.length < 3) return toast('Ticaret unvanını yaz.');
+      if (!/^\d{10,11}$/.test(d.vergi)) return toast('Vergi no 10, TC kimlik no 11 haneli olmalı.');
+      if (d.yetki.length < 4) return toast('Yetki belgesi no gir.');
+      if (karma && d.yetki2.length < 4) return toast('Taşıt ticareti yetki belgesi no gir.');
+      git(3, d);
+    };
+    return;
+  }
+
+  // adim 3: sözleşme
+  el.innerHTML = ust + `<div class="kart" style="display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">${METIN.ortaklik[0]}</h3>
+      <div class="bp-sozlesme">${METIN.ortaklik[1].replace(/\n/g, '<br>')}</div>
+      <div class="bp-ozet"><div><small>Tür</small><b>${kac(ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[1])}</b></div><div><small>Unvan</small><b>${kac(v.unvan)}</b></div><div><small>Ücretsiz Dönem</small><b>${ay} Ay</b></div></div>
+      <label class="satir k" style="align-items:flex-start"><input type="checkbox" id="bpKabul" style="width:22px;height:22px;flex-shrink:0"><span style="line-height:1.5">İş Ortaklığı Sözleşmesi'ni okudum, kabul ediyorum.</span></label>
+      <div class="izgara2"><button class="btn sade" id="bpGeri">Geri</button><button class="btn" id="bpGonder">Başvur</button></div></div>`;
+  $('#bpGeri').onclick = () => git(2);
+  $('#bpGonder').onclick = async () => {
+    if (!$('#bpKabul').checked) return toast('Devam etmek için sözleşmeyi kabul et.');
+    if (await dene(async () => { const { error } = await sb.rpc('ortak_basvur', { p_tur: v.tur, p_unvan: v.unvan, p_vergi: v.vergi, p_yetki: v.yetki, p_surum: ORTAK_SOZLESME_SURUM, p_yetki2: v.tur === 'karma' ? v.yetki2 : null }); if (error) throw error; }, 'Başvurun alındı')) EKRAN.ortaklik();
+  };
+}
 
 // ---------- Yönetim sekmesi ----------
 YON_SEKME.push(['ortak', 'tik', 'İş Ortakları']);
