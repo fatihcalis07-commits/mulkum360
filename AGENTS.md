@@ -58,6 +58,8 @@ RPC: ilan_goruntule, teklif_yanitla, hesabimi_sil, favori_sayilari, rapor_olustu
 5. Gizli anahtarlar (DB şifresi, service_role, Google client secret, GEMINI_API_KEY) koda, sohbete ya da depoya yazılmaz.
 6. Her değişiklikten sonra APK derlenip kullanıcıya gönderilir; değişiklik `DEVIR.md` sonuna eklenir.
 7. Arayüz: tek renk paleti, dokunma alanları ≥44 px, yüzen öğe yok, tekrar eden menü yok.
+8. **Değerlemede piyasa verisinin en yükseği alınır** (kullanıcı kararı, 13.11.2026). Satılık konut m² referansı = TCMB değerleme, sahibindex/Betam ve Emlakjet & Endeksa rakamlarından **en yüksek olanı**; ortanca ya da ortalama alınmaz. Gerekçe: raporlar gecikmeli yayımlanır, değerleme zaman olarak piyasanın gerisinde kalmamalı. Her rakam ilin Endeksa yıllık artışıyla (yoksa Türkiye'ninkiyle) bugüne taşınır (`piyasaRef`, app.js). Yeni rapor gelince `endeks_veri`'ye kaynak ve dönemle eklenir.
+9. **Fiyat düşürülmeden önce kullanıcıya rapor sunulur.** Test ilanı ya da değerleme yöntemi güncellenirken fiyatı düşecek kayıtlar değiştirilmez; önce kaç kayıt, hangi bölge ve ne kadar düştüğü raporlanır, kullanıcı onay verirse uygulanır. Artışlar uygulanabilir. Toplu fiyat güncellemesinde fiyat düştü bildirimi ve fiyat geçmişi tetikleyicileri işlem süresince kapatılır, sonra açık olduğu kontrol edilir.
 
 ## 7. Açık işler (öncelik sırasıyla)
 1. **GEMINI_API_KEY** Supabase Edge Functions → Secrets'a eklenmedi (Google AI Studio'da "Mulkum360 MulkumAI" anahtarı hazır). Eklenene kadar MülkümAI sohbeti hata verir.
