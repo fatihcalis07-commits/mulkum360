@@ -62,6 +62,8 @@ Kaynak: `uyelik_paket` tablosu. Play Console → **Ürünler → Abonelikler**. 
 | `ortak_galeri_3ay` | Business Partner Galeri 3 Aylık | 3 ay (P3M) | 2.690 ₺ |
 | `ortak_galeri_yillik` | Business Partner Galeri Yıllık | 1 yıl (P1Y) | 9.600 ₺ |
 
+**DURUM (13.11.2026): Play Console'da oluşturuldu ve ETKİN.** Uygulama: Mülküm360 (`com.mulkum360.app`, uygulama kimliği 4973990726276854087, geliştirici hesabı "Tahmin Arenası", kişisel). 13.5 AAB dahili test kanalına taslak olarak yüklendi (yayınlanmadı). Her paketin tek temel planı var (`aylik` / `3ay` / `yillik`), otomatik yenileme, 7 gün ek süre, satış yalnız Türkiye. Play fiyatları KDV dahil: 1.499,99 / 3.989,99 / 14.399,99 / 999,99 / 2.689,99 / 9.599,99 TL (Play'e vergisiz tutar girilir, %20 KDV'yi kendisi ekler; ondalık için virgül kullan, nokta binlik sayılıyor). `uyelik_paket.fiyat` bu rakamlarla eşitlendi.
+
 - **Ücretsiz deneme teklifi EKLEME.** İlk 3 ay ücretsiz dönem bizim sistemimizde (kart istenmez). Paket seçimi ücretsiz dönemin son 7 gününde açılır.
 - Ek süre (grace period) önerisi: 7 gün; hesap askıya alma (account hold): varsayılan. Ek süre boyunca ilanlar yayında kalır, askıda kalınca beklemeye alınır.
 - Fiyatı Play Console'da değiştirirsen Yönetim → İş Ortakları → Business Partner Paketleri'ndeki fiyatı da aynı yap (Play fiyatı yüklenemezse o gösterilir).
