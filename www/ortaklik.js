@@ -1,9 +1,10 @@
 // Mülküm360 — Anlaşmalı İş Ortaklığı (emlak ofisi / oto galeri)
-// Model: ilk N ay ücretsiz, sonra aylık üyelik. Tahakkuk, gecikme ve askıya alma sunucuda (uyelik_gunluk) yürür.
-// Migration: supabase/migrations/20261116010000_is_ortakligi.sql
+// Model: ilk N ay ücretsiz (kart istenmez), sonra Business Partner aboneliği (Google Play: aylık / 3 aylık / yıllık).
+// Abonelik doğrulama ve Google bildirimleri: supabase/functions/play-abonelik. Havale yalnız yöneticinin tanımladığı ortaklarda (aylık tahakkuk).
+// Migration: 20261116010000_is_ortakligi.sql, 20261118010000_ortak_abonelik.sql
 'use strict';
 
-const ORTAK_SOZLESME_SURUM = 'v1-2026-11';
+const ORTAK_SOZLESME_SURUM = 'v2-2026-11';
 const ORTAK_DURUM = { basvuru: 'İnceleniyor', aktif: 'Aktif', askida: 'Askıda', red: 'Onaylanmadı', iptal: 'Sona Erdi' };
 const TAHAKKUK_DURUM = { bekliyor: 'Ödeme Bekliyor', odendi: 'Ödendi', gecikti: 'Gecikti', iptal: 'İptal' };
 const paraTl = (n) => (+n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' TL';
@@ -12,6 +13,57 @@ const donemAd = (d) => new Date(d).toLocaleDateString('tr-TR', { month: 'long', 
 
 async function uyelikAyar() { try { const { data } = await sb.from('uyelik_ayar').select('*').eq('id', 1).maybeSingle(); return data || {}; } catch (_) { return {}; } }
 async function ortakBen() { if (!S.oturum) return null; try { const { data } = await sb.from('is_ortagi').select('*').eq('kullanici', S.oturum).maybeSingle(); return data; } catch (_) { return null; } }
+async function uyelikPaketleri(tur) { try { const { data } = await sb.from('uyelik_paket').select('*').eq('tur', tur).eq('aktif', true).order('sira'); return data || []; } catch (_) { return []; } }
+const ABONE_DURUM = { aktif: 'Aktif', ek_sure: 'Ödeme Bekleniyor (Ek Süre)', iptal_edildi: 'Yenilenmeyecek', beklemede: 'Ödeme Alınamadı', duraklatildi: 'Duraklatıldı', sona_erdi: 'Sona Erdi', odeme_bekliyor: 'Ödeme Onayı Bekleniyor' };
+const aboneGecerli = (o) => !!o && ['aktif', 'ek_sure', 'iptal_edildi'].includes(o.abonelik_durum) && new Date(o.abonelik_bitis) > new Date();
+const paketSure = (ay) => (ay === 12 ? 'yıl' : ay === 1 ? 'ay' : ay + ' ay');
+const PLAY_ABONE_YONET = (urun) => 'https://play.google.com/store/account/subscriptions?package=com.mulkum360.app' + (urun ? '&sku=' + encodeURIComponent(urun) : '');
+
+// Google Play aboneliği onaylandı: sunucuda doğrula, sonra onayla (finish = acknowledge)
+async function ortakAbonelikDogrula(tx, token, urun) {
+  if (PLAY.isleniyor.has(token) || !S.oturum) return;
+  PLAY.isleniyor.add(token);
+  try {
+    const { data, error } = await sb.functions.invoke('play-abonelik', { body: { urun, token } });
+    if (error) { let j = {}; try { j = await error.context.json(); } catch (_) {} if (!j.bekliyor) toast(j.hata || 'Abonelik doğrulanamadı.'); return; }
+    await tx.finish();
+    if (data && data.gecerli) toast(`${data.paket || 'Business Partner'} aboneliğin aktif`);
+    if (location.hash.startsWith('#/ortaklik')) EKRAN.ortaklik();
+  } catch (x) { kayit && kayit('play_abonelik_hata', String(x && x.message)); }
+  finally { PLAY.isleniyor.delete(token); }
+}
+async function ortakAboneOl(p, o) {
+  const pu = playUrun(p.id), teklif = pu && pu.getOffer();
+  if (!teklif) return toast(window.Capacitor?.isNativePlatform?.() ? 'Google Play paketleri hazırlanıyor; biraz sonra tekrar dene.' : 'Abonelik, Google Play\'den indirilen Mülküm360 uygulamasından başlatılır.');
+  const ek = {}; if (o && o.play_token && aboneGecerli(o) && o.play_urun !== p.id) ek.googlePlay = { oldPurchaseToken: o.play_token }; // paket değişikliği
+  const hata = await teklif.order(ek);
+  if (hata && hata.code !== CdvPurchase.ErrorCode.PAYMENT_CANCELLED) toast(hata.message || 'Ödeme başlatılamadı.');
+}
+function aboneKarti(o, paketler, ucretsiz, kalanGun) {
+  const p = paketler.find((x) => x.id === o.play_urun);
+  if (aboneGecerli(o)) {
+    return `<div class="kart abone-kart"><div class="satir"><div class="ara"><small>Aboneliğin</small><b>${kac(p?.ad || 'Business Partner')}</b></div><span class="th-durum ${o.abonelik_durum === 'aktif' ? 'odendi' : 'bekliyor'}">${ABONE_DURUM[o.abonelik_durum] || ''}</span></div>
+      <div class="k soluk">${o.abonelik_durum === 'iptal_edildi' ? 'Yenileme kapalı. ' + gunAy(o.abonelik_bitis) + ' tarihine kadar geçerli.' : o.abonelik_durum === 'ek_sure' ? 'Google Play yenileme ödemesini tekrar deniyor. Ödeme yöntemini Google Play\'de güncelle.' : 'Sonraki yenileme: ' + gunAy(o.abonelik_bitis)}</div>
+      <a class="btn sade tam" href="${PLAY_ABONE_YONET(o.play_urun)}" target="_blank" rel="noopener">${ic('ayar', 18)}Aboneliği Google Play'de Yönet</a></div>`
+      + (paketler.length > 1 ? `<div class="bolum-bas"><h2 style="font-size:16px">Paketi Değiştir</h2></div>` + paketKartlari(paketler.filter((x) => x.id !== o.play_urun), paketler) : '');
+  }
+  const uyari = o.abonelik_durum === 'beklemede' ? `<div class="uyari-k">${ic('uyari', 18)}<div>Google Play yenileme ödemesini alamadı. Ödeme yöntemini <a href="${PLAY_ABONE_YONET(o.play_urun)}" target="_blank" rel="noopener">Google Play'de güncelle</a>; ödeme alınınca ilanların otomatik yayına döner.</div></div>` : '';
+  if (ucretsiz && kalanGun > 7) return uyari + `<div class="bilgi-k">${ic('takvim', 18)}<div>Ücretsiz dönemin ${gunAy(o.ucretsiz_bitis)} tarihine kadar sürüyor. Paket seçimi son 7 günde açılır; o zaman hatırlatma gönderiyoruz.</div></div>`
+    + `<div class="bolum-bas"><h2 style="font-size:16px">Business Partner Paketleri</h2></div>` + paketKartlari(paketler, paketler, true);
+  return uyari + `<div class="bolum-bas"><h2 style="font-size:16px">Business Partner Paketi Seç</h2></div>`
+    + (ucretsiz ? `<div class="k soluk" style="margin:-4px 0 10px">Ücretsiz dönemin ${kalanGun} gün sonra bitiyor. İlk ödeme abone olduğun gün alınır.</div>` : '') + paketKartlari(paketler, paketler);
+}
+function paketKartlari(liste, hepsi, kilitli) {
+  const aylik = hepsi.find((x) => x.ay === 1);
+  return liste.map((p) => {
+    const indirim = aylik && p.ay > 1 ? Math.round((1 - p.fiyat / (aylik.fiyat * p.ay)) * 100) : 0;
+    const fiyat = playUrun(p.id)?.pricing?.price || paraTl(p.fiyat);
+    return `<div class="kart paket-k${p.ay === 12 ? ' one' : ''}">${p.ay === 12 ? '<span class="paket-rozet">En Avantajlı</span>' : indirim > 0 ? '<span class="paket-rozet">%' + indirim + ' İndirim</span>' : ''}
+      <div class="satir"><div class="ara"><b style="font-size:15.5px">${kac(p.ad)}</b><div class="k soluk">${p.ay > 1 ? 'Aylık ' + paraTl(p.fiyat / p.ay) + ' karşılığı' : 'İstediğin zaman iptal'}</div></div>
+      <div style="text-align:right"><div style="font-size:19px;font-weight:800">${kac(fiyat)}</div><div class="k soluk">/ ${paketSure(p.ay)}</div></div></div>
+      ${kilitli ? '' : `<button class="btn tam" data-abone="${p.id}">Google Play ile Abone Ol</button>`}</div>`;
+  }).join('') || '<div class="bos">Şu an satışta paket yok</div>';
+}
 async function ortakTahakkuklar(id) { try { const { data } = await sb.from('uyelik_tahakkuk').select('*').eq('ortak', id).order('donem', { ascending: false }); return data || []; } catch (_) { return []; } }
 
 // Sözleşme metni (avukat kontrolünden geçmeli; sürüm değişince yeniden onay istenir)
@@ -19,13 +71,13 @@ METIN.ortaklik = ['İş Ortaklığı Sözleşmesi', `<b>1. Taraflar ve konu.</b>
 
 <b>2. Ücretsiz dönem.</b> Başvurunun onaylandığı günden itibaren ilk ücretsiz dönem boyunca (başvuru ekranında yazan ay sayısı) ilan hizmeti ücretsizdir.
 
-<b>3. Aylık üyelik bedeli.</b> Ücretsiz dönemin bittiği günden sonraki ilk ayın 1'inden itibaren her ay için onay ekranında yazan aylık üyelik bedeli (KDV dahil) tahakkuk eder. Bedel ayın 1'inde bildirilir, vade aynı ekranda yazan gün sayısı kadardır. Ödeme havale/EFT ile yapılır, ödeme açıklamasına üye e-postası yazılır. Fatura ödeme onayından sonra düzenlenir.
+<b>3. Abonelik.</b> Ücretsiz dönemden sonra ilan hizmeti, uygulamada gösterilen Business Partner paketlerinden (aylık, 3 aylık veya yıllık) biriyle sürer. Paketler Google Play aboneliği olarak satılır; fiyat ve vergiler ödeme öncesinde Google Play ekranında gösterilir. Abonelik seçilen süre sonunda otomatik yenilenir. İş Ortağı aboneliği Google Play hesabından istediği zaman iptal edebilir; iptal, ödenmiş dönemin sonunda geçerli olur. Ödeme, fatura ve iade işlemlerinde Google Play koşulları uygulanır. Mülküm360'ın yazılı onayıyla havale/EFT ile ödeme yapan İş Ortağı için aylık bedel ayın 1'inde tahakkuk eder, vade bildirimde yazılır ve fatura ödeme onayından sonra düzenlenir.
 
-<b>4. Gecikme.</b> Vadesinde ödenmeyen dönemde İş Ortağı'nın yayındaki ilanları beklemeye alınır. Ödeme onaylanınca ilanlar ek işlem gerekmeden yayına döner. Beklemede geçen süre için ayrıca bedel istenmez, ancak ilgili ayın bedeli düşmez.
+<b>4. Ödeme alınamaması.</b> Ücretsiz dönem bittiğinde geçerli bir abonelik yoksa, yenileme ödemesi alınamaz ve Google Play'in tanıdığı ek süre biterse ya da havale ile ödenen dönem vadesinde ödenmezse İş Ortağı'nın yayındaki ilanları beklemeye alınır. Abonelik yeniden geçerli olunca veya ödeme onaylanınca ilanlar ek işlem gerekmeden yayına döner. Beklemede geçen süre için ayrıca bedel istenmez.
 
 <b>5. İlan kuralları.</b> İş Ortağı yalnız yetkili olduğu taşınmaz ve taşıtlar için ilan verir; Ticaret Bakanlığı Elektronik İlan Doğrulama Sistemi (EİDS) kurallarına, Taşınmaz Ticareti Hakkında Yönetmelik ve Motorlu Kara Taşıtlarının Ticareti Hakkında Yönetmelik hükümlerine uyar. Yanıltıcı, satılmış veya yetkisiz ilanlar kaldırılır.
 
-<b>6. Bedel değişikliği.</b> Mülküm360 aylık bedeli en az 30 gün önceden bildirerek değiştirebilir. İş Ortağı yeni bedeli kabul etmezse sözleşmeyi sona erdirebilir.
+<b>6. Bedel değişikliği.</b> Mülküm360 paket bedellerini en az 30 gün önceden bildirerek değiştirebilir. Mevcut abonelikte fiyat artışı Google Play'in fiyat değişikliği kurallarına göre uygulanır. İş Ortağı yeni bedeli kabul etmezse aboneliği iptal edip sözleşmeyi sona erdirebilir.
 
 <b>7. Sona erme.</b> Taraflar sözleşmeyi her zaman sona erdirebilir. Sona erme, başlamış ayın bedelini etkilemez. Ağır ihlalde (sahte ilan, yetkisiz ilan, ödenmeyen iki dönem) Mülküm360 sözleşmeyi derhâl sona erdirebilir.
 
@@ -44,9 +96,11 @@ async function ortakHesapKarti() {
   const alt = !o || o.durum === 'red' || o.durum === 'iptal'
     ? `İlk ${a.ucretsiz_ay ?? 3} Ay Ücretsiz, Sonra Aylık ${paraTl(galeri ? a.galeri_aylik : a.emlak_aylik)}`
     : o.durum === 'basvuru' ? 'Başvurun İnceleniyor'
-    : o.durum === 'askida' ? 'Ödeme Gecikti · İlanların Beklemede'
-    : new Date(o.ucretsiz_bitis) >= new Date(new Date().toDateString()) ? 'Ücretsiz Dönem · ' + gunAy(o.ucretsiz_bitis) + ' Tarihine Kadar' : 'Aylık ' + paraTl(o.aylik_ucret) + ' · Aktif';
-  yer.innerHTML = `<a class="kart ortak-giris${o?.durum === 'askida' ? ' uyari' : ''}" href="#/ortaklik"><span class="og-ikon">${ic('tik', 22)}</span><div class="ara"><b>${o && ['aktif', 'askida'].includes(o.durum) ? ad : 'İş Ortaklığı Programı'}</b><div class="k soluk">${alt}</div></div><span class="yg-ok">${ic('ok', 18)}</span></a>`;
+    : o.durum === 'askida' ? (o.odeme_yontemi === 'havale' ? 'Ödeme Gecikti · İlanların Beklemede' : 'Abonelik Gerekli · İlanların Beklemede')
+    : aboneGecerli(o) ? 'Business Partner · ' + (o.abonelik_durum === 'iptal_edildi' ? gunAy(o.abonelik_bitis) + ' Tarihine Kadar' : 'Yenileme ' + gunAy(o.abonelik_bitis))
+    : new Date(o.ucretsiz_bitis) >= new Date(new Date().toDateString()) ? 'Ücretsiz Dönem · ' + gunAy(o.ucretsiz_bitis) + ' Tarihine Kadar'
+    : o.odeme_yontemi === 'havale' ? 'Aylık ' + paraTl(o.aylik_ucret) + ' · Aktif' : 'Business Partner Paketi Seç';
+  yer.innerHTML = `<a class="kart ortak-giris${o?.durum === 'askida' ? ' uyari' : ''}" href="#/ortaklik"><span class="og-ikon">${ic('tik', 22)}</span><div class="ara"><b>${o && ['aktif', 'askida'].includes(o.durum) ? (aboneGecerli(o) ? 'Business Partner' : ad) : 'Business Partner Programı'}</b><div class="k soluk">${alt}</div></div><span class="yg-ok">${ic('ok', 18)}</span></a>`;
 }
 
 // ---------- İş Ortaklığı ekranı ----------
@@ -58,10 +112,10 @@ EKRAN.ortaklik = async () => {
   const el = document.getElementById('ortakIc');
   const [o, a] = await Promise.all([ortakBen(), uyelikAyar()]);
   const galeri = b?.sektor === 'galeri', aylik = galeri ? a.galeri_aylik : a.emlak_aylik, ay = a.ucretsiz_ay ?? 3;
-  const tanitim = `<div class="ortak-hero"><b>${galeri ? 'Anlaşmalı Galeri' : 'Anlaşmalı Ofis'} Programı</b><span>İlk ${ay} ay ücretsiz. Sonra aylık ${paraTl(aylik)}, taahhüt yok.</span>
+  const tanitim = `<div class="ortak-hero"><b>${galeri ? 'Anlaşmalı Galeri' : 'Anlaşmalı Ofis'} Programı</b><span>İlk ${ay} ay ücretsiz, kart bilgisi istenmez. Sonra aylık ${paraTl(aylik)}'den başlayan Business Partner paketleri.</span>
     <div class="oh-madde"><i>${ic('tik', 16)}</i>Profilinde ve ilanlarında "${galeri ? 'Anlaşmalı Galeri' : 'Anlaşmalı Ofis'}" rozeti</div>
     <div class="oh-madde"><i>${ic('tik', 16)}</i>EİDS doğrulamalı ilanlarla güvenilir vitrin</div>
-    <div class="oh-madde"><i>${ic('tik', 16)}</i>Aylık ekstre, havale ile ödeme, faturalı hizmet</div></div>`;
+    <div class="oh-madde"><i>${ic('tik', 16)}</i>Aylık, 3 aylık veya yıllık paket; Google Play ile ödeme, istediğin zaman iptal</div></div>`;
   if (!b?.ofis) { el.innerHTML = tanitim + bosDurum('kisi', 'Kurumsal Hesap Gerekli', 'İş ortaklığı emlak ofisleri ve oto galeriler içindir. Profil ayarlarından hesap türünü "Emlak ofisi" ya da "Oto galeri" yap.', '<a class="btn" href="#/profil">Profil Ayarları</a>'); return; }
 
   if (!o || o.durum === 'red' || o.durum === 'iptal') {
@@ -86,19 +140,25 @@ EKRAN.ortaklik = async () => {
     return;
   }
   // aktif / askıda
-  const t = await ortakTahakkuklar(o.kullanici);
+  const havale = o.odeme_yontemi === 'havale';
+  const [t, paketler] = await Promise.all([havale ? ortakTahakkuklar(o.kullanici) : Promise.resolve([]), havale ? Promise.resolve([]) : uyelikPaketleri(o.tur)]);
+  const kalanGun = Math.ceil((new Date(o.ucretsiz_bitis) - new Date(new Date().toDateString())) / 864e5);
   const borc = t.filter((x) => ['bekliyor', 'gecikti'].includes(x.durum)).reduce((s, x) => s + +x.tutar, 0);
   const ucretsiz = new Date(o.ucretsiz_bitis) >= new Date(new Date().toDateString());
   const ilkDonem = (() => { const d = new Date(o.ucretsiz_bitis); d.setDate(d.getDate() - 1); return new Date(d.getFullYear(), d.getMonth() + 1, 1); })();
   el.innerHTML = `<div class="kart ortak-durum"><span class="od-rozet ${o.durum}">${ORTAK_DURUM[o.durum]}</span><b>${kac(o.unvan)}</b>
-      <div class="od-izgara"><div><small>Ücretsiz Dönem</small><b>${ucretsiz ? gunAy(o.ucretsiz_bitis) + "'e Kadar" : 'Bitti'}</b></div><div><small>Aylık Bedel</small><b>${paraTl(o.aylik_ucret)}</b></div>
-      <div><small>${ucretsiz ? 'İlk Ödeme Dönemi' : 'Açık Borç'}</small><b>${ucretsiz ? donemAd(ilkDonem) : paraTl(borc)}</b></div><div><small>Üyelik Başlangıcı</small><b>${gunAy(o.baslangic)}</b></div></div></div>`
-    + (o.durum === 'askida' ? `<div class="uyari-k">${ic('uyari', 18)}<div>Vadesi geçen ödeme nedeniyle ilanların beklemede. Ödeme onaylanınca otomatik olarak yayına döner.</div></div>` : '')
-    + (borc > 0 && a.iban ? `<div class="kart"><h3 style="margin:0 0 8px">Ödeme Bilgileri</h3><div class="k"><b>Alıcı:</b> ${kac(a.alici_unvan || KUNYE.unvan || KUNYE.ad)}</div><div class="k" style="margin-top:4px"><b>IBAN:</b> <span id="ortakIban">${kac(a.iban)}</span> <button class="btn sade kucuk" id="ibanKopya">Kopyala</button></div><div class="k soluk" style="margin-top:6px">Açıklamaya hesabının e-postasını yaz. Ödeme 1 iş günü içinde onaylanır.</div></div>` : '')
-    + `<div class="bolum-bas"><h2 style="font-size:16px">Hesap Özeti</h2></div>`
-    + (t.length ? `<div class="kart" style="padding:4px 16px">${t.map((x) => `<div class="tahakkuk-s"><div class="ara"><b>${donemAd(x.donem)}</b><div class="k soluk">${x.durum === 'odendi' ? 'Ödeme: ' + gunAy(x.odeme_tarihi) + (x.fatura_no ? ' · Fatura ' + kac(x.fatura_no) : '') : 'Son ödeme: ' + gunAy(x.vade)}</div></div><div style="text-align:right"><b>${paraTl(x.tutar)}</b><div><span class="th-durum ${x.durum}">${TAHAKKUK_DURUM[x.durum]}</span></div></div></div>`).join('')}</div>`
+      <div class="od-izgara"><div><small>Ücretsiz Dönem Sonu</small><b>${ucretsiz ? gunAy(o.ucretsiz_bitis) : 'Bitti'}</b></div>${havale ? `<div><small>Aylık Bedel</small><b>${paraTl(o.aylik_ucret)}</b></div>
+      <div><small>${ucretsiz ? 'İlk Ödeme Dönemi' : 'Açık Borç'}</small><b>${ucretsiz ? donemAd(ilkDonem) : paraTl(borc)}</b></div>` : `<div><small>Paket</small><b>${aboneGecerli(o) ? kac((paketler.find((x) => x.id === o.play_urun) || {}).ad?.replace('Business Partner ', '') || '—') : 'Seçilmedi'}</b></div>
+      <div><small>${aboneGecerli(o) ? (o.abonelik_durum === 'iptal_edildi' ? 'Bitiş' : 'Yenileme') : 'Abonelik'}</small><b>${aboneGecerli(o) ? gunAy(o.abonelik_bitis) : ABONE_DURUM[o.abonelik_durum] || 'Yok'}</b></div>`}<div><small>Üyelik Başlangıcı</small><b>${gunAy(o.baslangic)}</b></div></div></div>`
+    + (o.durum === 'askida' ? `<div class="uyari-k">${ic('uyari', 18)}<div>${havale ? 'Vadesi geçen ödeme nedeniyle ilanların beklemede. Ödeme onaylanınca otomatik olarak yayına döner.' : 'Geçerli bir Business Partner aboneliğin olmadığı için ilanların beklemede. Paket seçince otomatik yayına döner.'}</div></div>` : '')
+    + (havale ? '' : aboneKarti(o, paketler, ucretsiz, kalanGun))
+    + (havale && borc > 0 && a.iban && !window.Capacitor?.isNativePlatform?.() ? `<div class="kart"><h3 style="margin:0 0 8px">Ödeme Bilgileri</h3><div class="k"><b>Alıcı:</b> ${kac(a.alici_unvan || KUNYE.unvan || KUNYE.ad)}</div><div class="k" style="margin-top:4px"><b>IBAN:</b> <span id="ortakIban">${kac(a.iban)}</span> <button class="btn sade kucuk" id="ibanKopya">Kopyala</button></div><div class="k soluk" style="margin-top:6px">Açıklamaya hesabının e-postasını yaz. Ödeme 1 iş günü içinde onaylanır.</div></div>` : '')
+    + (havale && borc > 0 && window.Capacitor?.isNativePlatform?.() ? `<div class="bilgi-k">${ic('belge', 18)}<div>Ödeme bilgilerin faturayla birlikte e-posta ile gönderilir.</div></div>` : '')
+    + (havale ? `<div class="bolum-bas"><h2 style="font-size:16px">Hesap Özeti</h2></div>` : '')
+    + (!havale ? '' : t.length ? `<div class="kart" style="padding:4px 16px">${t.map((x) => `<div class="tahakkuk-s"><div class="ara"><b>${donemAd(x.donem)}</b><div class="k soluk">${x.durum === 'odendi' ? 'Ödeme: ' + gunAy(x.odeme_tarihi) + (x.fatura_no ? ' · Fatura ' + kac(x.fatura_no) : '') : 'Son ödeme: ' + gunAy(x.vade)}</div></div><div style="text-align:right"><b>${paraTl(x.tutar)}</b><div><span class="th-durum ${x.durum}">${TAHAKKUK_DURUM[x.durum]}</span></div></div></div>`).join('')}</div>`
       : bosDurum('takvim', 'Henüz Ödeme Dönemi Yok', ucretsiz ? 'Ücretsiz dönemin bitince ilk bedel ' + donemAd(ilkDonem) + ' ayının 1\'inde oluşur.' : 'Bu ayın bedeli ayın 1\'inde oluşur.'))
     + `<a class="btn sade tam" href="#/metin/ortaklik" style="margin-top:6px">${ic('belge', 18)}Sözleşmeyi Görüntüle</a>`;
+  el.querySelectorAll('[data-abone]').forEach((x) => (x.onclick = () => ortakAboneOl(paketler.find((p) => p.id === x.dataset.abone), o)));
   const k = $('#ibanKopya'); if (k) k.onclick = () => { try { navigator.clipboard.writeText(a.iban.replace(/\s/g, '')); toast('IBAN kopyalandı'); } catch (_) {} };
 };
 
@@ -106,25 +166,31 @@ EKRAN.ortaklik = async () => {
 YON_SEKME.push(['ortak', 'tik', 'İş Ortakları']);
 YON_GRUP[0][1].push('ortak');
 YON.ortak = async (el) => {
-  const [l, a, t] = await Promise.all([
+  const [l, a, t, pk] = await Promise.all([
     islem(sb.from('is_ortagi').select('*').order('guncelleme', { ascending: false })),
     uyelikAyar(),
     islem(sb.from('uyelik_tahakkuk').select('*').in('durum', ['bekliyor', 'gecikti']).order('vade')),
+    islem(sb.from('uyelik_paket').select('*').order('sira')),
   ]);
   await profilleriGetir(l.map((x) => x.kullanici));
   const ad = (id) => kac(kullanici(id)?.ad || 'Üye');
   const ortak = (id) => l.find((x) => x.kullanici === id);
   const bas = l.filter((x) => x.durum === 'basvuru'), akt = l.filter((x) => ['aktif', 'askida'].includes(x.durum));
-  const ortakSatir = (o, dugmeler) => `<div class="kart" style="margin-bottom:10px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;gap:8px"><div><b>${kac(o.unvan)}</b><div class="k soluk">${ad(o.kullanici)} · ${o.tur === 'galeri' ? 'Oto galeri' : 'Emlak ofisi'} · VKN ${kac(o.vergi_no)}</div><div class="k soluk">Yetki belgesi: ${kac(o.yetki_belge_no)}${o.ucretsiz_bitis ? ' · Ücretsiz: ' + gunAy(o.ucretsiz_bitis) + "'e kadar" : ''}${o.aylik_ucret ? ' · ' + paraTl(o.aylik_ucret) + '/ay' : ''}</div></div><span class="od-rozet ${o.durum}">${ORTAK_DURUM[o.durum]}</span></div>${dugmeler}</div>`;
+  const ortakSatir = (o, dugmeler) => `<div class="kart" style="margin-bottom:10px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;gap:8px"><div><b>${kac(o.unvan)}</b><div class="k soluk">${ad(o.kullanici)} · ${o.tur === 'galeri' ? 'Oto galeri' : 'Emlak ofisi'} · VKN ${kac(o.vergi_no)}</div><div class="k soluk">Yetki belgesi: ${kac(o.yetki_belge_no)}${o.ucretsiz_bitis ? ' · Ücretsiz dönem sonu: ' + gunAy(o.ucretsiz_bitis) : ''}${o.odeme_yontemi === 'havale' ? (o.aylik_ucret ? ' · Havale ' + paraTl(o.aylik_ucret) + '/ay' : ' · Havale') : ' · Play: ' + (aboneGecerli(o) ? kac(o.play_urun) + ' → ' + gunAy(o.abonelik_bitis) : ABONE_DURUM[o.abonelik_durum] || 'abonelik yok')}</div></div><span class="od-rozet ${o.durum}">${ORTAK_DURUM[o.durum]}</span></div>${dugmeler}</div>`;
   el.innerHTML = `<div class="bolum-bas"><h2 style="font-size:15px">Başvurular (${bas.length})</h2></div>`
     + (bas.length ? bas.map((o) => ortakSatir(o, `<div class="k soluk">Yetki belgesini <a href="https://ttbs.gtb.gov.tr/Home/BelgeSorgula" target="_blank" rel="noopener">TTBS Belge Sorgula</a> ile kontrol et.</div><div class="izgara2"><button class="btn kucuk" data-onay="${o.kullanici}">Onayla</button><button class="btn sade kucuk" data-red="${o.kullanici}">Reddet</button></div>`)).join('') : '<div class="k soluk" style="margin-bottom:12px">Bekleyen başvuru yok.</div>')
     + `<div class="bolum-bas"><h2 style="font-size:15px">Açık Tahakkuklar (${t.length})</h2></div>`
     + (t.length ? `<div class="kart" style="padding:4px 16px;margin-bottom:12px">${t.map((x) => `<div class="tahakkuk-s"><div class="ara"><b>${kac(ortak(x.ortak)?.unvan || '—')}</b><div class="k soluk">${donemAd(x.donem)} · vade ${gunAy(x.vade)}</div></div><div style="text-align:right"><b>${paraTl(x.tutar)}</b><div><span class="th-durum ${x.durum}">${TAHAKKUK_DURUM[x.durum]}</span></div><div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end"><button class="btn kucuk" data-odendi="${x.id}">Ödendi</button><button class="btn sade kucuk" data-tiptal="${x.id}">İptal</button></div></div></div>`).join('')}</div>` : '<div class="k soluk" style="margin-bottom:12px">Açık tahakkuk yok.</div>')
     + `<div class="bolum-bas"><h2 style="font-size:15px">İş Ortakları (${akt.length})</h2></div>`
-    + (akt.length ? akt.map((o) => ortakSatir(o, `<div class="izgara2"><button class="btn sade kucuk" data-ucret="${o.kullanici}">Aylık Bedeli Değiştir</button><button class="btn sade kucuk" data-sonlandir="${o.kullanici}">Ortaklığı Sonlandır</button></div>`)).join('') : '<div class="k soluk" style="margin-bottom:12px">Henüz iş ortağı yok.</div>')
+    + (akt.length ? akt.map((o) => ortakSatir(o, `<div class="izgara2"><button class="btn sade kucuk" data-yontem="${o.kullanici}">${o.odeme_yontemi === 'havale' ? 'Play Aboneliğine Geçir' : 'Havaleye Geçir'}</button><button class="btn sade kucuk" data-sonlandir="${o.kullanici}">Ortaklığı Sonlandır</button>${o.odeme_yontemi === 'havale' ? `<button class="btn sade kucuk" data-ucret="${o.kullanici}">Aylık Bedeli Değiştir</button>` : ''}</div>`)).join('') : '<div class="k soluk" style="margin-bottom:12px">Henüz iş ortağı yok.</div>')
+    + `<div class="bolum-bas"><h2 style="font-size:15px">Business Partner Paketleri</h2></div>
+      <div class="k soluk" style="margin-bottom:8px">Satış fiyatı Play Console'da belirlenir; buradaki fiyat uygulamada Play fiyatı yüklenemezse gösterilir. İkisini aynı tut.</div>
+      ${pk.map((p) => `<div class="kart" data-paket="${p.id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"><b>${kac(p.ad)}</b><div class="k soluk">${kac(p.id)}</div>
+        <div class="izgara2"><label class="alan">Fiyat (TL)<input name="fiyat" type="number" min="1" step="0.01" value="${p.fiyat}"></label><label class="satir k" style="gap:8px;align-self:end"><input type="checkbox" name="aktif" ${p.aktif ? 'checked' : ''} style="width:20px;height:20px">Satışta</label></div>
+        <button class="btn sade kucuk" data-pkaydet="${p.id}">Kaydet</button></div>`).join('')}`
     + `<div class="bolum-bas"><h2 style="font-size:15px">Program Ayarları</h2></div>
       <form class="kart" id="uyAyar" style="display:flex;flex-direction:column;gap:10px">
-        <div class="izgara2"><label class="alan">Emlak ofisi aylık (TL)<input name="emlak_aylik" type="number" min="0" step="0.01" value="${a.emlak_aylik ?? 1500}"></label><label class="alan">Oto galeri aylık (TL)<input name="galeri_aylik" type="number" min="0" step="0.01" value="${a.galeri_aylik ?? 1000}"></label></div>
+        <div class="izgara2"><label class="alan">Havale: emlak aylık (TL)<input name="emlak_aylik" type="number" min="0" step="0.01" value="${a.emlak_aylik ?? 1500}"></label><label class="alan">Havale: galeri aylık (TL)<input name="galeri_aylik" type="number" min="0" step="0.01" value="${a.galeri_aylik ?? 1000}"></label></div>
         <div class="izgara2"><label class="alan">Ücretsiz ay<input name="ucretsiz_ay" type="number" min="0" max="24" value="${a.ucretsiz_ay ?? 3}"></label><label class="alan">Vade (gün)<input name="vade_gun" type="number" min="1" max="60" value="${a.vade_gun ?? 15}"></label></div>
         <label class="alan">Ödeme alıcı unvanı<input name="alici_unvan" maxlength="160" value="${kac(a.alici_unvan || '')}"></label>
         <label class="alan">IBAN<input name="iban" maxlength="34" placeholder="TR.." value="${kac(a.iban || '')}"></label>
@@ -137,6 +203,16 @@ YON.ortak = async (el) => {
     if (await dene(async () => { const { error } = await sb.rpc('ortak_karar', { p_kullanici: o.kullanici, p_karar: 'onay', p_aylik: v }); if (error) throw error; }, 'Onaylandı')) yenile();
   }));
   el.querySelectorAll('[data-red]').forEach((x) => (x.onclick = () => ortakNotSheet('Başvuruyu reddet', 'Gerekçe (üyeye gider)', async (n) => { const { error } = await sb.rpc('ortak_karar', { p_kullanici: x.dataset.red, p_karar: 'red', p_not: n }); if (error) throw error; yenile(); })));
+  el.querySelectorAll('[data-yontem]').forEach((x) => (x.onclick = async () => {
+    const o = ortak(x.dataset.yontem), yeni = o.odeme_yontemi === 'havale' ? 'play' : 'havale';
+    if (!(await onayla('Ödeme yöntemi değişsin mi?', yeni === 'havale' ? `${o.unvan} faturalı havale ile ödeyecek; her ayın 1'inde tahakkuk oluşur. Ödeme bilgisini ona e-postayla gönder.` : `${o.unvan} uygulamadan Google Play aboneliği seçecek.`, 'Değiştir'))) return;
+    if (await dene(async () => { const { error } = await sb.rpc('ortak_odeme_yontemi', { p_kullanici: o.kullanici, p_yontem: yeni }); if (error) throw error; }, 'Kaydedildi')) yenile();
+  }));
+  el.querySelectorAll('[data-pkaydet]').forEach((x) => (x.onclick = async () => {
+    const k = el.querySelector(`[data-paket="${x.dataset.pkaydet}"]`), fiyat = +k.querySelector('[name=fiyat]').value;
+    if (!(fiyat > 0)) return toast('Fiyat sıfırdan büyük olmalı.');
+    if (await dene(async () => { const { error } = await sb.from('uyelik_paket').update({ fiyat, aktif: k.querySelector('[name=aktif]').checked }).eq('id', x.dataset.pkaydet); if (error) throw error; }, 'Paket kaydedildi')) yenile();
+  }));
   el.querySelectorAll('[data-sonlandir]').forEach((x) => (x.onclick = () => ortakNotSheet('Ortaklığı sonlandır', 'Not (isteğe bağlı)', async (n) => { const { error } = await sb.rpc('ortak_karar', { p_kullanici: x.dataset.sonlandir, p_karar: 'iptal', p_not: n || null }); if (error) throw error; yenile(); })));
   el.querySelectorAll('[data-ucret]').forEach((x) => (x.onclick = () => ortakNotSheet('Aylık bedel (TL)', 'Yeni aylık bedel', async (n) => { const v = +String(n).replace(',', '.'); if (!(v >= 0)) throw new Error('Geçerli bir tutar gir'); const { error } = await sb.rpc('ortak_karar', { p_kullanici: x.dataset.ucret, p_karar: 'onay', p_aylik: v }); if (error) throw error; yenile(); }, 'number')));
   el.querySelectorAll('[data-odendi]').forEach((x) => (x.onclick = () => ortakNotSheet('Ödeme alındı', 'Fatura no (isteğe bağlı)', async (n) => { const { error } = await sb.rpc('tahakkuk_odendi', { p_id: x.dataset.odendi, p_fatura: n || null }); if (error) throw error; yenile(); })));

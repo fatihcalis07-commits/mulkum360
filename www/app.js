@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.4 · 13.11.2026 03:15';
+const SURUM = '13.5 · 13.11.2026 09:10';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2918,7 +2918,9 @@ const METIN = {
 
 <b>5. Krediler.</b> Krediler süresizdir, nakde çevrilemez, devredilemez. Yapay zekâ üretimi başarısız olursa kullanılan kredi otomatik iade edilir.
 
-<b>6. Şikâyet.</b> Sorun ve itirazlarını ${KUNYE.eposta} adresine yazabilirsin; tüketici hakem heyeti ve tüketici mahkemesine başvuru hakkın saklıdır.`],
+<b>6. Business Partner abonelikleri.</b> Onaylı iş ortaklarına aylık, 3 aylık ve yıllık abonelik olarak Google Play üzerinden satılır. Abonelik dönem sonunda otomatik yenilenir; Google Play > Ödemeler ve abonelikler bölümünden istediğin zaman iptal edebilirsin, iptal ödenmiş dönemin sonunda geçerli olur. Kısmi dönem iadesi Google Play'in iade politikasına tabidir. Ayrıntılar İş Ortaklığı Sözleşmesi'ndedir.
+
+<b>7. Şikâyet.</b> Sorun ve itirazlarını ${KUNYE.eposta} adresine yazabilirsin; tüketici hakem heyeti ve tüketici mahkemesine başvuru hakkın saklıdır.`],
   gizlilik: ['Gizlilik politikası', `<b>Veri sorumlusu:</b> Mülküm360 uygulamasının veri sorumlusu Mülküm360'tır. İletişim: ${KUNYE.eposta}.
 
 <b>Toplanan veriler:</b> ad soyad, e-posta, telefon, ilan içerikleri ve fotoğraflar, mesajlar, satın alma kayıtları, uygulama hata kayıtları.

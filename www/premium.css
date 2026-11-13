@@ -871,3 +871,8 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .gorev-kural>b{font-size:13.5px}
 .gorev-kural span{padding-left:14px;position:relative}
 .gorev-kural span::before{content:'';position:absolute;left:2px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--soluk)}
+
+/* Business Partner abonelik */
+.abone-kart{display:flex;flex-direction:column;gap:10px}
+.abone-kart small{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soluk)}
+.abone-kart b{font-size:16.5px;font-weight:800}

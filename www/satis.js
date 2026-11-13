@@ -15,6 +15,7 @@ async function playDogrula(tx) {
   const np = tx.nativePurchase || {}, token = np.purchaseToken || tx.purchaseId;
   const urun = (tx.products && tx.products[0] && tx.products[0].id) || (np.productIds || [])[0];
   if (!token || !urun || PLAY.isleniyor.has(token) || !S.oturum) return; // giriş yoksa sonra yeniden denenir
+  if (/^ortak_/.test(String(urun))) return typeof ortakAbonelikDogrula === 'function' ? ortakAbonelikDogrula(tx, token, urun) : undefined; // Business Partner aboneliği
   const isDop = /^doping_/.test(String(urun));
   if (isDop && !PLAY_ILAN[urun]) { kayit && kayit('play_dop_ilansiz', String(urun)); toast('Görünürlük satın alımın çözümlenemedi; destek seninle iletişime geçecek.'); return; } // tüketme, Play yeniden deneyecek
   PLAY.isleniyor.add(token);
@@ -36,8 +37,11 @@ async function playBaslat() {
   let idler = []; try { idler = (await krediPaketleri()).map((p) => p.play_urun).filter(Boolean); } catch (_) {}
   try { const { data } = await sb.from('doping_paketleri').select('play_urun').eq('aktif', true); idler = [...idler, ...(data || []).map((d) => d.play_urun).filter(Boolean)]; } catch (_) {}
   idler = [...new Set(idler)];
-  if (!idler.length) { PLAY.basladi = false; return; }
-  store.register(idler.map((id) => ({ id, type: ProductType.CONSUMABLE, platform: Platform.GOOGLE_PLAY })));
+  let abonelikler = []; try { const { data } = await sb.from('uyelik_paket').select('id').eq('aktif', true); abonelikler = (data || []).map((d) => d.id); } catch (_) {}
+  if (!idler.length && !abonelikler.length) { PLAY.basladi = false; return; }
+  // Abonelik Google'da kullanıcı kimliğiyle eşleşsin (RTDN bildirimleri hesabı bulsun). Supabase kimliği UUID, kişisel veri değil.
+  store.applicationUsername = () => S.oturum || undefined; store.obfuscator = 'disabled';
+  store.register([...idler.map((id) => ({ id, type: ProductType.CONSUMABLE, platform: Platform.GOOGLE_PLAY })), ...abonelikler.map((id) => ({ id, type: ProductType.PAID_SUBSCRIPTION, platform: Platform.GOOGLE_PLAY }))]);
   store.when().approved((tx) => playDogrula(tx)).productUpdated(() => { PLAY.hazir = true; });
   store.error((e) => { if (e && e.code !== CdvPurchase.ErrorCode.PAYMENT_CANCELLED) kayit && kayit('play_hata', `${e.code} ${e.message}`); });
   try { await store.initialize([Platform.GOOGLE_PLAY]); PLAY.hazir = true; } catch (x) { kayit && kayit('play_baslat_hata', String(x && x.message)); }

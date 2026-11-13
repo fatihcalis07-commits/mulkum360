@@ -48,3 +48,36 @@
 - Edge `play-odeme` **CANLIYA DEPLOY EDİLDİ (10.11, doping dallı son kod)**; `GOOGLE_PLAY_SA_JSON` olmadığı için her istekte dürüst 503 ("henüz ayarlanmadı") veriyor — ödeme kabul etmiyor. ✔ kural: yarım entegrasyonu çalışıyormuş gibi gösterme.
 - İstemci doping Play yolu v3.6 kodunda (2641b1d): Play kataloğunda ürün görünene kadar sheet **talep** yoluna zarif düşüyor (headless duman ✔).
 - **Play Console + hizmet hesabı KULLANICI işi** (Google hesabı + mali yetki): 5 aktif ürünü oluştur, SA JSON indir → `supabase secrets set GOOGLE_PLAY_SA_JSON='...'` (tek satır, sohbete yazma) → uçtan uca kapalı test.
+
+## 5. Business Partner abonelikleri (İş Ortaklığı, 13.11.2026)
+
+Kaynak: `uyelik_paket` tablosu. Play Console → **Ürünler → Abonelikler**. Her paket ayrı bir abonelik ürünü, içinde tek bir temel plan (otomatik yenilenen).
+
+| Abonelik ürün kimliği | Ad | Temel plan süresi | Fiyat (KDV dahil) |
+|---|---|---|---|
+| `ortak_emlak_aylik` | Business Partner Emlak Aylık | 1 ay (P1M) | 1.500 ₺ |
+| `ortak_emlak_3ay` | Business Partner Emlak 3 Aylık | 3 ay (P3M) | 3.990 ₺ |
+| `ortak_emlak_yillik` | Business Partner Emlak Yıllık | 1 yıl (P1Y) | 14.400 ₺ |
+| `ortak_galeri_aylik` | Business Partner Galeri Aylık | 1 ay (P1M) | 1.000 ₺ |
+| `ortak_galeri_3ay` | Business Partner Galeri 3 Aylık | 3 ay (P3M) | 2.690 ₺ |
+| `ortak_galeri_yillik` | Business Partner Galeri Yıllık | 1 yıl (P1Y) | 9.600 ₺ |
+
+- **Ücretsiz deneme teklifi EKLEME.** İlk 3 ay ücretsiz dönem bizim sistemimizde (kart istenmez). Paket seçimi ücretsiz dönemin son 7 gününde açılır.
+- Ek süre (grace period) önerisi: 7 gün; hesap askıya alma (account hold): varsayılan. Ek süre boyunca ilanlar yayında kalır, askıda kalınca beklemeye alınır.
+- Fiyatı Play Console'da değiştirirsen Yönetim → İş Ortakları → Business Partner Paketleri'ndeki fiyatı da aynı yap (Play fiyatı yüklenemezse o gösterilir).
+
+### Kurulum
+1. Hizmet hesabı JSON'u (`GOOGLE_PLAY_SA_JSON`) kredi satışı için girildiyse aynısı kullanılır.
+2. **Gerçek zamanlı geliştirici bildirimleri (RTDN):**
+   - Google Cloud → Pub/Sub → konu oluştur (ör. `play-bildirim`), konuya `google-play-developer-notifications@system.gserviceaccount.com` için **Pub/Sub Yayıncısı** rolü ver.
+   - Konuya **push** aboneliği: uç nokta `https://klnabwqduyavaqmbzxpo.supabase.co/functions/v1/play-abonelik?anahtar=<GİZLİ>`
+   - Aynı gizli değeri Supabase sırrı yap: `supabase secrets set PLAY_RTDN_ANAHTAR='<GİZLİ>'` (sohbete yazma).
+   - Play Console → Para kazanma kurulumu → Gerçek zamanlı bildirimler → konu adı `projects/<proje>/topics/play-bildirim` → "Test bildirimi gönder".
+3. `play-abonelik` canlıda (`--no-verify-jwt`; uygulama girişi JWT'yi kendisi doğrular). SA JSON yoksa dürüst 503 verir.
+4. Lisans test hesabıyla kapalı testte: abone ol → İş Ortaklığı ekranında "Aboneliğin: Aktif" → Play'den iptal → "Yenilenmeyecek" → test aboneliği bitince ilanlar beklemede.
+
+### Davranış
+- Uygulama satın almadan sonra `play-abonelik`'e gider; sunucu Google `subscriptionsv2` ile doğrular, onaylar (acknowledge), `play_abonelik_isle` ile ortaklığı günceller.
+- Abonelik Google'da kullanıcı kimliğiyle (Supabase UUID, `obfuscatedExternalAccountId`) eşleşir; RTDN bildirimleri hesabı böyle bulur.
+- Geçerli: aktif, ek süre, iptal edilmiş ama süresi dolmamış. Askıya alma: ödeme alınamadı (on hold), duraklatıldı, süresi doldu. Günlük iş (06:10) 2 gün payla yedek kontrol yapar.
+- Havale: yalnız yöneticinin "Havaleye Geçir" dediği faturalı ortaklar; uygulamada IBAN gösterilmez (Play politikası), ödeme bilgisi e-postayla gider. Web'de gösterilir.
