@@ -61,6 +61,11 @@ Kaynak: `uyelik_paket` tablosu. Play Console → **Ürünler → Abonelikler**. 
 | `ortak_galeri_aylik` | Business Partner Galeri Aylık | 1 ay (P1M) | 1.499,99 ₺ |
 | `ortak_galeri_3ay` | Business Partner Galeri 3 Aylık | 3 ay (P3M) | 2.999,99 ₺ |
 | `ortak_galeri_yillik` | Business Partner Galeri Yıllık | 1 yıl (P1Y) | 9.999,99 ₺ |
+| `ortak_karma_aylik` | Business Partner Emlak + Galeri Aylık | 1 ay (P1M) | 2.999,99 ₺ |
+| `ortak_karma_3ay` | Business Partner Emlak + Galeri 3 Aylık | 3 ay (P3M) | 5.999,99 ₺ |
+| `ortak_karma_yillik` | Business Partner Emlak + Galeri Yıllık | 1 yıl (P1Y) | 21.999,99 ₺ |
+
+Emlak + Galeri (karma, 13.11, 13.6): iki yetki belgesi gerekir (taşınmaz + ikinci el taşıt). Başvuruda tür seçilir; aktif tek türlü ortak eksik belgeyi ekleyip geçiş talebi gönderir, yönetici "Emlak + Galeri'ye Geçir" ile onaylar. Rozet "Anlaşmalı Ofis ve Galeri". Vergisiz girilen: 2500 / 5000 / 18333,33. Migration 20261119010000_ortak_karma.sql.
 
 **DURUM (13.11.2026): Play Console'da oluşturuldu ve ETKİN.** Uygulama: Mülküm360 (`com.mulkum360.app`, uygulama kimliği 4973990726276854087, geliştirici hesabı "Tahmin Arenası", kişisel). 13.5 AAB dahili test kanalına taslak olarak yüklendi (yayınlanmadı). Her paketin tek temel planı var (`aylik` / `3ay` / `yillik`), otomatik yenileme, 7 gün ek süre, satış yalnız Türkiye. Play fiyatları KDV dahil (13.11 güncellendi): Emlak 1.799,99 / 3.999,99 / 14.999,99, Galeri 1.499,99 / 2.999,99 / 9.999,99 TL. Play'e vergisiz tutar girilir (%20 KDV'yi kendisi ekler) ve TRY fiyatını sonu 9,99 olan en yakın tutara yuvarlar; kuruşsuz fiyat yazdırılamıyor. Vergisiz girilen: 1500 / 3333,33 / 12500 / 1250 / 2500 / 8333,33. Ondalık için virgül kullan, nokta binlik sayılıyor. Uygulamada da aynı tutar (kuruşlu) gösterilir; fiyat etiketi tahsil edilenle aynı olmalı. `uyelik_paket.fiyat` bu rakamlarla eşitlendi.
 

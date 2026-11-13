@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.5 · 13.11.2026 09:10';
+const SURUM = '13.6 · 13.11.2026 10:40';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -35,7 +35,7 @@ const ilan = (id) => S.ilanlar.find((i) => i.id === id);
 const gorunenAd = (k) => { if (!k?.soyadGizle || k.id === S.oturum) return k?.ad || ''; const p = String(k.ad).trim().split(/\s+/); return p.length < 2 ? k.ad : p.slice(0, -1).join(' ') + ' ' + p[p.length - 1][0].toLocaleUpperCase('tr-TR') + '.'; };
 // Emlak ofisi rozeti: firma ya da yetki belgesi beyan eden üyeler
 const kurumAd = (k, ana) => (k?.sektor ? k.sektor === 'galeri' : ana === 'vasita') ? 'Oto galeri' : 'Emlak ofisi';
-const rozet = (k, ana = 'emlak') => k?.anlasmali ? `<span class="rozet kurum anlasmali">${ic('tik', 12)}Anlaşmalı ${k.anlasmali === 'galeri' ? 'Galeri' : 'Ofis'}</span>` : k?.dogrulanmis ? `<span class="rozet kurum dogru">${ic('kalkan', 12)}Doğrulanmış ${kurumAd(k, ana) === 'Oto galeri' ? 'galeri' : 'ofis'}</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet kurum">${ic('kalkan', 12)}${kurumAd(k, ana)}</span>` : '';
+const rozet = (k, ana = 'emlak') => k?.anlasmali ? `<span class="rozet kurum anlasmali">${ic('tik', 12)}Anlaşmalı ${k.anlasmali === 'galeri' ? 'Galeri' : k.anlasmali === 'karma' ? 'Ofis ve Galeri' : 'Ofis'}</span>` : k?.dogrulanmis ? `<span class="rozet kurum dogru">${ic('kalkan', 12)}Doğrulanmış ${kurumAd(k, ana) === 'Oto galeri' ? 'galeri' : 'ofis'}</span>` : k?.ofis || k?.firma || k?.yetkiNo ? `<span class="rozet kurum">${ic('kalkan', 12)}${kurumAd(k, ana)}</span>` : '';
 // İlanın kimden olduğu: emlakta ilan sahibinin hesap türü, vasıtada ilandaki alan
 const kimden = (i) => (i.ana === 'emlak' ? (kullanici(i.sahip).ofis ? 'Emlak ofisinden' : 'Sahibinden') : i.alanlar?.kimden || '');
 const basHarf = (ad) => kac(String(ad || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR'));

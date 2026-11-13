@@ -876,3 +876,12 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .abone-kart{display:flex;flex-direction:column;gap:10px}
 .abone-kart small{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soluk)}
 .abone-kart b{font-size:16.5px;font-weight:800}
+
+/* Emlak + Galeri */
+.tur-sec{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.tur-sec label{position:relative}
+.tur-sec input{position:absolute;opacity:0;pointer-events:none}
+.tur-sec span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:44px;padding:6px;border-radius:12px;border:1.5px solid var(--p-ince);font-size:13px;font-weight:700;color:var(--soluk);cursor:pointer}
+.tur-sec input:checked+span{border-color:var(--murekkep);color:var(--murekkep);background:var(--yuzey2)}
+.karma-kart{display:flex;flex-direction:column;gap:8px}
+.karma-kart>b{font-size:15.5px}
