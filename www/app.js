@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.9 · 13.11.2026 18:27';
+const SURUM = '14.0 · 13.11.2026 18:44';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -280,13 +280,14 @@ function sorguYap(o) { const p = new URLSearchParams(); Object.entries(o).forEac
 
 // ---------- Emsal ve değerleme ----------
 const TEST_DAHIL = false; // Test ilanları (ornek) değerlemeye, bölge analizine ve trende katılmaz
-// Piyasa referansı: il bazında TCMB değerleme birim fiyatı ve sahibindex/Betam ilan m² fiyatı; ikisinden yüksek olanı
-// TCMB konut fiyat endeksiyle (KFE, Türkiye) bugüne taşınır. Gerçek emsal azsa değer buna dayanır.
+// Piyasa referansı (satılık): il bazında TCMB değerleme birim fiyatı, sahibindex/Betam ilan m² fiyatı ve Emlakjet & Endeksa
+// m² fiyatı. Her biri bugüne taşınır (ilin Endeksa yıllık artışıyla, yoksa Türkiye'ninkiyle) ve en yükseği alınır.
+// Kirada BK ve Betam kira m²'sinden yüksek olanı, TCMB konut fiyat endeksiyle (KFE) güncellenir. Gerçek emsal azsa değer buna dayanır.
 async function piyasaRefYukle() {
   if (S.PIYASA) return S.PIYASA;
   try {
     const [{ data: v }, { data: k }, { data: pm }, { data: ke }] = await Promise.all([
-      sb.from('endeks_veri').select('kod,bolge,donem,deger').in('kod', ['BIRIMFIYAT', 'BK', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2']).gte('donem', '2024-01-01').order('donem', { ascending: false }).limit(5000),
+      sb.from('endeks_veri').select('kod,bolge,donem,deger').in('kod', ['BIRIMFIYAT', 'BK', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'ENDEKSA.YILLIK']).gte('donem', '2024-01-01').order('donem', { ascending: false }).limit(5000),
       sb.from('kfe').select('donem,deger').eq('bolge', 'TR').gte('donem', '2023-01-01').order('donem'),
       sb.from('piyasa_m2').select('il,ilce,mahalle,islem,m2_fiyat,kaynak,donem').order('donem', { ascending: false }).limit(3000),
       sb.from('kullanici_emsal').select('il,ilce,mahalle,islem,m2net,fiyat,olusturma').gte('olusturma', new Date(Date.now() - 365 * 864e5).toISOString()).limit(5000)
@@ -313,12 +314,22 @@ function piyasaRef(il, islem, ilce = '', mahalle = '') {
     const l = emM.length >= 3 ? emM : em.length >= 3 ? em : null;
     if (l) return { birim: medyan(l.map((x) => +x.fiyat / +x.m2net)), kaynak: `${l === emM ? mahalle + ' Mah.' : ilce} için kullanıcıların girdiği ${l.length} emsal (son 12 ay)`, yerel: true };
   }
-  const guncelle = (r) => { if (!r) return null; const f = P.kfeSon && P.kfe[r.donem.slice(0, 7)] ? P.kfeSon[1] / P.kfe[r.donem.slice(0, 7)] : 1; return { deger: +r.deger * Math.max(1, Math.min(f, 2)), donem: r.donem, ham: +r.deger }; };
+  // Satılıkta ilin Endeksa yıllık m² artışı (yoksa Türkiye) aylık bileşik olarak bugüne uygulanır; kirada KFE oranı
+  const yillik = P.son['ENDEKSA.YILLIK|' + il] || P.son['ENDEKSA.YILLIK|TR'];
+  const ayFark = (d) => { const a = new Date(d), b = new Date(); return Math.max(0, (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth()); };
+  const guncelle = (r) => {
+    if (!r) return null;
+    const f = !kira && yillik ? Math.pow(1 + +yillik.deger / 100, ayFark(r.donem) / 12) : P.kfeSon && P.kfe[r.donem.slice(0, 7)] ? P.kfeSon[1] / P.kfe[r.donem.slice(0, 7)] : 1;
+    return { deger: +r.deger * Math.max(1, Math.min(f, kira ? 2 : 1.5)), donem: r.donem, ham: +r.deger };
+  };
   const bul = (kod) => guncelle(P.son[kod + '|' + il]) || null;
-  const aday = [[kira ? 'BK' : 'BIRIMFIYAT', 'TCMB değerleme birim fiyatı'], [kira ? 'BETAM.KIRALIK.M2' : 'BETAM.SATILIK.M2', 'sahibindex ilan fiyatı (Betam)']]
+  const aday = (kira ? [['BK', 'TCMB değerleme kira'], ['BETAM.KIRALIK.M2', 'sahibindex ilan kirası (Betam)']]
+    : [['BIRIMFIYAT', 'TCMB değerleme'], ['BETAM.SATILIK.M2', 'sahibindex ilan (Betam)'], ['ENDEKSA.M2', 'Emlakjet & Endeksa']])
     .map(([kod, ad]) => { const x = bul(kod); return x ? { ...x, ad } : null; }).filter(Boolean).sort((x, y) => y.deger - x.deger);
   if (!aday.length) return il !== 'TR' ? piyasaRef('TR', islem) : null;
-  return { birim: aday[0].deger, kaynak: `${aday[0].ad}, ${il === 'TR' ? 'Türkiye ortalaması' : il} (${new Date(aday[0].donem).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}, bugüne güncellendi)`, adaylar: aday };
+  const yer = il === 'TR' ? 'Türkiye ortalaması' : il, ay = (d) => new Date(d).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+  // Kaynakların en yükseği esas alınır: raporlar gecikmeli yayımlandığından piyasanın gerisinde kalmamak için
+  return { birim: aday[0].deger, kaynak: `${aday[0].ad} m² fiyatı, ${yer} (${ay(aday[0].donem)}, bugüne güncellendi${!kira && yillik ? `; yıllık artış %${String(yillik.deger).replace('.', ',')}` : ''}${aday.length > 1 ? `; ${aday.length} kaynağın en yükseği` : ''})`, adaylar: aday };
 }
 function emsaller(o) {
   // o: {ana, alt, il, ilce, mahalle, sokak, islem, oda, m2net, marka, model, yil, haric}

@@ -49,8 +49,8 @@ EKRAN.endeksler = async () => {
 
 async function emlakEndeksHtml(st) {
   const tr = await endeksSeri(['TP.KFE.TR', 'TP.YKFE.TR', 'TP.YOKFEND.TR', 'TP.TUKFIY2025.GENEL', 'TP.DK.USD.S.YTL', 'TP.TUKFIY2025.04110', 'TP.AKONUTSAT1.KTRTOPLAM', 'BIRIMFIYAT', 'BK']);
-  const il = await endeksSeri(['BIRIMFIYAT', 'BK', 'M360.KONUT.M2', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2'], st.il);
-  const trR = await endeksSeri(['BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'BIRIMFIYAT']);
+  const il = await endeksSeri(['BIRIMFIYAT', 'BK', 'M360.KONUT.M2', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'ENDEKSA.YILLIK', 'ENDEKSA.REEL.YILLIK', 'ENDEKSA.ORT.FIYAT'], st.il);
+  const trR = await endeksSeri(['BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'BIRIMFIYAT', 'ENDEKSA.YILLIK', 'ENDEKSA.REEL.YILLIK', 'ENDEKSA.ORT.FIYAT']);
   const kfe = tabanla(tr['TP.KFE.TR']), reel = tabanla(bol(tr['TP.KFE.TR'] || [], tr['TP.TUKFIY2025.GENEL'] || [])), dolar = tabanla(bol(tr['TP.KFE.TR'] || [], tr['TP.DK.USD.S.YTL'] || []));
   const fiyat = il.BIRIMFIYAT || [], kira = il.BK || [];
   const sonF = fiyat.at(-1), sonK = kira.at(-1);
@@ -72,6 +72,10 @@ async function emlakEndeksHtml(st) {
       if (!sr.length) return '';
       return `<div class="kart"><h3>Piyasa raporları karşılaştırması</h3><div class="k soluk">${yer} · konut m² fiyatı (TL)</div>${cizgiGrafik(sr)}
         <div class="liste endeks-tablo">${sr.map((s) => `<div class="oge"><span class="ara">${s.ad} <small class="soluk">${donemAdi(s.l.at(-1)[0])}</small></span><b>${sayiY(s.l.at(-1)[1])} TL</b></div>`).join('')}</div>
+        ${(() => { const y = (x, k) => (x[k] || []).at(-1), yz = (v) => '%' + v[1].toLocaleString('tr-TR', { maximumFractionDigits: 1 }), t = y(trR, 'ENDEKSA.YILLIK'); if (!t) return '';
+          const iy = st.il !== 'TR' && y(il, 'ENDEKSA.YILLIK'), ir = iy && y(il, 'ENDEKSA.REEL.YILLIK'), io = st.il !== 'TR' && y(il, 'ENDEKSA.ORT.FIYAT'), tr2 = y(trR, 'ENDEKSA.REEL.YILLIK'), to = y(trR, 'ENDEKSA.ORT.FIYAT');
+          return `<div class="endeks-kutular" style="margin-top:10px">${kutu(yz(t), 'Yıllık artış', 'Türkiye · ' + donemAdi(t[0]))}${tr2 ? kutu(yz(tr2), 'Reel değişim', 'Enflasyondan arındırılmış') : ''}${iy ? kutu(yz(iy), 'Yıllık artış', st.il + (ir ? ' · reel ' + yz(ir) : '')) : to ? kutu(sayiY(to[1]) + ' TL', 'Ortalama konut', 'Türkiye') : ''}</div>
+          <div class="k soluk">Emlakjet &amp; Endeksa ${donemAdi(t[0])} Konut Değer Raporu${io ? ` · ${st.il} ortalama konut fiyatı ${sayiY(io[1])} TL` : to ? ` · Türkiye ortalama konut fiyatı ${sayiY(to[1])} TL` : ''}. Değerlemede satılık m² fiyatları bu yıllık artışla bugüne taşınır.</div>`; })()}
         <div class="k soluk">İlan fiyatları (sahibindex) pazarlık öncesi istenen fiyattır; TCMB değerleme fiyatları ekspertiz raporlarına dayanır. Kaynaklar kamuya açık aylık raporlardır.</div></div>`; })()}
     ${(() => { const n = S.ilanlar.filter((i) => i.durum === 'yayinda' && !i.ornek && i.ana === 'emlak').length;
       return `<div class="kart"><h3>Mülküm360 ilan verisi</h3><div class="k" style="line-height:1.5">Endeksimize her hafta yalnız gerçek ilanlar katılır (test ilanları hariç). Şu an <b>${n}</b> gerçek emlak ilanı var; bir ilde en az 3 ilan olunca o ilin m² ortalaması endekse girer.</div>
