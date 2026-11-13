@@ -82,7 +82,7 @@ async function konumPanel(i) {
   }
   const d = k.duzey === 'parsel' ? 0.0025 : k.duzey === 'sokak' ? 0.004 : k.duzey === 'mahalle' ? 0.008 : 0.03;
   const bbox = [k.lon - d * 1.4, k.lat - d, k.lon + d * 1.4, k.lat + d].map((x) => x.toFixed(5)).join('%2C');
-  const aciklama = { bina: 'İlan sahibinin haritada işaretlediği konum. Kapı numarası gösterilmez.', parsel: `Tapu parseli (TKGM ${kac(f.ada)} ada ${kac(f.parsel)} parsel) gösteriliyor; konum kesindir.`, sokak: 'Sokak düzeyinde yaklaşık konum. Kapı numarası gösterilmez.', mahalle: 'Mahalle merkezi gösteriliyor; tam adres satıcıdan öğrenilir.', ilçe: 'Mahalle haritada bulunamadı; ilçe merkezi gösteriliyor.' }[k.duzey];
+  const aciklama = { bina: 'İlan sahibinin haritada işaretlediği konum. Kapı numarası gösterilmez.', parsel: f.parselGoster === 'Evet' ? `Tapu parseli (TKGM ${kac(f.ada)} ada ${kac(f.parsel)} parsel) gösteriliyor; konum kesindir.` : 'Tapu parseline göre konum gösteriliyor. Kapı numarası gösterilmez.', sokak: 'Sokak düzeyinde yaklaşık konum. Kapı numarası gösterilmez.', mahalle: 'Mahalle merkezi gösteriliyor; tam adres satıcıdan öğrenilir.', ilçe: 'Mahalle haritada bulunamadı; ilçe merkezi gösteriliyor.' }[k.duzey];
   kap.innerHTML = `<h3>Konumu</h3>${yol}
     <div class="harita-kutu"><iframe title="İlanın konumu" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${k.lat.toFixed(5)}%2C${k.lon.toFixed(5)}"></iframe></div>
     <div class="k soluk" style="font-size:12px;margin:6px 0 10px">${aciklama} Harita © OpenStreetMap katkıda bulunanlar.</div>

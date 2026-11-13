@@ -901,3 +901,13 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .bp-ozet>div{padding:10px;border-radius:12px;background:var(--yuzey2);min-width:0}
 .bp-ozet small{display:block;font-size:11px;font-weight:700;color:var(--soluk);text-transform:uppercase;letter-spacing:.05em}
 .bp-ozet b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* İşaretleme: ada/parsel ile bul */
+.ki-parsel{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}
+.ki-parsel input{min-width:0;height:44px;padding:0 12px;border-radius:12px;border:1.5px solid var(--p-ince);background:var(--yuzey);color:var(--murekkep);font:inherit;font-size:15px}
+.ki-parsel .btn{height:44px;padding:0 14px;display:flex;align-items:center;gap:6px}
+.ki-pdurum{font-size:12.5px;line-height:1.45;min-height:18px}
+.ki-pdurum svg{vertical-align:-2px;stroke:var(--guven)}
+.ki-kullan{border:0;background:var(--murekkep);color:var(--yuzey,#fff);font:inherit;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;cursor:pointer;margin-left:4px}
+.ki-sinir{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.ki-sinir polygon{fill:rgba(200,85,61,.14);stroke:#C8553D;stroke-width:2.5;stroke-linejoin:round}

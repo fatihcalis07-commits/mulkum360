@@ -64,7 +64,9 @@ const ALANLAR = {
     ['ada', 'Ada no', 'metin'],
     ['parsel', 'Parsel no', 'metin'],
     ['eids', 'EİDS ilan doğrulama no', 'metin'],
-    ['proje', 'Proje adı (yeni konut projelerinde)', 'metin']
+    ['proje', 'Proje adı (yeni konut projelerinde)', 'metin'],
+    // Ada/parsel varsayılan olarak ilanda gizli; yalnız konumu bulmak için kullanılır
+    ['parselGoster', 'Ada / parsel ilanda görünsün', 'sec', ['Hayır', 'Evet']]
   ],
   vasita: [
     ['marka', 'Marka', 'liste', MARKALAR, true],

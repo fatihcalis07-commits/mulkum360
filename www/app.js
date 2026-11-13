@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.7 · 13.11.2026 11:20';
+const SURUM = '13.8 · 13.11.2026 14:41';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -894,10 +894,10 @@ EKRAN.ilan = (id) => {
         <div><span>İlan tarihi</span><b>${new Date(i.olusturma).toLocaleDateString('tr-TR')}</b></div>
         <div><span>Kategori</span><b>${ALT[i.alt].ad}</b></div>
         ${i.ana === 'emlak' ? `<div><span>Kimden</span><b>${kimden(i)}</b></div>` : ''}
-        ${tanim.filter(([k]) => f[k] !== undefined && f[k] !== '' && !(i.ana === 'vasita' && ['hasar', 'tramer'].includes(k))).map(([k, ad]) => `<div><span>${ad}</span><b>${kac(k === 'km' ? sayiBicim(f[k]) : k === 'tramer' ? sayiBicim(+f[k]) + ' TL' : k === 'tuketim' ? f[k] + ' L/100 km' : k === 'muayene' && !isNaN(new Date(f[k])) ? new Date(f[k]).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : f[k])}${k.startsWith('m2') ? ' ㎡' : ''}</b></div>`).join('')}
+        ${tanim.filter(([k]) => f[k] !== undefined && f[k] !== '' && !(i.ana === 'vasita' && ['hasar', 'tramer'].includes(k)) && k !== 'parselGoster' && !(['ada', 'parsel'].includes(k) && f.parselGoster !== 'Evet')).map(([k, ad]) => `<div><span>${ad}</span><b>${kac(k === 'km' ? sayiBicim(f[k]) : k === 'tramer' ? sayiBicim(+f[k]) + ' TL' : k === 'tuketim' ? f[k] + ' L/100 km' : k === 'muayene' && !isNaN(new Date(f[k])) ? new Date(f[k]).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : f[k])}${k.startsWith('m2') ? ' ㎡' : ''}</b></div>`).join('')}
         ${f.mahalle ? `<div><span>Mahalle</span><b>${kac(f.mahalle)}</b></div>` : ''}${f.sokak ? `<div><span>Sokak / cadde</span><b>${kac(f.sokak)}</b></div>` : ''}
       </div></div>
-      ${i.ana === 'emlak' && f.ada && f.parsel ? `<div class="kart" id="parselK"><h3>Ada / Parsel (TKGM)</h3><div class="bilgi-tablo"><div><span>Ada / parsel</span><b>${kac(f.ada)} / ${kac(f.parsel)}</b></div></div><div class="k soluk" style="margin-top:6px">Tapu ve Kadastro kayıtları yükleniyor…</div></div>` : ''}
+      ${i.ana === 'emlak' && f.ada && f.parsel && f.parselGoster === 'Evet' ? `<div class="kart" id="parselK"><h3>Ada / Parsel (TKGM)</h3><div class="bilgi-tablo"><div><span>Ada / parsel</span><b>${kac(f.ada)} / ${kac(f.parsel)}</b></div></div><div class="k soluk" style="margin-top:6px">Tapu ve Kadastro kayıtları yükleniyor…</div></div>` : ''}
       <a class="kart satir" href="#/uye/${s.id}" style="text-decoration:none;color:inherit">${avatarHtml(s, 44)}<div class="ara"><b>${kac(gorunenAd(s))}</b> ${rozet(s, i.ana)}${s.firma ? `<div class="k">${kac(s.firma)}</div>` : ''}<div class="k soluk">${s.olusturma ? 'Üyelik: ' + new Date(s.olusturma).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) + ' · ' : ''}${S.ilanlar.filter((x) => x.sahip === s.id && x.durum === 'yayinda').length} ilan${s.acikTel ? ' · ' + kac(s.acikTel) : ''}</div><div class="k soluk" data-sozet="${s.id}"></div></div><span class="ok">›</span></a>
       </div>
       <div data-panel="aciklama" hidden>
@@ -2172,26 +2172,62 @@ async function konumIsaretSheet(t) {
     try { const k = await ilanKonumu({ ...t, ana: 'emlak', alanlar: { ...al, enlem: '', boylam: '' } }); if (k && k.lat) { lat = k.lat; lon = k.lon; } } catch (_) {}
     if (!(lat > 0)) { lat = 39.1; lon = 35.2; z = 6; }
   }
-  sheetAc('<h2 style="font-size:19px;font-weight:800">Mülkün yerini işaretle</h2><div class="k soluk">Haritayı kaydır, ortadaki iğneyi binanın üstüne getir. Yakınlaştırmak için + kullan.</div>'
+  const mah = al.mahalle || '';
+  sheetAc('<h2 style="font-size:19px;font-weight:800">Mülkün yerini işaretle</h2><div class="k soluk">Haritayı kaydır, ortadaki iğneyi binanın üstüne getir. Ada ve parseli biliyorsan yazıp bul; harita parsele gider.</div>'
+    + '<div class="ki-parsel"><input id="kiAda" inputmode="numeric" maxlength="12" placeholder="Ada" aria-label="Ada no" value="' + kac(al.ada || '') + '"><input id="kiPar" inputmode="numeric" maxlength="12" placeholder="Parsel" aria-label="Parsel no" value="' + kac(al.parsel || '') + '"><button type="button" class="btn sade" id="kiBul">' + ic('ara', 16) + 'Bul</button></div>'
+    + '<div class="k soluk ki-pdurum" id="kiPDurum">' + (mah ? 'İsteğe bağlı. ' + kac(mah) + ', ' + kac(t.ilce || '') + ' içinde aranır.' : 'İsteğe bağlı. Ada/parsel aramak için önce mahalleyi seç.') + '</div>'
     + '<div id="kiHarita" class="ki-harita"><div class="ki-karo"></div><div class="ki-igne">' + ic('konum', 34, '#C8553D', 2.2) + '</div><div class="ki-zum"><button type="button" data-z="1">+</button><button type="button" data-z="-1">−</button></div><button type="button" class="ki-ben" id="kiBen">' + ic('konum', 16) + 'Konumum</button></div>'
-    + '<div class="k soluk" style="font-size:12px">Tam adres ve kapı numarası ilanda gösterilmez; harita yalnız binanın çevresini gösterir.</div>'
+    + '<div class="k soluk" style="font-size:12px">Tam adres, kapı numarası ve ada/parsel ilanda gösterilmez; harita yalnız binanın çevresini gösterir. Ada/parseli göstermek istersen formdaki "Ada / parsel ilanda görünsün" seçeneğini kullan.</div>'
     + '<div class="izgara2">' + (al.konumDuzey === 'isaret' ? '<button type="button" class="btn sade" id="kiSil">İşareti kaldır</button>' : '<span></span>') + '<button type="button" class="btn" id="kiKaydet">Bu konumu kullan</button></div>', (s) => {
-    const kap = $('#kiHarita', s), karo = $('.ki-karo', s);
+    const kap = $('#kiHarita', s), karo = $('.ki-karo', s), durum = $('#kiPDurum', s), adaI = $('#kiAda', s), parI = $('#kiPar', s);
+    let sinir = null, sorguNo = 0, ters = null;
     const ciz2 = () => {
       const W = kap.clientWidth || 340, H = kap.clientHeight || 300, n = 2 ** z, p = dunyaPx(lat, lon, z), x0 = p.x - W / 2, y0 = p.y - H / 2;
       let h = ''; for (let tx = Math.floor(x0 / 256); tx <= Math.floor((x0 + W) / 256); tx++) for (let ty = Math.floor(y0 / 256); ty <= Math.floor((y0 + H) / 256); ty++) h += '<img src="https://tile.openstreetmap.org/' + z + '/' + (((tx % n) + n) % n) + '/' + ty + '.png" alt="" style="position:absolute;left:' + (tx * 256 - x0) + 'px;top:' + (ty * 256 - y0) + 'px;width:256px;height:256px">';
+      // Parsel sınırı karo katmanının içinde: harita sürüklenirken birlikte kayar
+      if (sinir && sinir.length > 2) h += '<svg class="ki-sinir" width="' + W + '" height="' + H + '"><polygon points="' + sinir.map(([x, y]) => { const q = dunyaPx(y, x, z); return (q.x - x0).toFixed(1) + ',' + (q.y - y0).toFixed(1); }).join(' ') + '"/></svg>';
       karo.innerHTML = h; karo.style.transform = '';
+    };
+    const ozet = (p) => [p.mahalle, (p.ada || '?') + ' ada ' + (p.parsel || '?') + ' parsel', p.alan ? p.alan + ' m²' : '', p.nitelik].filter(Boolean).map(kac).join(' · ');
+    const parselSor = async (govde) => { const { data, error } = await sb.functions.invoke('parsel', { body: govde }); if (data && (data.hata || data.lat)) return data; if (error?.context?.status === 404) { try { const j = await error.context.json(); if (j?.hata) return j; } catch (_) {} } throw error || new Error('yanıt yok'); };
+    // İğnenin altındaki parsel: harita durunca sorulur, satıcı isterse "Kullan" ile ada/parsele yazılır
+    const tersSor = () => {
+      clearTimeout(ters); if (z < 16) return;
+      ters = setTimeout(async () => {
+        const no = ++sorguNo;
+        try {
+          const p = await parselSor({ lat, lon }); if (no !== sorguNo || !document.body.contains(durum)) return;
+          if (p.hata) { sinir = null; ciz2(); return; }
+          sinir = p.sinir; ciz2();
+          if (String(p.ada) === adaI.value.trim() && String(p.parsel) === parI.value.trim()) { durum.innerHTML = ic('tik', 14) + ' İğne bu parselde: ' + ozet(p); return; }
+          durum.innerHTML = 'İğnenin altındaki parsel: <b>' + ozet(p) + '</b> <button type="button" class="ki-kullan" id="kiKullan">Kullan</button>';
+          $('#kiKullan', s).onclick = () => { adaI.value = p.ada || ''; parI.value = p.parsel || ''; durum.innerHTML = ic('tik', 14) + ' ' + ozet(p); };
+        } catch (_) { /* TKGM yanıt vermezse öneri çıkmaz; işaretleme elle sürer */ }
+      }, 700);
+    };
+    $('#kiBul', s).onclick = async () => {
+      const ada = adaI.value.replace(/\D/g, ''), parsel = parI.value.replace(/\D/g, '');
+      if (!ada || !parsel) return toast('Ada ve parsel numarasını yaz.');
+      if (!t.il || !t.ilce || !al.mahalle) return toast('Önce il, ilçe ve mahalleyi seç.');
+      const b = $('#kiBul', s); b.disabled = true; durum.textContent = 'Tapu ve Kadastro kayıtlarında aranıyor…'; const no = ++sorguNo;
+      try {
+        const p = await parselSor({ il: t.il, ilce: t.ilce, mahalle: al.mahalle, ada, parsel }); if (no !== sorguNo || !document.body.contains(durum)) return;
+        if (p.hata) { durum.textContent = p.hata + ' Numaraları kontrol et ya da iğneyi elle yerleştir.'; return; }
+        lat = p.lat; lon = p.lon; z = 18; sinir = p.sinir; ciz2();
+        durum.innerHTML = ic('tik', 14) + ' Bulundu: ' + ozet(p) + '. İğneyi binanın üstüne kaydırabilirsin.';
+      } catch (_) { durum.textContent = 'Tapu ve Kadastro servisine şu an ulaşılamadı. İğneyi elle yerleştirebilirsin.'; }
+      finally { b.disabled = false; }
     };
     let tut = null;
     kap.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; tut = { x: e.clientX, y: e.clientY }; kap.setPointerCapture(e.pointerId); });
     kap.addEventListener('pointermove', (e) => { if (tut) karo.style.transform = 'translate(' + (e.clientX - tut.x) + 'px,' + (e.clientY - tut.y) + 'px)'; });
-    const birak = (e) => { if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; tut = null; const p = dunyaPx(lat, lon, z), q = pxDon(p.x - dx, p.y - dy, z); lat = q.lat; lon = q.lon; ciz2(); };
+    const birak = (e) => { if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; tut = null; const p = dunyaPx(lat, lon, z), q = pxDon(p.x - dx, p.y - dy, z); lat = q.lat; lon = q.lon; ciz2(); if (Math.abs(dx) + Math.abs(dy) > 3) tersSor(); };
     kap.addEventListener('pointerup', birak); kap.addEventListener('pointercancel', () => { tut = null; ciz2(); });
-    s.querySelectorAll('[data-z]').forEach((b) => (b.onclick = () => { z = Math.max(5, Math.min(19, z + +b.dataset.z)); ciz2(); }));
-    $('#kiBen', s).onclick = async () => { try { const G = window.Capacitor?.Plugins?.Geolocation; const p = G ? await G.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 }) : await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(ok, no, { timeout: 8000 })); lat = p.coords.latitude; lon = p.coords.longitude; z = 18; ciz2(); } catch (_) { toast('Konum alınamadı'); } };
-    $('#kiKaydet', s).onclick = () => { if (z < 14) return toast('Biraz daha yakınlaştırıp binanın üstüne getir.'); Object.assign(al, { enlem: Math.round(lat * 1e6) / 1e6, boylam: Math.round(lon * 1e6) / 1e6, konumDuzey: 'isaret' }); sheetKapat(); toast('Konum işaretlendi'); ciz(); };
+    s.querySelectorAll('[data-z]').forEach((b) => (b.onclick = () => { z = Math.max(5, Math.min(19, z + +b.dataset.z)); ciz2(); tersSor(); }));
+    $('#kiBen', s).onclick = async () => { try { const G = window.Capacitor?.Plugins?.Geolocation; const p = G ? await G.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 }) : await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(ok, no, { timeout: 8000 })); lat = p.coords.latitude; lon = p.coords.longitude; z = 18; ciz2(); tersSor(); } catch (_) { toast('Konum alınamadı'); } };
+    $('#kiKaydet', s).onclick = () => { if (z < 14) return toast('Biraz daha yakınlaştırıp binanın üstüne getir.'); Object.assign(al, { enlem: Math.round(lat * 1e6) / 1e6, boylam: Math.round(lon * 1e6) / 1e6, konumDuzey: 'isaret' }); const ad2 = adaI.value.replace(/\D/g, ''), pa2 = parI.value.replace(/\D/g, ''); if (ad2 && pa2) { al.ada = ad2; al.parsel = pa2; } clearTimeout(ters); sorguNo++; sheetKapat(); toast('Konum işaretlendi'); ciz(); };
     const ks = $('#kiSil', s); if (ks) ks.onclick = () => { delete al.enlem; delete al.boylam; delete al.konumDuzey; sheetKapat(); toast('İşaret kaldırıldı; konum adresten bulunacak'); ciz(); };
-    setTimeout(ciz2, 30);
+    setTimeout(() => { ciz2(); if (al.konumDuzey === 'isaret') tersSor(); }, 30);
   });
 }
 // Yeni ilan yayınlanınca: ilanı güçlendirme önerileri (kredi satışının en doğal anı)
