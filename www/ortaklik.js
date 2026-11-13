@@ -15,7 +15,10 @@ const donemAd = (d) => new Date(d).toLocaleDateString('tr-TR', { month: 'long', 
 
 async function uyelikAyar() { try { const { data } = await sb.from('uyelik_ayar').select('*').eq('id', 1).maybeSingle(); return data || {}; } catch (_) { return {}; } }
 async function ortakBen() { if (!S.oturum) return null; try { const { data } = await sb.from('is_ortagi').select('*').eq('kullanici', S.oturum).maybeSingle(); return data; } catch (_) { return null; } }
-async function uyelikPaketleri(tur) { try { const { data } = await sb.from('uyelik_paket').select('*').eq('tur', tur).eq('aktif', true).order('sira'); return data || []; } catch (_) { return []; } }
+const PAKET_ON = {};
+const bpSecim = { al: () => { try { return localStorage.getItem('bpPaket') || ''; } catch (_) { return ''; } }, yaz: (id) => { try { localStorage.setItem('bpPaket', id); } catch (_) {} } };
+async function uyelikPaketleri(tur) { if (PAKET_ON[tur]) return PAKET_ON[tur]; const l = await uyelikPaketleriGetir(tur); if (l.length) PAKET_ON[tur] = l; return l; }
+async function uyelikPaketleriGetir(tur) { try { const { data } = await sb.from('uyelik_paket').select('*').eq('tur', tur).eq('aktif', true).order('sira'); return data || []; } catch (_) { return []; } }
 const ABONE_DURUM = { aktif: 'Aktif', ek_sure: 'Ödeme Bekleniyor (Ek Süre)', iptal_edildi: 'Yenilenmeyecek', beklemede: 'Ödeme Alınamadı', duraklatildi: 'Duraklatıldı', sona_erdi: 'Sona Erdi', odeme_bekliyor: 'Ödeme Onayı Bekleniyor' };
 const aboneGecerli = (o) => !!o && ['aktif', 'ek_sure', 'iptal_edildi'].includes(o.abonelik_durum) && new Date(o.abonelik_bitis) > new Date();
 const paketSure = (ay) => (ay === 12 ? 'yıl' : ay === 1 ? 'ay' : ay + ' ay');
@@ -51,19 +54,19 @@ function aboneKarti(o, paketler, ucretsiz, kalanGun) {
   }
   const uyari = o.abonelik_durum === 'beklemede' ? `<div class="uyari-k">${ic('uyari', 18)}<div>Google Play yenileme ödemesini alamadı. Ödeme yöntemini <a href="${PLAY_ABONE_YONET(o.play_urun)}" target="_blank" rel="noopener">Google Play'de güncelle</a>; ödeme alınınca ilanların otomatik yayına döner.</div></div>` : '';
   if (ucretsiz && kalanGun > 7) return uyari + `<div class="bilgi-k">${ic('takvim', 18)}<div>Ücretsiz dönemin ${gunAy(o.ucretsiz_bitis)} tarihine kadar sürüyor. Paket seçimi son 7 günde açılır; o zaman hatırlatma gönderiyoruz.</div></div>`
-    + `<div class="bolum-bas"><h2 style="font-size:16px">Business Partner Paketleri</h2></div>` + paketKartlari(paketler, paketler, true);
+    + `<div class="bolum-bas"><h2 style="font-size:16px">Business Partner Paketleri</h2></div>` + paketKartlari(paketler, paketler, true, bpSecim.al());
   return uyari + `<div class="bolum-bas"><h2 style="font-size:16px">Business Partner Paketi Seç</h2></div>`
     + (ucretsiz ? `<div class="k soluk" style="margin:-4px 0 10px">Ücretsiz dönemin ${kalanGun} gün sonra bitiyor. İlk ödeme abone olduğun gün alınır.</div>` : '') + paketKartlari(paketler, paketler);
 }
-function paketKartlari(liste, hepsi, kilitli) {
+function paketKartlari(liste, hepsi, kilitli, secili) {
   const aylik = hepsi.find((x) => x.ay === 1);
   return liste.map((p) => {
     const indirim = aylik && p.ay > 1 ? Math.round((1 - p.fiyat / (aylik.fiyat * p.ay)) * 100) : 0;
     const fiyat = playUrun(p.id)?.pricing?.price || paraTl(p.fiyat);
-    return `<div class="kart paket-k${p.ay === 12 ? ' one' : ''}">${p.ay === 12 ? '<span class="paket-rozet">En Avantajlı</span>' : indirim > 0 ? '<span class="paket-rozet">%' + indirim + ' İndirim</span>' : ''}
+    return `<div class="kart paket-k${p.ay === 12 ? ' one' : ''}${kilitli ? ' secilir' : ''}${kilitli && secili === p.id ? ' secili' : ''}"${kilitli ? ` data-psec="${p.id}" role="radio" tabindex="0" aria-checked="${secili === p.id}"` : ''}>${p.ay === 12 ? '<span class="paket-rozet">En Avantajlı</span>' : indirim > 0 ? '<span class="paket-rozet">%' + indirim + ' İndirim</span>' : ''}
       <div class="satir"><div class="ara"><b style="font-size:15.5px">${kac(p.ad)}</b><div class="k soluk">${p.ay > 1 ? 'Aylık ' + paraTl(p.fiyat / p.ay) + ' karşılığı' : 'İstediğin zaman iptal'}</div></div>
       <div style="text-align:right"><div style="font-size:19px;font-weight:800">${kac(fiyat)}</div><div class="k soluk">/ ${paketSure(p.ay)}</div></div></div>
-      ${kilitli ? '' : `<button class="btn tam" data-abone="${p.id}">Google Play ile Abone Ol</button>`}</div>`;
+      ${kilitli ? `<div class="paket-sec">${secili === p.id ? ic('tik', 16) + 'Seçildi' : 'Bu paketi seç'}</div>` : `<button class="btn tam" data-abone="${p.id}">Google Play ile Abone Ol</button>`}</div>`;
   }).join('') || '<div class="bos">Şu an satışta paket yok</div>';
 }
 async function ortakTahakkuklar(id) { try { const { data } = await sb.from('uyelik_tahakkuk').select('*').eq('ortak', id).order('donem', { ascending: false }); return data || []; } catch (_) { return []; } }
@@ -151,6 +154,11 @@ EKRAN.ortaklik = async () => {
   const kg = $('#karmaGec'); if (kg) kg.onclick = async () => { const v = $('#karmaBelge').value.trim(); if (v.length < 4) return toast('Yetki belgesi no gir.');
     if (await dene(async () => { const { error } = await sb.rpc('ortak_karma_talep', { p_yetki2: v }); if (error) throw error; }, 'Geçiş talebin alındı')) EKRAN.ortaklik(); };
   el.querySelectorAll('[data-abone]').forEach((x) => (x.onclick = () => ortakAboneOl(paketler.find((p) => p.id === x.dataset.abone), o)));
+  el.querySelectorAll('[data-psec]').forEach((x) => (x.onclick = () => {
+    bpSecim.yaz(x.dataset.psec);
+    el.querySelectorAll('[data-psec]').forEach((y) => { const s2 = y === x; y.classList.toggle('secili', s2); y.setAttribute('aria-checked', s2); y.querySelector('.paket-sec').innerHTML = s2 ? ic('tik', 16) + 'Seçildi' : 'Bu paketi seç'; });
+    toast(`Seçimin kaydedildi. Abonelik ${gunAy(new Date(new Date(o.ucretsiz_bitis) - 7 * 864e5))} tarihinde açılır, hatırlatma gelir.`);
+  }));
   const k = $('#ibanKopya'); if (k) k.onclick = () => { try { navigator.clipboard.writeText(a.iban.replace(/\s/g, '')); toast('IBAN kopyalandı'); } catch (_) {} };
 };
 
@@ -165,17 +173,20 @@ async function ortakBasvuruAdim(el, b, o, a, adim, v) {
 
   if (adim === 1) {
     const listeler = await Promise.all(ORTAK_TUR_SECENEK.map(([t]) => uyelikPaketleri(t)));
+    const liste = listeler[ORTAK_TUR_SECENEK.findIndex((x) => x[0] === v.tur)];
+    if (!liste.some((p) => p.id === v.paket)) v = { ...v, paket: (liste.find((p) => p.id === bpSecim.al()) || liste.find((p) => p.ay === 12) || liste[0] || {}).id };
     el.innerHTML = ust + red + `<div class="ortak-hero"><b>Business Partner</b><span>İlk ${ay} ay ücretsiz, kart bilgisi istenmez. Ücretsiz dönem bitmeden paketini seçersin; istediğin zaman iptal.</span>
         <div class="oh-madde"><i>${ic('tik', 16)}</i>Profilinde ve ilanlarında "Anlaşmalı" rozeti</div>
         <div class="oh-madde"><i>${ic('tik', 16)}</i>EİDS doğrulamalı ilanlarla güvenilir vitrin</div>
         <div class="oh-madde"><i>${ic('tik', 16)}</i>Aylık, 3 aylık veya yıllık paket; Google Play ile ödeme</div></div>
       <div class="bp-tur">${ORTAK_TUR_SECENEK.map(([t, ad]) => `<button class="${v.tur === t ? 'secili' : ''}" data-tur="${t}">${ad}</button>`).join('')}</div>
       <div class="k soluk" style="margin:-2px 0 10px">${kac(ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[2])}${v.tur === 'karma' ? ' · iki yetki belgesi gerekir' : ''}</div>
-      ${paketKartlari(listeler[ORTAK_TUR_SECENEK.findIndex((x) => x[0] === v.tur)], listeler[ORTAK_TUR_SECENEK.findIndex((x) => x[0] === v.tur)], true)}
+      ${paketKartlari(liste, liste, true, v.paket)}
       <button class="btn tam" id="bpIleri">${ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[1]} ile Devam Et</button>
       <div class="k soluk" style="text-align:center;margin-top:8px">Ödeme şimdi alınmaz. Önce işletmeni doğrularız, ücretsiz dönem onaydan sonra başlar.</div>`;
-    el.querySelectorAll('[data-tur]').forEach((x) => (x.onclick = () => git(1, { tur: x.dataset.tur })));
-    $('#bpIleri').onclick = () => git(2);
+    el.querySelectorAll('[data-tur]').forEach((x) => (x.onclick = () => git(1, { tur: x.dataset.tur, paket: '' })));
+    el.querySelectorAll('[data-psec]').forEach((x) => (x.onclick = () => git(1, { paket: x.dataset.psec })));
+    $('#bpIleri').onclick = () => { if (v.paket) bpSecim.yaz(v.paket); git(2); };
     return;
   }
 
@@ -205,7 +216,7 @@ async function ortakBasvuruAdim(el, b, o, a, adim, v) {
   // adim 3: sözleşme
   el.innerHTML = ust + `<div class="kart" style="display:flex;flex-direction:column;gap:12px"><h3 style="margin:0">${METIN.ortaklik[0]}</h3>
       <div class="bp-sozlesme">${METIN.ortaklik[1].replace(/\n/g, '<br>')}</div>
-      <div class="bp-ozet"><div><small>Tür</small><b>${kac(ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[1])}</b></div><div><small>Unvan</small><b>${kac(v.unvan)}</b></div><div><small>Ücretsiz Dönem</small><b>${ay} Ay</b></div></div>
+      <div class="bp-ozet"><div><small>Tür</small><b>${kac(ORTAK_TUR_SECENEK.find((x) => x[0] === v.tur)[1])}</b></div><div><small>Unvan</small><b>${kac(v.unvan)}</b></div>${v.paket && PAKET_ON[v.tur] ? `<div><small>Paket</small><b>${kac(((PAKET_ON[v.tur].find((p) => p.id === v.paket) || {}).ad || '').replace('Business Partner ', ''))}</b></div>` : ''}<div><small>Ücretsiz Dönem</small><b>${ay} Ay</b></div></div>
       <label class="satir k" style="align-items:flex-start"><input type="checkbox" id="bpKabul" style="width:22px;height:22px;flex-shrink:0"><span style="line-height:1.5">İş Ortaklığı Sözleşmesi'ni okudum, kabul ediyorum.</span></label>
       <div class="izgara2"><button class="btn sade" id="bpGeri">Geri</button><button class="btn" id="bpGonder">Başvur</button></div></div>`;
   $('#bpGeri').onclick = () => git(2);
