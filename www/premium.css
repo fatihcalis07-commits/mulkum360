@@ -911,3 +911,6 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ki-kullan{border:0;background:var(--murekkep);color:var(--yuzey,#fff);font:inherit;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;cursor:pointer;margin-left:4px}
 .ki-sinir{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
 .ki-sinir polygon{fill:rgba(200,85,61,.14);stroke:#C8553D;stroke-width:2.5;stroke-linejoin:round}
+
+.ki-yer{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ki-yer select{min-width:0;height:44px;padding:0 8px;border-radius:12px;border:1.5px solid var(--p-ince);background:var(--yuzey);color:var(--murekkep);font:inherit;font-size:14px}

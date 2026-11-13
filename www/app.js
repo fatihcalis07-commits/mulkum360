@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '13.8 · 13.11.2026 14:41';
+const SURUM = '13.9 · 13.11.2026 18:27';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -2174,8 +2174,9 @@ async function konumIsaretSheet(t) {
   }
   const mah = al.mahalle || '';
   sheetAc('<h2 style="font-size:19px;font-weight:800">Mülkün yerini işaretle</h2><div class="k soluk">Haritayı kaydır, ortadaki iğneyi binanın üstüne getir. Ada ve parseli biliyorsan yazıp bul; harita parsele gider.</div>'
+    + (t.il && t.ilce && mah ? '' : '<div class="ki-yer"><select id="kiIl" aria-label="İl" data-bos="İl"><option value="">İl</option>' + ILLER.map((x) => '<option' + (t.il === x ? ' selected' : '') + '>' + kac(x) + '</option>').join('') + '</select><select id="kiIlce" aria-label="İlçe" data-bos="İlçe"><option value="">İlçe</option>' + (t.ilce ? '<option selected>' + kac(t.ilce) + '</option>' : '') + '</select><select id="kiMah" aria-label="Mahalle" data-bos="Mahalle"><option value="">Mahalle</option></select></div>')
     + '<div class="ki-parsel"><input id="kiAda" inputmode="numeric" maxlength="12" placeholder="Ada" aria-label="Ada no" value="' + kac(al.ada || '') + '"><input id="kiPar" inputmode="numeric" maxlength="12" placeholder="Parsel" aria-label="Parsel no" value="' + kac(al.parsel || '') + '"><button type="button" class="btn sade" id="kiBul">' + ic('ara', 16) + 'Bul</button></div>'
-    + '<div class="k soluk ki-pdurum" id="kiPDurum">' + (mah ? 'İsteğe bağlı. ' + kac(mah) + ', ' + kac(t.ilce || '') + ' içinde aranır.' : 'İsteğe bağlı. Ada/parsel aramak için önce mahalleyi seç.') + '</div>'
+    + '<div class="k soluk ki-pdurum" id="kiPDurum">' + (t.il && t.ilce && mah ? 'İsteğe bağlı. ' + kac(mah) + ', ' + kac(t.ilce) + ' içinde aranır.' : 'İsteğe bağlı. Ada numarası mahalleye göre verildiği için önce mahalleyi seç.') + '</div>'
     + '<div id="kiHarita" class="ki-harita"><div class="ki-karo"></div><div class="ki-igne">' + ic('konum', 34, '#C8553D', 2.2) + '</div><div class="ki-zum"><button type="button" data-z="1">+</button><button type="button" data-z="-1">−</button></div><button type="button" class="ki-ben" id="kiBen">' + ic('konum', 16) + 'Konumum</button></div>'
     + '<div class="k soluk" style="font-size:12px">Tam adres, kapı numarası ve ada/parsel ilanda gösterilmez; harita yalnız binanın çevresini gösterir. Ada/parseli göstermek istersen formdaki "Ada / parsel ilanda görünsün" seçeneğini kullan.</div>'
     + '<div class="izgara2">' + (al.konumDuzey === 'isaret' ? '<button type="button" class="btn sade" id="kiSil">İşareti kaldır</button>' : '<span></span>') + '<button type="button" class="btn" id="kiKaydet">Bu konumu kullan</button></div>', (s) => {
@@ -2205,10 +2206,21 @@ async function konumIsaretSheet(t) {
         } catch (_) { /* TKGM yanıt vermezse öneri çıkmaz; işaretleme elle sürer */ }
       }, 700);
     };
+    // Ekrandaki il/ilçe/mahalle seçimi ilan taslağına yazılır; mahalle seçilince harita oraya gider
+    const kIl = $('#kiIl', s);
+    if (kIl) {
+      const kIlce = $('#kiIlce', s), kMah = $('#kiMah', s);
+      konumSecBagla(kIl, kIlce, kMah, () => { t.il = kIl.value; t.ilce = kIlce.value; delete al.mahalle; durum.textContent = 'Mahalleyi seç, sonra ada ve parseli yazıp Bul\'a bas.'; });
+      kMah.addEventListener('change', async () => {
+        t.il = kIl.value; t.ilce = kIlce.value; al.mahalle = kMah.value; if (!al.mahalle) return;
+        durum.textContent = 'İsteğe bağlı. ' + al.mahalle + ', ' + t.ilce + ' içinde aranır.';
+        try { const k = await ilanKonumu({ ...t, ana: 'emlak', alanlar: { ...al, enlem: '', boylam: '', ada: '', parsel: '' } }); if (k && k.lat && document.body.contains(kap)) { lat = k.lat; lon = k.lon; z = Math.max(z, 16); sinir = null; ciz2(); } } catch (_) {}
+      });
+    }
     $('#kiBul', s).onclick = async () => {
       const ada = adaI.value.replace(/\D/g, ''), parsel = parI.value.replace(/\D/g, '');
       if (!ada || !parsel) return toast('Ada ve parsel numarasını yaz.');
-      if (!t.il || !t.ilce || !al.mahalle) return toast('Önce il, ilçe ve mahalleyi seç.');
+      if (!t.il || !t.ilce || !al.mahalle) { toast('Önce yukarıdan mahalleyi seç.'); ($('#kiMah', s) && !$('#kiMah', s).value && t.ilce ? $('#kiMah', s) : $('#kiIl', s) && !t.il ? $('#kiIl', s) : $('#kiIlce', s))?.focus(); return; }
       const b = $('#kiBul', s); b.disabled = true; durum.textContent = 'Tapu ve Kadastro kayıtlarında aranıyor…'; const no = ++sorguNo;
       try {
         const p = await parselSor({ il: t.il, ilce: t.ilce, mahalle: al.mahalle, ada, parsel }); if (no !== sorguNo || !document.body.contains(durum)) return;

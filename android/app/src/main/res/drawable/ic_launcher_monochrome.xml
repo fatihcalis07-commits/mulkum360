@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 13+ temalı simge: sembolün tek renkli hâli (sistem rengini kendisi verir) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="1424" android:viewportHeight="1424">
+    <group android:translateX="200" android:translateY="200">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M512 222 L800 468 Q806 474 798 474 H716 Q710 474 704 469 L512 304 L320 469 Q314 474 308 474 H226 Q218 474 224 468 Z"/>
+        <path android:fillColor="#FFFFFFFF" android:pathData="M238 540 A274 274 0 0 0 786 540 H698 A186 186 0 0 1 326 540 Z"/>
+        <path android:fillColor="#FFFFFFFF" android:pathData="M444 558 A68 68 0 1 0 580 558 A68 68 0 1 0 444 558 Z"/>
+    </group>
+</vector>
