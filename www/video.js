@@ -85,11 +85,133 @@ function videoTakip(id, i) {
 // ---------- Fotoğraf Turu (ücretsiz, 14.3): ilan fotoğraflarından telefonda üretilen tanıtım videosu ----------
 // Sunucu ve kredi kullanmaz. Fotoğraflar yavaş yakınlaşma ve geçişle akar; üstte fiyat, özet, konum ve Mülküm360 imzası durur.
 // Kayıt gerçek zamanlıdır (15 sn'lik video 15 sn'de hazırlanır). Görüntü değiştirilmez: AI notu gerekmez.
+// ---------- Marka kapağı ve bitiş ekranı (14.15): kurumsal, koyu lacivert + altın; tüm dışa aktarılan videolarda ----------
+// markaHazirla() logo, ilan fotoğrafı (karartılmış zemin) ve ilan bağlantısının karekodunu hazırlar; markaCiz() kareye bindirir.
+// tip 'kapak' (3 sn): logo, marka adı, altın çizgi, ilan türü, başlık, özet, fiyat · tip 'bitis' (3 sn): logo, ilan no, karekod.
+const MARKA_KAPAK = 3, MARKA_BITIS = 3;
+function qrCanvas(metin) {
+  const q = qrcode(0, 'M'); q.addData(metin); q.make();
+  const n = q.getModuleCount(), k = 8, kenar = 2, cv = document.createElement('canvas');
+  cv.width = cv.height = (n + kenar * 2) * k;
+  const x = cv.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, cv.width, cv.height); x.fillStyle = '#0b1b33';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) x.fillRect((c + kenar) * k, (r + kenar) * k, k, k);
+  return cv;
+}
+async function markaHazirla(i, ai) {
+  try { await Promise.all([document.fonts.load('300 40px Inter'), document.fonts.load('600 40px Inter'), document.fonts.load('700 40px Inter'), document.fonts.load('600 40px Tektur')]); } catch (_) {}
+  const f = i.alanlar || {}, kiralik = i.ana === 'emlak' && f.islem === 'Kiralık', m = { i, ai: !!ai };
+  try { m.logo = await createImageBitmap(await (await fetch('logo.png')).blob()); } catch (_) {}
+  try { const u = (i.fotolar || [])[0]; if (u) m.arka = await createImageBitmap(await (await fetch(u)).blob()); } catch (_) {}
+  try { m.qr = qrCanvas(WEB_ADRES + '#/ilan/' + i.id); } catch (_) {}
+  m.fiyat = i.fiyat ? tl(i.fiyat) + (kiralik ? ' / ay' : '') : '';
+  m.ozet = (i.ana === 'emlak' ? [f.oda, f.m2net && f.m2net + ' m²', f.kat && f.kat + '. kat'] : [f.yil, f.km != null && f.km !== '' && sayiBicim(f.km) + ' km', f.vites]).filter(Boolean).join('  ·  ');
+  m.yer = [f.mahalle && f.mahalle + ' Mah.', i.ilce, i.il].filter(Boolean).join(', ');
+  m.etiket = [i.ana === 'emlak' && f.islem ? String(f.islem).toLocaleUpperCase('tr') : '', ((ALT[i.alt] || {}).ad || (i.ana === 'emlak' ? 'Emlak' : 'Araç')).toLocaleUpperCase('tr')].filter(Boolean).join('  ·  ');
+  return m;
+}
+const markaSar = (c, yazi, en, max) => {
+  const kel = String(yazi || '').split(/\s+/).filter(Boolean), s = []; let a = '';
+  for (const w of kel) { const d = a ? a + ' ' + w : w; if (c.measureText(d).width > en && a) { s.push(a); a = w; } else a = d; }
+  if (a) s.push(a);
+  if (s.length > max) { s.length = max; let son = s[max - 1]; while (son.length > 3 && c.measureText(son + '…').width > en) son = son.slice(0, -1); s[max - 1] = son.trim() + '…'; }
+  return s;
+};
+function markaCiz(c, W, H, m, tip, t, alfa) {
+  if (!m || alfa <= 0) return;
+  const ol = Math.min(W, H) / 720, dik = H > W, YAZI = '"Inter","Segoe UI",system-ui,sans-serif', MARKA = '"Tektur","Inter",system-ui,sans-serif';
+  const asama = (bas, sure) => { const x = Math.max(0, Math.min(1, (t - bas) / sure)); return 1 - (1 - x) ** 3; };
+  const harf = (px) => { if ('letterSpacing' in c) c.letterSpacing = px * ol + 'px'; };
+  c.save(); c.textBaseline = 'alphabetic'; c.globalAlpha = alfa;
+  // Zemin: lacivert degrade + karartılmış ilan fotoğrafı + vinyet
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0d2140'); g.addColorStop(1, '#050a14'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  if (m.arka) {
+    const o = Math.max(W / m.arka.width, H / m.arka.height) * (1.06 + 0.012 * t), w = m.arka.width * o, h = m.arka.height * o;
+    c.globalAlpha = alfa * 0.28; c.drawImage(m.arka, (W - w) / 2, (H - h) / 2, w, h); c.globalAlpha = alfa;
+  }
+  const v = c.createRadialGradient(W / 2, H * 0.42, Math.min(W, H) * 0.12, W / 2, H / 2, Math.max(W, H) * 0.78);
+  v.addColorStop(0, 'rgba(18,44,86,0)'); v.addColorStop(1, 'rgba(2,5,12,.9)'); c.fillStyle = v; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(226,188,106,.38)'; c.lineWidth = 1.5 * ol; c.strokeRect(26 * ol, 26 * ol, W - 52 * ol, H - 52 * ol);
+  c.strokeStyle = 'rgba(226,188,106,.14)'; c.strokeRect(36 * ol, 36 * ol, W - 72 * ol, H - 72 * ol);
+  const yaz = (metin, x, y, font, renk, a, hiza, aralik) => {
+    c.save(); c.globalAlpha = alfa * a; c.font = font; c.fillStyle = renk; c.textAlign = hiza || 'center'; harf(aralik || 0);
+    c.fillText(metin, x, y + (1 - a) * 22 * ol); c.restore();
+  };
+  const altin = (x0, x1) => { const q = c.createLinearGradient(x0, 0, x1, 0); q.addColorStop(0, '#f6e0a0'); q.addColorStop(0.5, '#dcae52'); q.addColorStop(1, '#b9822c'); return q; };
+  const logo = (cx, cy, L, a) => {
+    if (!m.logo) return; const r = L * 0.22;
+    c.save(); c.globalAlpha = alfa * a; c.shadowColor = 'rgba(224,176,86,.5)'; c.shadowBlur = 46 * ol; c.fillStyle = '#0b1b33';
+    c.beginPath(); c.roundRect(cx - L / 2, cy - L / 2, L, L, r); c.fill(); c.restore();
+    c.save(); c.globalAlpha = alfa * a; c.beginPath(); c.roundRect(cx - L / 2, cy - L / 2, L, L, r); c.clip(); c.drawImage(m.logo, cx - L / 2, cy - L / 2, L, L); c.restore();
+    c.save(); c.globalAlpha = alfa * a * 0.7; c.strokeStyle = 'rgba(236,200,120,.65)'; c.lineWidth = 1.6 * ol; c.beginPath(); c.roundRect(cx - L / 2, cy - L / 2, L, L, r); c.stroke(); c.restore();
+  };
+  const marka = (cx, y, px, a) => {
+    c.save(); c.font = '600 ' + Math.round(px * ol) + 'px ' + MARKA; harf(2);
+    const w1 = c.measureText('mülküm').width, w2 = c.measureText('360').width, x0 = cx - (w1 + w2) / 2;
+    c.globalAlpha = alfa * a; c.textAlign = 'left'; c.fillStyle = '#ffffff'; c.fillText('mülküm', x0, y + (1 - a) * 16 * ol);
+    c.fillStyle = altin(x0 + w1, x0 + w1 + w2); c.fillText('360', x0 + w1, y + (1 - a) * 16 * ol); c.restore();
+  };
+  const cizgi = (cx, y, genis, a) => { c.save(); c.globalAlpha = alfa * a; c.fillStyle = altin(cx - genis, cx + genis); c.fillRect(cx - genis * a, y, genis * 2 * a, 2 * ol); c.restore(); };
+  if (tip === 'kapak') {
+    const cx = W / 2, cy = dik ? H * 0.225 : H * 0.2, L = (dik ? 150 : 100) * ol;
+    const a1 = asama(0.05, 0.8), a2 = asama(0.35, 0.8), a3 = asama(0.7, 0.7), a4 = asama(0.95, 0.8), a5 = asama(1.2, 0.8), a6 = asama(1.5, 0.8);
+    logo(cx, cy, L * (0.9 + 0.1 * a1), a1);
+    let y = cy + L / 2 + (dik ? 62 : 50) * ol;
+    marka(cx, y, dik ? 38 : 32, a2);
+    y += (dik ? 34 : 28) * ol; cizgi(cx, y, (dik ? 110 : 90) * ol, a3);
+    y += (dik ? 62 : 46) * ol;
+    if (m.etiket) yaz(m.etiket, cx, y, '600 ' + Math.round((dik ? 19 : 16) * ol) + 'px ' + YAZI, '#e2bc6a', a4, 'center', dik ? 7 : 6);
+    y += (dik ? 84 : 62) * ol;
+    // Başlık sığana kadar küçülür (en az 34 px); sığmazsa son satır kısaltılır
+    let tp = dik ? 48 : 40, satir = [];
+    c.save();
+    for (; tp >= 34; tp -= 2) { c.font = '600 ' + Math.round(tp * ol) + 'px ' + YAZI; satir = markaSar(c, m.i.baslik, W * (dik ? 0.78 : 0.7), 99); if (satir.length <= (dik ? 3 : 2)) break; }
+    if (satir.length > (dik ? 3 : 2)) { tp = 34; c.font = '600 ' + Math.round(tp * ol) + 'px ' + YAZI; satir = markaSar(c, m.i.baslik, W * (dik ? 0.78 : 0.7), dik ? 3 : 2); }
+    c.restore();
+    const lh = Math.round(tp * 1.24 * ol);
+    satir.forEach((s, n) => yaz(s, cx, y + n * lh, '600 ' + Math.round(tp * ol) + 'px ' + YAZI, '#ffffff', a5, 'center', 0));
+    y += (satir.length - 1) * lh + (dik ? 62 : 46) * ol;
+    const alt = [m.ozet, m.yer].filter(Boolean);
+    alt.forEach((s, n) => yaz(s, cx, y + n * (dik ? 38 : 32) * ol, '400 ' + Math.round((dik ? 25 : 21) * ol) + 'px ' + YAZI, 'rgba(236,241,250,.78)', a5, 'center', 0.5));
+    if (m.fiyat) {
+      c.save(); c.font = '700 ' + Math.round((dik ? 62 : 50) * ol) + 'px ' + YAZI; const w = c.measureText(m.fiyat).width; c.restore();
+      const py = H - (dik ? 170 : 108) * ol;
+      c.save(); c.globalAlpha = alfa * a6; c.font = '700 ' + Math.round((dik ? 62 : 50) * ol) + 'px ' + YAZI; c.textAlign = 'center'; c.fillStyle = altin(cx - w / 2, cx + w / 2); harf(0.5);
+      c.fillText(m.fiyat, cx, py + (1 - a6) * 22 * ol); c.restore();
+    }
+  } else {
+    const a1 = asama(0.05, 0.8), a2 = asama(0.3, 0.8), a3 = asama(0.6, 0.7), a4 = asama(0.8, 0.8), a5 = asama(1.1, 0.8);
+    const cx = dik ? W / 2 : W * 0.3, cy = dik ? H * 0.2 : H * 0.3, L = (dik ? 150 : 112) * ol;
+    logo(cx, cy, L * (0.9 + 0.1 * a1), a1);
+    let y = cy + L / 2 + (dik ? 64 : 52) * ol;
+    marka(cx, y, dik ? 40 : 34, a2);
+    y += (dik ? 34 : 28) * ol; cizgi(cx, y, (dik ? 110 : 90) * ol, a3);
+    y += (dik ? 66 : 50) * ol;
+    yaz('Detaylar ve iletişim için', cx, y, '400 ' + Math.round((dik ? 25 : 21) * ol) + 'px ' + YAZI, 'rgba(236,241,250,.78)', a4, 'center', 0.5);
+    y += (dik ? 62 : 48) * ol;
+    if (m.i.no) {
+      yaz('İLAN NO', cx, y, '600 ' + Math.round((dik ? 17 : 14) * ol) + 'px ' + YAZI, '#e2bc6a', a4, 'center', 6);
+      y += (dik ? 66 : 52) * ol;
+      c.save(); c.font = '600 ' + Math.round((dik ? 62 : 50) * ol) + 'px ' + YAZI; const w = c.measureText(String(m.i.no)).width; c.restore();
+      c.save(); c.globalAlpha = alfa * a4; c.font = '600 ' + Math.round((dik ? 62 : 50) * ol) + 'px ' + YAZI; c.textAlign = 'center'; c.fillStyle = altin(cx - w / 2, cx + w / 2); harf(3);
+      c.fillText(String(m.i.no), cx, y + (1 - a4) * 20 * ol); c.restore();
+    }
+    if (m.qr) {
+      const Q = (dik ? 250 : 230) * ol, qx = dik ? W / 2 : W * 0.72, qy = dik ? H * 0.64 : H * 0.46;
+      c.save(); c.globalAlpha = alfa * a5; c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = 36 * ol; c.fillStyle = '#ffffff';
+      c.beginPath(); c.roundRect(qx - Q / 2 - 14 * ol, qy - Q / 2 - 14 * ol, Q + 28 * ol, Q + 28 * ol, 22 * ol); c.fill(); c.restore();
+      c.save(); c.globalAlpha = alfa * a5; c.imageSmoothingEnabled = false; c.drawImage(m.qr, qx - Q / 2, qy - Q / 2, Q, Q); c.restore();
+      yaz('Telefonunla okut, ilanı aç', qx, qy + Q / 2 + 52 * ol, '500 ' + Math.round((dik ? 21 : 18) * ol) + 'px ' + YAZI, 'rgba(236,241,250,.8)', a5, 'center', 0.5);
+    }
+    if (m.ai) yaz('Görseller yapay zekâ ile oluşturulmuştur; gerçeği birebir yansıtmayabilir.', W / 2, H - 62 * ol, '400 ' + Math.round(15 * ol) + 'px ' + YAZI, 'rgba(236,241,250,.55)', a5, 'center', 0.3);
+  }
+  c.restore();
+}
+
 const TUR_SURE = [15, 30, 45];
-const TUR_KAPANIS = 2.4, TUR_EN_AZ = 2.4;
+const TUR_EN_AZ = 2.4;
 const turMime = () => ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
   .find((m) => { try { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); } catch (_) { return false; } }) || '';
-const turAdet = (i, sure) => Math.max(1, Math.min(i.fotolar.length, Math.floor((sure - TUR_KAPANIS) / TUR_EN_AZ)));
+const turAdet = (i, sure) => Math.max(1, Math.min(i.fotolar.length, Math.floor(sure / TUR_EN_AZ)));
 const turYaziKes = (c, yazi, en) => { let s = String(yazi || ''); if (c.measureText(s).width <= en) return s; while (s.length > 3 && c.measureText(s + '…').width > en) s = s.slice(0, -1); return s.trim() + '…'; };
 
 async function turUret(i, s, ilerleme) {
@@ -102,7 +224,9 @@ async function turUret(i, s, ilerleme) {
     ilerleme('Fotoğraflar hazırlanıyor ' + resimler.length + '/' + adet);
   }
   if (!resimler.length) throw new Error('Fotoğraflar okunamadı.');
-  const her = (s.sure - TUR_KAPANIS) / resimler.length;
+  const her = s.sure / resimler.length, TOPLAM = MARKA_KAPAK + s.sure + MARKA_BITIS;
+  ilerleme('Kapak hazırlanıyor…');
+  const mk = await markaHazirla(i, false);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d');
   const YAZI = '"Inter","Segoe UI",system-ui,sans-serif';
@@ -116,7 +240,7 @@ async function turUret(i, s, ilerleme) {
   };
   const kare = (t) => {
     c.fillStyle = '#0b0f17'; c.fillRect(0, 0, W, H);
-    const tFoto = Math.min(t, s.sure - TUR_KAPANIS - 0.001), n = Math.min(resimler.length - 1, Math.floor(tFoto / her)), icSn = tFoto - n * her;
+    const tFoto = Math.min(Math.max(t - MARKA_KAPAK, 0), s.sure - 0.001), n = Math.min(resimler.length - 1, Math.floor(tFoto / her)), icSn = tFoto - n * her;
     const fotoCiz = (k, sn, alfa) => { const p = Math.min(1, Math.max(0, sn / (her + GECIS))), yon = k % 2 ? -1 : 1; kapla(resimler[k], 1.06 + 0.1 * p, yon * (p - 0.5) * 0.9, alfa); };
     fotoCiz(n, icSn, 1);
     if (n + 1 < resimler.length && icSn > her - GECIS) fotoCiz(n + 1, icSn - her, (icSn - (her - GECIS)) / GECIS);
@@ -135,18 +259,9 @@ async function turUret(i, s, ilerleme) {
     c.fillStyle = 'rgba(6,10,18,.55)'; c.beginPath(); c.roundRect(k - 6, k - 6, iw, 44, 12); c.fill();
     c.fillStyle = '#fff'; c.fillText(imza, k + 8, k + 25);
     c.font = '600 20px ' + YAZI; c.textAlign = 'right'; c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText((n + 1) + ' / ' + resimler.length, W - k, k + 22);
-    // Kapanış kartı
-    const kt = t - (s.sure - TUR_KAPANIS);
-    if (kt > 0) {
-      const a = Math.min(1, kt / 0.5);
-      c.fillStyle = 'rgba(6,10,18,' + (a * 0.9) + ')'; c.fillRect(0, 0, W, H);
-      c.globalAlpha = a; c.textAlign = 'center'; c.fillStyle = '#fff';
-      if (fiyat) { c.font = '800 ' + (dikey ? 64 : 60) + 'px ' + YAZI; c.fillText(fiyat, W / 2, H / 2 - 30); }
-      c.font = '600 ' + (dikey ? 32 : 30) + 'px ' + YAZI; c.fillText(turYaziKes(c, i.baslik || '', W - 2 * k), W / 2, H / 2 + 34);
-      c.font = '500 ' + (dikey ? 28 : 26) + 'px ' + YAZI; c.fillStyle = 'rgba(255,255,255,.8)';
-      c.fillText('Mülküm360' + (i.no ? ' · ilan no ' + i.no : ''), W / 2, H / 2 + 92);
-      c.globalAlpha = 1;
-    }
+    // Marka kapağı (başta, 0,5 sn'de ilk fotoğrafa çözülür) ve bitiş ekranı (sonda, 0,5 sn'de belirir)
+    if (t < MARKA_KAPAK) markaCiz(c, W, H, mk, 'kapak', t, t > MARKA_KAPAK - 0.5 ? (MARKA_KAPAK - t) / 0.5 : 1);
+    else if (t > MARKA_KAPAK + s.sure) markaCiz(c, W, H, mk, 'bitis', t - MARKA_KAPAK - s.sure, Math.min(1, (t - MARKA_KAPAK - s.sure) / 0.5));
   };
   kare(0);
   const akis = cv.captureStream(30), parcalar = [];
@@ -158,8 +273,8 @@ async function turUret(i, s, ilerleme) {
   await new Promise((ok) => {
     const adim = () => {
       const t = (performance.now() - t0) / 1000;
-      if (s.iptal || t >= s.sure) return ok();
-      kare(t); ilerleme('Video hazırlanıyor %' + Math.round(t / s.sure * 100));
+      if (s.iptal || t >= TOPLAM) return ok();
+      kare(t); ilerleme('Video hazırlanıyor %' + Math.round(t / TOPLAM * 100));
       setTimeout(adim, 33);   // rAF değil: uygulama arka plana geçerse rAF durur ve kayıt hiç bitmez
     };
     adim();
@@ -273,6 +388,7 @@ async function videoKaydetDosya(i, blob, ad) {
 // İlandaki ya da hazırlanmış bir videoyu kaydet / paylaş. Çok klipli turlar önce tek dosyada birleştirilir.
 async function videoDisaAktar(i, v, mod) {
   if (klipListe(v).length > 1) return tekVideoSheet(i, v, mod);
+  if (videoAiMi(v)) return tekVideoSheet(i, { ...v, parcalar: [v.url] }, mod);
   try {
     toast('Video hazırlanıyor…');
     const blob = await (await fetch(v.url)).blob();
@@ -283,7 +399,7 @@ async function videoDisaAktar(i, v, mod) {
 
 // Tur kliplerini (ve varsa anlatım sesini) telefonda tek video dosyasına çevirir. Kayıt gerçek zamanlıdır.
 // İki video katmanı: sıradaki klip önceden yüklenir ve 0,2 sn çapraz geçişle devralır (geçişte siyah kare olmaz).
-async function tekVideoUret(liste, sesUrl, s, ilerleme) {
+async function tekVideoUret(liste, sesUrl, s, ilerleme, marka) {
   const destek = (m) => { try { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); } catch (_) { return false; } };
   const mime = (sesUrl ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'] : []).find(destek) || turMime();
   if (!mime) throw new Error('Bu telefon video kaydını desteklemiyor.');
@@ -306,7 +422,7 @@ async function tekVideoUret(liste, sesUrl, s, ilerleme) {
       hedef.stream.getAudioTracks().forEach((t) => akis.addTrack(t));
     } catch (_) { ses = null; }
   }
-  let aktif = vs[0], onceki = null, gecisT = 0;
+  let aktif = vs[0], onceki = null, gecisT = 0, kapakT0 = performance.now(), kapakBitisT = 0, bitisT0 = 0;
   const kare = () => {
     c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
     if (onceki) { try { c.drawImage(onceki, 0, 0, W, H); } catch (_) {} }
@@ -319,6 +435,12 @@ async function tekVideoUret(liste, sesUrl, s, ilerleme) {
     c.fillStyle = '#fff'; c.fillText(imza, k + 14 * olcek, k + 31 * olcek);
     c.font = '500 ' + Math.round(17 * olcek) + 'px ' + YAZI; c.textAlign = 'right'; c.fillStyle = 'rgba(255,255,255,.75)';
     c.fillText('AI ile oluşturuldu', W - k, H - k);
+    if (marka) {
+      const simdi = performance.now();
+      if (!kapakBitisT) markaCiz(c, W, H, marka, 'kapak', (simdi - kapakT0) / 1000, 1);
+      else if (simdi - kapakBitisT < 500) markaCiz(c, W, H, marka, 'kapak', (simdi - kapakT0) / 1000, 1 - (simdi - kapakBitisT) / 500);
+      if (bitisT0) markaCiz(c, W, H, marka, 'bitis', (simdi - bitisT0) / 1000, Math.min(1, (simdi - bitisT0) / 500));
+    }
   };
   kare();
   const parcalar = [], kaydedici = new MediaRecorder(akis, { mimeType: mime, videoBitsPerSecond: 5000000 });
@@ -327,6 +449,8 @@ async function tekVideoUret(liste, sesUrl, s, ilerleme) {
   let cizim = true; const dongu = () => { if (!cizim) return; kare(); setTimeout(dongu, 33); };
   kaydedici.start(500); dongu();
   try {
+    if (marka) { ilerleme('Kapak çekiliyor…'); await new Promise((ok) => setTimeout(ok, 2500)); }
+    kapakBitisT = performance.now();
     await aktif.play(); if (ses) ses.play().catch(() => {});
     for (let n = 0; n < liste.length; n++) {
       if (s.iptal) break;
@@ -343,7 +467,8 @@ async function tekVideoUret(liste, sesUrl, s, ilerleme) {
         setTimeout(() => { v.pause(); if (liste[n + 2]) yukle(v, liste[n + 2]).catch(() => {}); }, GEC * 1000 + 60);
       }
     }
-    await new Promise((ok) => setTimeout(ok, 250));
+    if (marka) { ilerleme('Bitiş ekranı çekiliyor…'); bitisT0 = performance.now(); await new Promise((ok) => setTimeout(ok, 3500)); }
+    else await new Promise((ok) => setTimeout(ok, 250));
   } finally {
     cizim = false; if (ses) ses.pause(); vs.forEach((v) => v.pause());
     kaydedici.stop(); await bitti.catch(() => {});
@@ -376,10 +501,11 @@ function tekVideoSheet(i, v, mod) {
   sheetAc('<div id="tekS" style="display:flex;flex-direction:column;gap:12px"></div>', async (kok) => {
     const el = kok.querySelector('#tekS');
     el.innerHTML = `<h2 style="font-size:19px;font-weight:800">Tek video hazırlanıyor</h2>
-      <div class="k soluk">Klipler${v.ses ? ' ve sesli anlatım' : ''} tek dosyada birleştiriliyor. Yaklaşık ${liste.length * 5} saniye sürer; bu sırada ekranı kapatma.</div>
+      <div class="k soluk">Klipler${v.ses ? ' ve sesli anlatım' : ''} tek dosyada birleştiriliyor. Marka kapağı ve bitiş ekranıyla birlikte yaklaşık ${liste.length * 5 + 6} saniye sürer; bu sırada ekranı kapatma.</div>
       <div class="bilgi-k">${ic('yildiz', 18)}<div id="tekDurum">Başlıyor…</div></div>`;
     try {
-      const r = await tekVideoUret(liste, v.ses || '', s, (m) => { if (!document.body.contains(el)) s.iptal = true; else el.querySelector('#tekDurum').textContent = m; });
+      const marka = await markaHazirla(i, true);
+      const r = await tekVideoUret(liste, v.ses || '', s, (m) => { if (!document.body.contains(el)) s.iptal = true; else el.querySelector('#tekDurum').textContent = m; }, marka);
       if (!document.body.contains(el)) return;
       const sonuc = { ...r, url: URL.createObjectURL(r.blob), ad: videoAd(i, r.uzanti) };
       videoSonucCiz(el, i, sonuc, 'Tek video hazır', 'Video ilan fotoğraflarından AI ile üretildi; gerçeği birebir yansıtmayabilir.', null);
@@ -400,7 +526,7 @@ function videoSheet(i, ilkTur) {
   const YEREL = ['foto', 'uzay'];   // telefonda üretilen ücretsiz türler (uzay = drone altında "uzaydan konuma")
   const s = { konum: undefined, tur: turler.some((t) => t[0] === ilkTur) ? ilkTur : 'foto', foto: i.fotolar[0], secili: [], oran: '9:16', sure: 15, anlatim: true, sonuc: null, calisiyor: false, iptal: false };
   const ACIKLAMA = {
-    foto: 'İlan fotoğraflarından fiyat, özet ve konum yazılı bir tanıtım videosu hazırlar. Ücretsizdir, telefonunda oluşturulur; görüntüler değiştirilmez.',
+    foto: 'İlan fotoğraflarından fiyat, özet ve konum yazılı bir tanıtım videosu hazırlar. Başında marka kapağı, sonunda karekodlu bitiş ekranı olur. Ücretsizdir, telefonunda oluşturulur; görüntüler değiştirilmez.',
     video: VIDEO_TUR.video.aciklama + '.',
     drone: VIDEO_TUR.drone.aciklama + '. En iyi sonuç için binanın dışarıdan çekilmiş bir fotoğrafını seç.',
     uzay: `Uydu görüntüsünde dünyadan ilanın konumuna doğru inen bir video hazırlar. ${INIS_KREDI} kredidir; telefonunda oluşturulur, oluşturulamazsa kredi iade edilir.`,
@@ -447,8 +573,8 @@ function videoSheet(i, ilkTur) {
             ? `<div class="bilgi-k">${ic('kredi', 18)}<div>Bakiyen <b>${bakiye} kredi</b>. Bu video <b>${kredi} kredi</b>.</div></div><a class="btn tam" href="#/kredi">${ic('kredi', 18, '#fff')}Kredi al</a>`
             : `<button class="btn tam" id="vUret">${ic('yildiz', 18, '#fff')}${dugmeAd} · ${kredi} kredi</button><div class="k soluk" style="text-align:center">Bakiyen: <b>${bakiye} kredi</b></div>`}
       <div class="k soluk">${{
-        foto: `${turAdet(i, s.sure)} fotoğraf kullanılır. Hazırlanması ${s.sure} saniye sürer; ekranı kapatma.`,
-        uzay: '12 saniyelik video. Uydu görüntüleri indirilir ve telefonda birleştirilir; hazırlanırken ekranı kapatma.',
+        foto: `${turAdet(i, s.sure)} fotoğraf kullanılır. Kapak ve bitiş ekranıyla ${s.sure + 6} saniye sürer; ekranı kapatma.`,
+        uzay: '18 saniyelik video (marka kapağı ve karekodlu bitiş ekranı dahil). Uydu görüntüleri indirilir ve telefonda birleştirilir; hazırlanırken ekranı kapatma.',
         video: '720p, sessiz. 1-3 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
         drone: '720p, sessiz. 1-3 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
         tur: `720p. 3-10 dakikada hazır olur, bu sayfadan çıkabilirsin. Oluşturulamazsa kredinin tamamı iade edilir.`
@@ -535,7 +661,7 @@ const INIS_DUZEY_AD = { bina: 'haritadaki işaret', parsel: 'ada / parsel', soka
 async function inisUret(i, k, s, ilerleme) {
   const mime = turMime(); if (!mime) throw new Error('Bu telefon video kaydını desteklemiyor.');
   const dikey = s.oran === '9:16', W = dikey ? 720 : 1280, H = dikey ? 1280 : 720;
-  const Z0 = 3, Z1 = INIS_SON_Z[k.duzey] || 15, INIS = 9, BEKLE = 3, SURE = INIS + BEKLE;
+  const Z0 = 3, Z1 = INIS_SON_Z[k.duzey] || 15, INIS = 9, BEKLE = 3, SURE = INIS + BEKLE, TOPLAM = MARKA_KAPAK + SURE + MARKA_BITIS;
   const resim = {};
   for (let z = Z0; z <= Z1; z++) {
     ilerleme('Uydu görüntüleri alınıyor ' + (z - Z0 + 1) + '/' + (Z1 - Z0 + 1));
@@ -543,12 +669,15 @@ async function inisUret(i, k, s, ilerleme) {
     try { const b = await (await fetch(u)).blob(); if (b.size > 5000) resim[z] = await createImageBitmap(b); } catch (_) {}
   }
   if (!resim[Z1] || Object.keys(resim).length < (Z1 - Z0 + 1) / 2) throw new Error('Uydu görüntüsü alınamadı. Biraz sonra tekrar dene.');
+  ilerleme('Kapak hazırlanıyor…');
+  const mk = await markaHazirla(i, false);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d'), YAZI = '"Inter","Segoe UI",system-ui,sans-serif', ol = Math.min(W, H) / 720;
   const f = i.alanlar || {}, yer = [f.mahalle && f.mahalle + ' Mah.', i.ilce, i.il].filter(Boolean).join(', ');
   const kiralik = i.ana === 'emlak' && f.islem === 'Kiralık', fiyat = i.fiyat ? tl(i.fiyat) + (kiralik ? ' / ay' : '') : '';
   const ciz = (z, alfa) => { const im = resim[z]; if (!im) return; const o = 2 ** (s.zoom - z), w = 1280 * o; c.globalAlpha = alfa; c.drawImage(im, (W - w) / 2, (H - w) / 2, w, w); c.globalAlpha = 1; };
-  const kare = (t) => {
+  const kare = (tz) => {
+    const t = Math.min(Math.max(tz - MARKA_KAPAK, 0), SURE);
     const p = Math.min(1, t / INIS), e = p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
     s.zoom = Z0 + (Z1 - Z0) * e;
     c.fillStyle = '#05070c'; c.fillRect(0, 0, W, H);
@@ -591,6 +720,8 @@ async function inisUret(i, k, s, ilerleme) {
     c.fillStyle = '#fff'; c.fillText(imza, kx + 8 * ol, kx + 25 * ol);
     c.font = '500 ' + Math.round(15 * ol) + 'px ' + YAZI; c.textAlign = 'right'; c.fillStyle = 'rgba(255,255,255,.8)';
     c.fillText('© Mapbox © OpenStreetMap · uydu görüntüsü', W - kx, H - 24 * ol);
+    if (tz < MARKA_KAPAK) markaCiz(c, W, H, mk, 'kapak', tz, tz > MARKA_KAPAK - 0.5 ? (MARKA_KAPAK - tz) / 0.5 : 1);
+    else if (tz > MARKA_KAPAK + SURE) markaCiz(c, W, H, mk, 'bitis', tz - MARKA_KAPAK - SURE, Math.min(1, (tz - MARKA_KAPAK - SURE) / 0.5));
   };
   s.zoom = Z0; kare(0);
   const akis = cv.captureStream(30), parcalar = [];
@@ -600,7 +731,7 @@ async function inisUret(i, k, s, ilerleme) {
   kaydedici.start(500);
   const t0 = performance.now();
   await new Promise((ok) => {
-    const adim = () => { const t = (performance.now() - t0) / 1000; if (s.iptal || t >= SURE) return ok(); kare(t); ilerleme('Video hazırlanıyor %' + Math.round(t / SURE * 100)); setTimeout(adim, 33); };
+    const adim = () => { const t = (performance.now() - t0) / 1000; if (s.iptal || t >= TOPLAM) return ok(); kare(t); ilerleme('Video hazırlanıyor %' + Math.round(t / TOPLAM * 100)); setTimeout(adim, 33); };
     adim();
   });
   kaydedici.stop(); await bitti; akis.getTracks().forEach((x) => x.stop()); Object.values(resim).forEach((r) => r.close && r.close());
