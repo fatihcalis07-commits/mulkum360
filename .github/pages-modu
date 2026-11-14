@@ -1,0 +1,4 @@
+bakim
+# Pages modu (ilk satır): bakim = mulkum360.com "Yakında" sayfasını gösterir; web uygulaması yayında değil.
+# acik = www klasöründeki web uygulaması mulkum360.com/ adresinde açılır. EİDS sonucu gelmeden "acik" yapma.
+# Değiştirip push etmek yeterli (.github/workflows/pages.yml yayınlar).

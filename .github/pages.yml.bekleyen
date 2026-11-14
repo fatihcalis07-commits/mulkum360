@@ -1,0 +1,51 @@
+# mulkum360.com yayını: GitHub Pages "GitHub Actions" kaynağıyla. Depodaki dahili belgeler (DEVIR.md, AGENTS.md, supabase/...) yayınlanmaz;
+# yalnız aşağıda derlenen _site klasörü çıkar. Mod .github/pages-modu dosyasının ilk satırından okunur (bakim | acik).
+name: Pages yayını
+on:
+  push:
+    branches: [main]
+    paths: ['.github/pages-modu', '.github/workflows/pages.yml', 'www/**', 'index.html', 'gizlilik.html', 'CNAME']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  yayin:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pages kaynağı GitHub Actions mı?
+        id: kontrol
+        run: |
+          tur=$(curl -s -H "Authorization: Bearer ${{ github.token }}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/pages" | python3 -c "import sys,json; print(json.load(sys.stdin).get('build_type',''))")
+          echo "build_type=$tur"
+          if [ "$tur" = "workflow" ]; then echo "hazir=evet" >> "$GITHUB_OUTPUT"; else echo "::notice::Pages kaynağı henüz GitHub Actions değil; yayın atlandı. Ayarlar > Pages > Source > GitHub Actions seçilince çalışır."; fi
+      - name: Siteyi hazırla
+        if: steps.kontrol.outputs.hazir == 'evet'
+        run: |
+          set -e
+          modu=$(head -1 .github/pages-modu | tr -d '\r ')
+          echo "mod=$modu"
+          mkdir _site
+          if [ "$modu" = "acik" ]; then cp -r www/. _site/; else cp index.html _site/index.html; fi
+          cp gizlilik.html _site/gizlilik.html
+          cp CNAME _site/CNAME
+          touch _site/.nojekyll
+          # Eski adres: /www/ ... kökteki yeni adrese (ilan bağlantısı #/ilan/... korunur)
+          mkdir -p _site/www
+          printf '%s\n' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/"><title>Mülküm360</title><script>location.replace("/"+location.hash)</script><a href="/">Mülküm360</a>' > _site/www/index.html
+          find _site -maxdepth 2 | sort | head -40
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.kontrol.outputs.hazir == 'evet'
+        with:
+          path: _site
+      - id: deploy
+        if: steps.kontrol.outputs.hazir == 'evet'
+        uses: actions/deploy-pages@v4

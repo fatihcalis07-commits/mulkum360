@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.17 · 15.11.2026 00:30';
+const SURUM = '14.18 · 15.11.2026 01:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1030,7 +1030,7 @@ EKRAN.ilan = (id) => {
 };
 
 // İlan paylaşımı: bağlantı kopyalama ve sosyal ağlar
-const WEB_ADRES = 'https://fatihcalis07-commits.github.io/mulkum360/www/';
+const WEB_ADRES = 'https://mulkum360.com/';
 function ilanPaylasSheet(i) {
   const url = WEB_ADRES + '#/ilan/' + i.id, f = i.alanlar || {}, e = encodeURIComponent;
   const metin = i.baslik + ' — ' + tl(i.fiyat) + (f.islem === 'Kiralık' ? ' / ay' : '') + ' (' + [i.ilce, i.il].filter(Boolean).join(', ') + ')';
@@ -2546,7 +2546,7 @@ EKRAN.hesap = () => {
   }));
   $('#tema').onclick = temaDegis; { const pb = $('#palet'); if (pb) pb.onclick = paletSecimi; } app.querySelectorAll('[data-dil]').forEach((b) => (b.onclick = () => dilSec(b.dataset.dil)));
   const dv = $('#davet'); if (dv) dv.onclick = () => git('#/tanitim');
-  $('#kvPaylas').onclick = () => paylas(`${b.ad}${b.firma ? ' · ' + b.firma : ''}\nMülküm360'taki ilanlarım: ${S.ilanlar.filter((i) => i.sahip === b.id && i.durum === 'yayinda').length} ilan\nUygulama: https://fatihcalis07-commits.github.io/mulkum360/`);
+  $('#kvPaylas').onclick = () => paylas(`${b.ad}${b.firma ? ' · ' + b.firma : ''}\nMülküm360'taki ilanlarım: ${S.ilanlar.filter((i) => i.sahip === b.id && i.durum === 'yayinda').length} ilan\nUygulama: https://mulkum360.com/`);
   const dk = $('#davetKod'); if (dk) dk.onclick = () => sheetAc(`<h2 style="font-size:19px;font-weight:800">Davet kodu</h2><div class="k soluk">Seni davet eden kişinin 8 haneli kodunu yaz; ikinize de 3 kredi yüklenir.</div><label class="alan">Kod<input id="dkKod" maxlength="8" autocapitalize="characters"></label><button class="btn tam" id="dkGonder">Kullan</button>`, (s) => {
     $('#dkGonder', s).onclick = async () => { const k = $('#dkKod', s).value.trim(); if (k.length !== 8) return toast('Kod 8 karakter olmalı.'); if (await davetUygula(k)) { sheetKapat(); ciz(); } };
   });
