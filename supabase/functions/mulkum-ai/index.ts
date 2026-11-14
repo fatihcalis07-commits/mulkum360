@@ -220,7 +220,7 @@ async function videoKaydet(sbY: ReturnType<typeof createClient>, uid: string, ba
 async function videoDurum(id: string, sbY: ReturnType<typeof createClient>, uid: string) {
   const { data: is } = await sbY.from('video_isleri').select('*').eq('id', id).eq('sahip', uid).maybeSingle();
   if (!is) return yanit({ hata: 'Video bulunamadı.' }, 404);
-  if (is.durum !== 'bekliyor') return yanit({ durum: is.durum, url: is.url, parcalar: Array.isArray(is.parcalar) ? is.parcalar.map((p: { url?: string }) => p.url).filter(Boolean) : undefined, hata: is.durum === 'hata' ? 'Video oluşturulamadı. Kredin iade edildi.' : undefined });
+  if (is.durum !== 'bekliyor') return yanit({ durum: is.durum, url: is.url, parcalar: Array.isArray(is.parcalar) ? is.parcalar.map((p: { url?: string }) => p.url).filter(Boolean) : undefined, ses: is.ses || undefined, hata: is.durum === 'hata' ? 'Video oluşturulamadı. Kredin iade edildi.' : undefined });
   if (is.tur === 'tur') return await turDurum(is, sbY, uid);
   const pk = Deno.env.get('POLLINATIONS_API_KEY')!;
   const basarisiz = async (neden: string) => {
@@ -245,7 +245,7 @@ async function videoDurum(id: string, sbY: ReturnType<typeof createClient>, uid:
 
 // ---------- Çok odalı tur (14.4): 3 ya da 6 fotoğrafın her biri 5 sn'lik klip olur; uygulama klipleri sırayla oynatır ----------
 // Tek iş satırı (tur='tur'), klipler parcalar sütununda. Bir klip başlatılamaz ya da başarısız olursa turun tamamı iptal edilir, kredi iade edilir.
-const TUR_KREDI: Record<number, number> = { 3: 6, 6: 10 };
+const TUR_KREDI: Record<number, number> = { 3: 9, 6: 15 };   // 14.5: +%50, sesli anlatım dahil
 const TUR_ACIKLAMA = 'MülkümVideo çok odalı tur';
 type Parca = { foto: string; is_no?: string; model?: string; url?: string };
 
@@ -278,7 +278,7 @@ async function turBaslat(g: Record<string, unknown>, sbY: ReturnType<typeof crea
   const { data: kalan, error: kh } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: -kredi, p_aciklama: TUR_ACIKLAMA });
   if (kh) return yanit({ hata: /yetersiz/.test(kh.message) ? `Kredin yetmiyor. Bu tur ${kredi} kredi; Hesabım → Kredilerim bölümünden kredi alabilirsin.` : 'Kredi düşülemedi, tekrar dene.' }, 402);
   const parcalar: Parca[] = fotolar.map((foto) => ({ foto }));
-  const { data: is, error: ih } = await sbY.from('video_isleri').insert({ sahip: uid, ilan: g.ilan || null, tur: 'tur', kaynak: fotolar[0], kredi, parcalar }).select('id').single();
+  const { data: is, error: ih } = await sbY.from('video_isleri').insert({ sahip: uid, ilan: g.ilan || null, tur: 'tur', kaynak: fotolar[0], kredi, parcalar, anlatim: g.anlatim !== false }).select('id').single();
   const iptal = async (neden: string) => {
     const { data: iade } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: kredi, p_aciklama: TUR_ACIKLAMA + ' iadesi' });
     if (is) await sbY.from('video_isleri').update({ durum: 'hata', iade: true, hata: neden.slice(0, 900), parcalar }).eq('id', is.id);
@@ -294,6 +294,79 @@ async function turBaslat(g: Record<string, unknown>, sbY: ReturnType<typeof crea
   return yanit({ id: is.id, kredi: kalan });
 }
 
+// ---------- Tur için sesli anlatım (14.5): metin Gemini ile ilan bilgilerinden yazılır, Gemini TTS ile seslendirilir ----------
+// Anlatım turun fiyatına dahildir. Hazırlanamazsa tur sessiz yayınlanır (ses_durum='hata'); klipler etkilenmez.
+const TTS_MODELLER = ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'];
+const TTS_SES = 'Kore';
+
+function wavYap(pcm: Uint8Array, hiz: number): Uint8Array {
+  const b = new Uint8Array(44 + pcm.length), d = new DataView(b.buffer);
+  const yaz = (o: number, s: string) => { for (let n = 0; n < s.length; n++) b[o + n] = s.charCodeAt(n); };
+  yaz(0, 'RIFF'); d.setUint32(4, 36 + pcm.length, true); yaz(8, 'WAVE'); yaz(12, 'fmt ');
+  d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true); d.setUint32(24, hiz, true);
+  d.setUint32(28, hiz * 2, true); d.setUint16(32, 2, true); d.setUint16(34, 16, true); yaz(36, 'data'); d.setUint32(40, pcm.length, true);
+  b.set(pcm, 44);
+  return b;
+}
+
+async function anlatimUret(is: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string, klipSayisi: number): Promise<string> {
+  const anahtar = Deno.env.get('GEMINI_API_KEY');
+  if (!anahtar) throw new Error('GEMINI_API_KEY yok');
+  const { data: ilan } = await sbY.from('ilanlar').select('baslik,fiyat,il,ilce,aciklama,alanlar').eq('id', is.ilan).maybeSingle();
+  if (!ilan) throw new Error('ilan bulunamadı');
+  const f = (ilan.alanlar || {}) as Record<string, unknown>;
+  const bilgi = [
+    ilan.baslik && `Başlık: ${ilan.baslik}`, f.islem && `İşlem: ${f.islem}`, ilan.fiyat && `Fiyat: ${ilan.fiyat} TL`,
+    f.oda && `Oda: ${f.oda}`, f.m2net && `Net alan: ${f.m2net} m²`, f.kat && `Kat: ${f.kat}`, f.yas != null && f.yas !== '' && `Bina yaşı: ${f.yas}`,
+    f.yil && `Model yılı: ${f.yil}`, f.km != null && f.km !== '' && `Kilometre: ${f.km}`, f.vites && `Vites: ${f.vites}`,
+    `Konum: ${[f.mahalle && f.mahalle + ' Mahallesi', ilan.ilce, ilan.il].filter(Boolean).join(', ')}`,
+    ilan.aciklama && `Açıklama: ${String(ilan.aciklama).slice(0, 700)}`
+  ].filter(Boolean).join('\n');
+  const sure = klipSayisi * 5, kelime = Math.round(sure * 2.1);
+  const istem = `Aşağıdaki ilan için ${sure} saniyelik bir tanıtım videosunda okunacak Türkçe anlatım metni yaz.
+Kurallar: en fazla ${kelime} kelime. Yalnız verilen bilgileri kullan, bilgi uydurma. Abartılı sıfat, ünlem ve reklam kalıbı kullanma; sade ve net konuş.
+Fiyatı yazıyla söyle (örnek: "altı milyon dört yüz yirmi beş bin lira"). Oda sayısını "üç artı bir" gibi oku. Sonda "Ayrıntılar Mülküm üç yüz altmış'ta." de.
+Yalnız okunacak metni döndür; başlık, tırnak, madde işareti, sahne notu yazma.
+
+${bilgi}`;
+  let metin = '';
+  for (const model of MODELLER) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': anahtar },
+      body: JSON.stringify({ contents: [{ parts: [{ text: istem }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 4096 } }),
+      signal: AbortSignal.timeout(25000)
+    }).catch(() => null);
+    if (r?.ok) {
+      const j = await r.json().catch(() => ({}));
+      metin = String(j?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || '').join('') || '').replace(/["“”*#]/g, '').trim();
+      if (metin) break;
+    } else console.error('anlatım metin', model, r?.status ?? 'zaman aşımı');
+  }
+  if (!metin) throw new Error('anlatım metni yazılamadı');
+  const hatalar: string[] = [];
+  for (const model of TTS_MODELLER) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': anahtar },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'Sakin, net ve güven veren bir emlak danışmanı gibi oku: ' + metin }] }],
+        generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_SES } } } }
+      }),
+      signal: AbortSignal.timeout(50000)
+    }).catch(() => null);
+    if (!r?.ok) { hatalar.push(`${model} ${r?.status ?? 'zaman aşımı'} ${r ? (await r.text().catch(() => '')).slice(0, 200) : ''}`); continue; }
+    const j = await r.json().catch(() => ({}));
+    const veri = j?.candidates?.[0]?.content?.parts?.find((p: { inlineData?: { data?: string } }) => p.inlineData?.data)?.inlineData;
+    if (!veri?.data) { hatalar.push(`${model} ses verisi yok`); continue; }
+    const hiz = Number(/rate=(\d+)/.exec(String(veri.mimeType || ''))?.[1]) || 24000;
+    const ham = Uint8Array.from(atob(veri.data), (ch) => ch.charCodeAt(0));
+    const yol = `${uid}/${crypto.randomUUID()}.wav`;
+    const { error } = await sbY.storage.from('ilan-videolari').upload(yol, wavYap(ham, hiz), { contentType: 'audio/wav' });
+    if (error) throw new Error('ses kaydı: ' + error.message);
+    return sbY.storage.from('ilan-videolari').getPublicUrl(yol).data.publicUrl;
+  }
+  throw new Error('seslendirme: ' + hatalar.join(' | '));
+}
+
 async function turDurum(is: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
   const id = String(is.id), pk = Deno.env.get('POLLINATIONS_API_KEY')!;
   const parcalar: Parca[] = Array.isArray(is.parcalar) ? (is.parcalar as Parca[]) : [];
@@ -304,6 +377,13 @@ async function turDurum(is: Record<string, unknown>, sbY: ReturnType<typeof crea
   };
   const yas = Date.now() - new Date(String(is.olusturma)).getTime();
   if (!parcalar.length) return await basarisiz('klip listesi boş');
+  // Sesli anlatım: bir kez denenir; başarısız olursa tur sessiz devam eder
+  let ses = (is.ses as string) || null;
+  if (is.anlatim && !ses && !is.ses_durum) {
+    try { ses = await anlatimUret(is, sbY, uid, parcalar.length); await sbY.from('video_isleri').update({ ses, ses_durum: 'hazir' }).eq('id', id); }
+    catch (x) { console.error('anlatım', (x as Error).message); await sbY.from('video_isleri').update({ ses_durum: 'hata', hata: ('anlatım: ' + (x as Error).message).slice(0, 900) }).eq('id', id); }
+    return yanit({ durum: 'bekliyor', hazir: parcalar.filter((p) => p.url).length, toplam: parcalar.length });
+  }
   let indirilen = 0, degisti = false;
   for (const p of parcalar) {
     if (p.url) continue;
@@ -322,7 +402,7 @@ async function turDurum(is: Record<string, unknown>, sbY: ReturnType<typeof crea
   const hazir = parcalar.filter((p) => p.url).length;
   if (hazir === parcalar.length) {
     await sbY.from('video_isleri').update({ durum: 'hazir', url: parcalar[0].url, parcalar, guncelleme: new Date().toISOString() }).eq('id', id);
-    return yanit({ durum: 'hazir', url: parcalar[0].url, parcalar: parcalar.map((p) => p.url) });
+    return yanit({ durum: 'hazir', url: parcalar[0].url, parcalar: parcalar.map((p) => p.url), ses });
   }
   if (degisti) await sbY.from('video_isleri').update({ parcalar, guncelleme: new Date().toISOString() }).eq('id', id);
   if (yas > 1800000) return await basarisiz('30 dk zaman aşımı');
