@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.15 · 14.11.2026 23:10';
+const SURUM = '14.16 · 14.11.2026 23:55';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -152,14 +152,14 @@ function girisGerek(neden) {
 function sheetAc(html, baglan) {
   sheetEl.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="tutamak"></div>${html}</div>`;
   sheetEl.hidden = false;
-  sheetEl.onclick = (e) => { if (e.target === sheetEl) sheetKapat(); };
+  sheetEl.onclick = (e) => { if (e.target === sheetEl) { if (sheetEngel && sheetEngel()) return toast('Video hazırlanıyor; bitince kapanır'); sheetKapat(); } };
   clearTimeout(sheetPopT);
   if (!sheetGec) { try { history.pushState({ sheet: 1 }, ''); sheetGec = true; } catch (_) {} }   // 14.12: geri tuşu önce pencereyi kapatır
   if (baglan) baglan($('.sheet', sheetEl));
 }
 // Pencere açıkken geri tuşu sayfadan değil pencereden çıkarır. Kapatılınca eklenen geçmiş kaydı geri alınır;
 // hemen ardından yeni pencere açılırsa (onay kutusu gibi) kayıt korunur, bu yüzden geri alma kısa bir gecikmeyle yapılır.
-let sheetGec = false, sheetPopT = 0;
+let sheetGec = false, sheetPopT = 0, sheetEngel = null;   // sheetEngel: iş sürerken (ör. video üretimi) geri tuşu ve dışarı dokunma pencereyi kapatmaz
 function sheetKapat() {
   sheetEl.hidden = true; sheetEl.innerHTML = '';
   if (!sheetGec) return;
@@ -171,6 +171,7 @@ function sheetKapat() {
 }
 addEventListener('popstate', () => {
   if (!sheetGec) return;
+  if (!sheetEl.hidden && sheetEngel && sheetEngel()) { try { history.pushState({ sheet: 1 }, ''); } catch (_) {} return toast('Video hazırlanıyor; bitince kapanır'); }
   sheetGec = false; clearTimeout(sheetPopT);
   if (!sheetEl.hidden) { sheetEl.hidden = true; sheetEl.innerHTML = ''; }
 });
