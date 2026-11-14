@@ -680,3 +680,8 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Kullanıcı kararı: Satılık/Fotoğraflı/Videolu çipleri ekranda gereksiz. `araHizliHtml` ve `.ara-hizli` silindi.
 - Fotoğraflı, Videolu, Fiyatı düşen: `filtreSheet` içinde 'Fotoğraf, video, fiyat' grubu (`cok('foto'|'video'|'dusen', ...)`); `aktif` ve `filtreSay` listelerine ve `araEtiketHtml` etiketlerine eklendi. İlk ilan 304 yerine 246 birimde başlıyor (390x844).
 - Test: Playwright 390 px; sheet grubu, 'Videolu' seçince 2 sonuç, uygula, etiketi kaldırınca 585 ilana dönüş; yatay taşma 0, sayfa hatası yok.
+
+
+## 14.23 (15.11.2026): vasıtada çok odalı tur yok
+- `videoSheet` (video.js): `Çok odalı tur` yalnız `i.ana === 'emlak'` ilanlarında listelenir (drone zaten emlak). İlan sayfasındaki MülkümVideo kartının açıklaması ve AI klibi metni vasıtada araca göre yazılır. Sunucu (`mulkum-ai`) ilan türünü denetlemez; yalnız arayüz.
+- Test: Playwright ile gerçek vasıta ve emlak ilanında `videoSheet` açıldı; vasıtada çok odalı ve drone yok, emlakta ikisi de var.

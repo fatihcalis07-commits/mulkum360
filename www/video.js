@@ -47,7 +47,7 @@ async function videoKartiYukle(i) {
   kap.className = 'kart';
   const adSatir = (v) => kac((VIDEO_TUR[v.tur] || VIDEO_TUR.video).kisa);
   const baslik = sahip
-    ? `<button class="satir mv-kart-bas" id="videoAc" style="text-align:left;width:100%;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümVideo</b><div class="k soluk">Fotoğraf turu, AI klibi, drone, uzaydan konuma iniş ve çok odalı tur</div></div><span class="ok">›</span></button>`
+    ? `<button class="satir mv-kart-bas" id="videoAc" style="text-align:left;width:100%;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümVideo</b><div class="k soluk">${i.ana === 'emlak' ? 'Fotoğraf turu, AI klibi, drone, uzaydan konuma iniş ve çok odalı tur' : 'Fotoğraf turu ve AI klibi'}</div></div><span class="ok">›</span></button>`
     : `<h3>MülkümVideo</h3>`;
   const parca = (html) => `<div class="mv-kart-ic">${html}</div>`;
   kap.innerHTML = baslik
@@ -570,12 +570,12 @@ function videoSheet(i, ilkTur) {
   const turler = [['foto', 'Fotoğraf turu', 'ücretsiz', 'Fotoğraflar fiyat ve konum yazısıyla akar. Telefonda hazırlanır.']];
   turler.push(['video', 'AI klibi', VIDEO_TUR.video.kredi + ' kredi', 'Tek fotoğraftan kameranın ilerlediği 5 saniyelik video.']);
   if (i.ana === 'emlak') turler.push(['drone', 'Drone görünümü', INIS_KREDI + '–' + VIDEO_TUR.drone.kredi + ' kredi', 'Bina fotoğrafından 9 saniyelik drone çekimi ya da uydudan konuma iniş.']);
-  if (i.fotolar.length >= 3) turler.push(['tur', 'Çok odalı tur', COK_ODA_KREDI[3] + '–' + COK_ODA_KREDI[6] + ' kredi', '3 ya da 6 odayı sırayla gezen, sesli anlatımlı video.']);
+  if (i.ana === 'emlak' && i.fotolar.length >= 3) turler.push(['tur', 'Çok odalı tur', COK_ODA_KREDI[3] + '–' + COK_ODA_KREDI[6] + ' kredi', '3 ya da 6 odayı sırayla gezen, sesli anlatımlı video.']);
   const YEREL = ['foto', 'uzay'];   // telefonda üretilen ücretsiz türler (uzay = drone altında "uzaydan konuma")
   const s = { konum: undefined, tur: turler.some((t) => t[0] === ilkTur) ? ilkTur : 'foto', foto: i.fotolar[0], secili: [], oran: '9:16', sure: 15, anlatim: true, sonuc: null, calisiyor: false, iptal: false };
   const ACIKLAMA = {
     foto: 'İlan fotoğraflarından fiyat, özet ve konum yazılı bir tanıtım videosu hazırlar. Başında marka kapağı, sonunda karekodlu bitiş ekranı olur. Ücretsizdir, telefonunda oluşturulur; görüntüler değiştirilmez.',
-    video: VIDEO_TUR.video.aciklama + '.',
+    video: (i.ana === 'emlak' ? VIDEO_TUR.video.aciklama : 'Araç fotoğrafını kameranın yavaşça ilerlediği kısa bir videoya çevirir') + '.',
     drone: VIDEO_TUR.drone.aciklama + '. En iyi sonuç için binanın dışarıdan çekilmiş bir fotoğrafını seç.',
     uzay: `Uydu görüntüsünde dünyadan ilanın konumuna doğru inen bir video hazırlar. ${INIS_KREDI} kredidir; telefonunda oluşturulur, oluşturulamazsa kredi iade edilir.`,
     tur: 'Gezilecek odaları sırayla seç. Her fotoğraf, kameranın yavaşça ilerlediği 5 saniyelik bir klibe dönüşür ve klipler sırayla oynar.'
