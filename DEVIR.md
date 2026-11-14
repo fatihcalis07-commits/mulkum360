@@ -651,8 +651,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 14.18 · Alan adı: uygulama kökte (15.11.2026)
 - `WEB_ADRES` artık `https://mulkum360.com/` (ilan paylaşım bağlantısı, video karekodu, künye paylaşımı, og:image). Eski `/www/` alt yolu kalktı.
-- Pages artık **GitHub Actions** ile yayınlanır: `.github/pages.yml.bekleyen` (OAuth belirteci `workflow` izni taşımadığı için push reddedildi; dosya GitHub web arayüzünde `.github/workflows/pages.yml` adına taşınmalı). Yalnız derlenen `_site` yayınlanır; depodaki DEVIR.md, supabase, eski kopyalar yayına çıkmaz.
+- Pages artık **GitHub Actions** ile yayınlanır: `.github/workflows/pages.yml` (15.11.2026: OAuth belirteci `workflow` izni taşımadığı için dosya GitHub web arayüzünden eklendi; Pages Source = GitHub Actions ayarlandı, ilk çalıştırma başarılı, kök "Yakında", DEVIR.md 404). Yalnız derlenen `_site` yayınlanır; depodaki DEVIR.md, supabase, eski kopyalar yayına çıkmaz.
 - Mod dosyası `.github/pages-modu` (ilk satır): `bakim` = kökte "Yakında" sayfası (şu an). `acik` = `www/` içeriği kökte yayınlanır. **EİDS sonucu gelmeden `acik` yapılmaz** (kullanıcı kararı).
 - `/www/` adresi her iki modda köke yönlenir (`#/ilan/..` korunur).
-- Tek seferlik elle adım: GitHub → Settings → Pages → Source = **GitHub Actions**. Seçilmeden iş akışı "atlandı" notu verir, yayın bozulmaz. Seçildikten sonra Actions → "Pages yayını" → Run workflow.
 - Açmak için: `.github/pages-modu` ilk satırını `acik` yap, push et.
