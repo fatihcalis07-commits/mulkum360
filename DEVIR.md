@@ -655,3 +655,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Mod dosyası `.github/pages-modu` (ilk satır): `bakim` = kökte "Yakında" sayfası (şu an). `acik` = `www/` içeriği kökte yayınlanır. **EİDS sonucu gelmeden `acik` yapılmaz** (kullanıcı kararı).
 - `/www/` adresi her iki modda köke yönlenir (`#/ilan/..` korunur).
 - Açmak için: `.github/pages-modu` ilk satırını `acik` yap, push et.
+
+
+## 14.19 (15.11.2026)
+- Video kapağında kat "1. Kat. kat" yazıyordu: `f.kat` zaten "1. Kat" gibi geliyor. `video.js` satır 107: harf içeren değer olduğu gibi, düz sayı "N. kat" yazılır.

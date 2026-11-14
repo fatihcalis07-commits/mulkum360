@@ -104,7 +104,7 @@ async function markaHazirla(i, ai) {
   try { const u = (i.fotolar || [])[0]; if (u) m.arka = await createImageBitmap(await (await fetch(u)).blob()); } catch (_) {}
   try { m.qr = qrCanvas(WEB_ADRES + '#/ilan/' + i.id); } catch (_) {}
   m.fiyat = i.fiyat ? tl(i.fiyat) + (kiralik ? ' / ay' : '') : '';
-  m.ozet = (i.ana === 'emlak' ? [f.oda, f.m2net && f.m2net + ' m²', f.kat && f.kat + '. kat'] : [f.yil, f.km != null && f.km !== '' && sayiBicim(f.km) + ' km', f.vites]).filter(Boolean).join('  ·  ');
+  m.ozet = (i.ana === 'emlak' ? [f.oda, f.m2net && f.m2net + ' m²', f.kat && (/[a-zçğıöşü]/i.test(String(f.kat)) ? String(f.kat) : f.kat + '. kat')] : [f.yil, f.km != null && f.km !== '' && sayiBicim(f.km) + ' km', f.vites]).filter(Boolean).join('  ·  ');
   m.yer = [f.mahalle && f.mahalle + ' Mah.', i.ilce, i.il].filter(Boolean).join(', ');
   m.etiket = [i.ana === 'emlak' && f.islem ? String(f.islem).toLocaleUpperCase('tr') : '', ((ALT[i.alt] || {}).ad || (i.ana === 'emlak' ? 'Emlak' : 'Araç')).toLocaleUpperCase('tr')].filter(Boolean).join('  ·  ');
   return m;
