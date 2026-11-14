@@ -1,8 +1,8 @@
 // MülkümVideo (ücretli): ilan fotoğrafından yapay zekâ ile drone görünümlü video ya da hareketli tanıtım videosu.
 // Üretim sunucuda (mulkum-ai: video_baslat / video_durum) async yürür; işler video_isleri tablosunda durur, ekran kapansa da kaybolmaz.
 const VIDEO_TUR = {
-  drone: { ad: 'MülkümVideo Drone', kisa: 'Drone', aciklama: 'Dış cephe fotoğrafından havadan çekilmiş gibi, yükselen ve binanın çevresinde dönen video', kredi: 3 },
-  video: { ad: 'MülkümVideo Tanıtım', kisa: 'Video', aciklama: 'Oda ya da dış cephe fotoğrafını kameranın yavaşça ilerlediği kısa bir videoya çevirir', kredi: 3 },
+  drone: { ad: 'MülkümVideo Drone', kisa: 'Drone', aciklama: 'Dış cephe fotoğrafından havadan çekilmiş gibi, yükselen ve binanın çevresinde dönen video', kredi: 5 },
+  video: { ad: 'MülkümVideo Tanıtım', kisa: 'Video', aciklama: 'Oda ya da dış cephe fotoğrafını kameranın yavaşça ilerlediği kısa bir videoya çevirir', kredi: 5 },
   tur: { ad: 'MülkümVideo Çok Odalı Tur', kisa: 'Tur', aciklama: 'Seçtiğin 3 ya da 6 fotoğrafı 5 saniyelik kliplere çevirir ve sırayla oynatır', kredi: 9 }
 };
 const VIDEO_BEKLE = new Map(); // iş id → zamanlayıcı
@@ -291,10 +291,10 @@ function tekVideoSheet(i, v) {
 function videoSheet(i, ilkTur) {
   // 14.6: yapay zekâ videoları şimdilik yalnız yöneticiye açık (sunucu da reddeder); diğer üyeler ücretsiz fotoğraf turunu görür
   const yz = typeof S !== 'undefined' && !!S.yonetici;
-  const turler = [['foto', 'Fotoğraf turu', 'ücretsiz']];
-  if (yz) turler.push(['video', 'Tanıtım', VIDEO_TUR.video.kredi + ' kredi']);
-  if (yz && i.ana === 'emlak') turler.push(['drone', 'Drone', VIDEO_TUR.drone.kredi + ' kredi']);
-  if (yz && i.fotolar.length >= 3) turler.push(['tur', 'Çok odalı tur', COK_ODA_KREDI[3] + ' ya da ' + COK_ODA_KREDI[6] + ' kredi']);
+  const turler = [['foto', 'Fotoğraf turu', 'ücretsiz', 'Fotoğraflar fiyat ve konum yazısıyla akar. Telefonda hazırlanır.']];
+  if (yz) turler.push(['video', 'Yapay zekâ klibi', VIDEO_TUR.video.kredi + ' kredi', 'Tek fotoğraftan kameranın ilerlediği 5 saniyelik video.']);
+  if (yz && i.ana === 'emlak') turler.push(['drone', 'Drone görünümü', VIDEO_TUR.drone.kredi + ' kredi', 'Dış cephe fotoğrafından havadan çekilmiş gibi 5 saniye.']);
+  if (yz && i.fotolar.length >= 3) turler.push(['tur', 'Çok odalı tur', COK_ODA_KREDI[3] + '–' + COK_ODA_KREDI[6] + ' kredi', '3 ya da 6 odayı sırayla gezen, sesli anlatımlı video.']);
   const s = { tur: turler.some((t) => t[0] === ilkTur) ? ilkTur : 'foto', foto: i.fotolar[0], secili: [], oran: '9:16', sure: 15, anlatim: true, sonuc: null, calisiyor: false, iptal: false };
   const ACIKLAMA = {
     foto: 'İlan fotoğraflarından fiyat, özet ve konum yazılı bir tanıtım videosu hazırlar. Ücretsizdir, telefonunda oluşturulur; görüntüler değiştirilmez.',
@@ -309,26 +309,30 @@ function videoSheet(i, ilkTur) {
     const sira = (u) => { const n = s.secili.indexOf(u); return n > -1 ? `<span style="position:absolute;top:4px;left:4px;min-width:22px;height:22px;border-radius:11px;background:var(--vurgu);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center">${n + 1}</span>` : ''; };
     const secili = (u) => (s.tur === 'tur' ? s.secili.includes(u) : u === s.foto);
     const dugmeAd = { foto: 'Videoyu oluştur · ücretsiz', video: 'Videoyu oluştur', drone: 'Videoyu oluştur', tur: 'Turu oluştur' }[s.tur];
-    el.innerHTML = `<h2 style="font-size:19px;font-weight:800">MülkümVideo</h2>
-      <div class="k soluk">${ACIKLAMA[s.tur]}</div>
-      <div class="ciplar">${turler.map(([k, a, f]) => `<button class="cip ${k === s.tur ? 'secili' : ''}" data-t="${k}">${a} · ${f}</button>`).join('')}</div>
-      ${s.tur === 'foto' ? '' : `<div class="deko-fotolar">${i.fotolar.map((u) => `<button data-f="${u}" class="${secili(u) ? 'secili' : ''}" style="background-image:url('${u}');position:relative" aria-label="Fotoğraf seç">${s.tur === 'tur' ? sira(u) : ''}</button>`).join('')}</div>`}
-      <div class="ciplar">${[['9:16', 'Dikey (Reels, durum)'], ['16:9', 'Yatay (ilan)']].map(([k, a]) => `<button class="cip ${k === s.oran ? 'secili' : ''}" data-o="${k}">${a}</button>`).join('')}</div>
+    const fotoIpucu = { video: 'Videoya dönüşecek fotoğrafı seç.', drone: 'Binanın dışarıdan çekilmiş fotoğrafını seç.', tur: `Odaları gezilecek sırayla seç (${adet} seçili). 3 oda ${COK_ODA_KREDI[3]} kredi, 6 oda ${COK_ODA_KREDI[6]} kredi.` }[s.tur];
+    const n0 = turler.length > 1 ? 1 : 0;
+    el.innerHTML = `<div class="mv-bas"><h2>MülkümVideo</h2><div class="k soluk">İlanın için tanıtım videosu hazırla, kaydet ya da paylaş.</div></div>
+      ${turler.length > 1 ? `<div class="mv-adim"><b>1</b>Video türü</div>
+      <div class="liste mv-tur">${turler.map(([k, a, f, d]) => `<button class="oge ${k === s.tur ? 'secili' : ''}" data-t="${k}">${ic(k === 'foto' ? 'foto' : 'yildiz', 18)}<div class="ara"><div>${a}</div><div class="k soluk">${d}</div></div><span class="mv-fiyat${k === 'foto' ? ' ucretsiz' : ''}">${f}</span></button>`).join('')}</div>` : ''}
+      ${s.tur === 'foto' ? '' : `<div class="mv-adim"><b>${n0 + 1}</b>Fotoğraf</div><div class="k soluk" style="margin-top:-6px">${fotoIpucu}</div>
+      <div class="deko-fotolar">${i.fotolar.map((u) => `<button data-f="${u}" class="${secili(u) ? 'secili' : ''}" style="background-image:url('${u}');position:relative" aria-label="Fotoğraf seç">${s.tur === 'tur' ? sira(u) : ''}</button>`).join('')}</div>`}
+      <div class="mv-adim"><b>${n0 + (s.tur === 'foto' ? 1 : 2)}</b>Ayarlar</div>
+      <div class="ciplar">${[['9:16', 'Dikey · Reels'], ['16:9', 'Yatay · ilan']].map(([k, a]) => `<button class="cip ${k === s.oran ? 'secili' : ''}" data-o="${k}">${a}</button>`).join('')}</div>
       ${s.tur === 'foto' ? `<div class="ciplar">${TUR_SURE.map((n) => `<button class="cip ${n === s.sure ? 'secili' : ''}" data-s="${n}">${n} saniye</button>`).join('')}</div>` : ''}
       ${s.tur === 'tur' ? `<div class="ciplar"><button class="cip ${s.anlatim ? 'secili' : ''}" data-a="1">Sesli anlatım</button><button class="cip ${s.anlatim ? '' : 'secili'}" data-a="0">Sessiz</button></div>` : ''}
       ${s.tur === 'foto'
         ? `<button class="btn tam" id="vUret">${ic('foto', 18, '#fff')}${dugmeAd}</button><div class="k soluk" id="tDurum" style="text-align:center;min-height:18px"></div>`
         : s.tur === 'tur' && !kredi
-          ? `<div class="bilgi-k">${ic('foto', 18)}<div>${adet} fotoğraf seçtin. <b>3 fotoğraf ${COK_ODA_KREDI[3]} kredi</b> (15 saniye), <b>6 fotoğraf ${COK_ODA_KREDI[6]} kredi</b> (30 saniye).</div></div>`
+          ? `<button class="btn tam" disabled>${adet < 3 ? (3 - adet) + ' fotoğraf daha seç' : (6 - adet) + ' fotoğraf daha seç ya da 3 bırak'}</button>`
           : bakiye < kredi
             ? `<div class="bilgi-k">${ic('kredi', 18)}<div>Bakiyen <b>${bakiye} kredi</b>. Bu video <b>${kredi} kredi</b>.</div></div><a class="btn tam" href="#/kredi">${ic('kredi', 18, '#fff')}Kredi al</a>`
             : `<button class="btn tam" id="vUret">${ic('yildiz', 18, '#fff')}${dugmeAd} · ${kredi} kredi</button><div class="k soluk" style="text-align:center">Bakiyen: <b>${bakiye} kredi</b></div>`}
       <div class="k soluk">${{
-        foto: `${i.fotolar.length} fotoğraftan ${turAdet(i, s.sure)} tanesi kullanılır${turAdet(i, s.sure) < i.fotolar.length ? '; hepsi için süreyi uzat' : ''}. Hazırlanması ${s.sure} saniye sürer; bu sırada ekranı kapatma.`,
-        video: '5 saniyelik, 720p, sessiz video. Hazırlanması 1-3 dakika sürer; video oluşturulamazsa kredi iade edilir. Videolar ilanda "yapay zekâ ile oluşturuldu" notuyla gösterilir.',
-        drone: '5 saniyelik, 720p, sessiz video. Hazırlanması 1-3 dakika sürer; video oluşturulamazsa kredi iade edilir. Videolar ilanda "yapay zekâ ile oluşturuldu" notuyla gösterilir.',
-        tur: `720p. Hazırlanması 3-10 dakika sürer; bu sayfadan çıkabilirsin. Kliplerden biri oluşturulamazsa tur iptal edilir ve kredinin tamamı iade edilir.${s.anlatim ? ' Sesli anlatım ilan bilgilerinden yapay zekâ ile hazırlanır; hazırlanamazsa tur sessiz yayınlanır.' : ''} Tur ilanda "yapay zekâ ile oluşturuldu" notuyla gösterilir.`
-      }[s.tur]}</div>`;
+        foto: `${turAdet(i, s.sure)} fotoğraf kullanılır. Hazırlanması ${s.sure} saniye sürer; ekranı kapatma.`,
+        video: '720p, sessiz. 1-3 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
+        drone: '720p, sessiz. 1-3 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
+        tur: `720p. 3-10 dakikada hazır olur, bu sayfadan çıkabilirsin. Oluşturulamazsa kredinin tamamı iade edilir.`
+      }[s.tur]}${s.tur === 'foto' ? '' : ' İlanda "yapay zekâ ile oluşturuldu" notuyla gösterilir.'}</div>`;
     const kilit = () => s.calisiyor;
     el.querySelectorAll('[data-t]').forEach((x) => (x.onclick = () => { if (kilit()) return; s.tur = x.dataset.t; ciz(el); }));
     el.querySelectorAll('[data-o]').forEach((x) => (x.onclick = () => { if (kilit()) return; s.oran = x.dataset.o; ciz(el); }));
@@ -364,5 +368,5 @@ function videoSheet(i, ilkTur) {
       } catch (x) { toast(x.message); ciz(el); }
     };
   };
-  sheetAc('<div id="videoS" style="display:flex;flex-direction:column;gap:12px"></div>', (el) => ciz(el.querySelector('#videoS')));
+  sheetAc('<div id="videoS" class="mv"></div>', (el) => ciz(el.querySelector('#videoS')));
 }

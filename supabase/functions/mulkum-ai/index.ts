@@ -167,7 +167,7 @@ const yanit = (govde: unknown, durum = 200) => new Response(JSON.stringify(govde
 
 // ---------- MülkümVideo (ücretli) ----------
 // Pollinations görüntüden video: önce Seedance 1 Pro Fast, olmazsa P-Video. İş async başlatılır, uygulama durumu sorar.
-const VIDEO_KREDI: Record<string, number> = { drone: 3, video: 3 };
+const VIDEO_KREDI: Record<string, number> = { drone: 5, video: 5 };   // 14.6: 3 kredi +%50, yukarı yuvarlandı
 const VIDEO_MODELLER = ['bytedance/seedance-1-pro-fast', 'prunaai/p-video'];
 const VIDEO_ISTEM: Record<string, string> = {
   drone: 'Cinematic aerial drone footage of this exact property, starting from this frame. The drone smoothly rises and pulls back while slowly orbiting, revealing the building, its roof, garden and the surrounding neighbourhood from above. Keep the architecture, facade colours, windows, balconies and surroundings exactly as in the photo; do not add, remove or reshape buildings. Daylight, stable gimbal, smooth slow motion, photorealistic real-estate drone video. No text, no watermark, no logo.',
