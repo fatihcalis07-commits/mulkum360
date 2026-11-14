@@ -954,7 +954,7 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ilan-satir .bilgi .baslik{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;line-height:1.3}
 .ilan-satir.kalpli .fiyat,.ilan-satir.kalpli .baslik{padding-right:30px}
 .ilan-satir .kart-kalp{top:8px;right:8px;width:30px;height:30px}
-.ilan-satir .m2f{display:inline-block;white-space:nowrap;margin-left:8px;font-size:12px;font-weight:600;color:var(--soluk)}
+.ilan-satir .m2f{display:inline-block;white-space:nowrap;margin-left:2px;font-size:12px;font-weight:600;color:var(--soluk)}
 .sr-rozetler{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
 .sr-r{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:650;line-height:1.2;padding:2px 7px;border-radius:999px;background:var(--yuzey2);color:var(--soluk)}
 .sr-r svg{stroke:currentColor}
@@ -972,3 +972,32 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ara-hizli::-webkit-scrollbar{display:none}
 .ara-hizli .cip{flex:0 0 auto}
 .ara-cubuk>*{font-size:13px;padding:0 9px}
+
+/* 14.21 kategori: alt alta ince acilir satirlar */
+.ara-akor{display:flex;flex-direction:column;gap:8px}
+.ak-grup{background:var(--yuzey);border:1px solid var(--p-ince);border-radius:16px;box-shadow:var(--golge);overflow:hidden}
+.ak-grup.secili{border-color:var(--birincil)}
+.ak-bas{display:flex;align-items:center;gap:10px;width:100%;height:44px;padding:0 12px;border:0;background:none;font:inherit;color:var(--murekkep);cursor:pointer;text-align:left}
+.ak-ik{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--yuzey2);flex-shrink:0}
+.ak-ik svg{stroke:var(--vurgu-ikon,#1064BC)}
+.ak-bas b{font-size:15.5px;font-weight:800;letter-spacing:-.01em}
+.ak-bas small{flex:1;font-size:12.5px;font-weight:600;color:var(--soluk)}
+.ak-bas>svg{stroke:var(--soluk);transition:transform .2s;flex-shrink:0}
+.ak-grup.secili .ak-bas>svg{transform:rotate(180deg)}
+.ak-ic{padding:2px 10px 8px;border-top:1px solid var(--p-ince);display:flex;flex-direction:column;gap:4px}
+.ak-ic .ara-kat{border:0;border-radius:0;box-shadow:none;background:none}
+.ak-ic .ara-kat button{min-height:44px;padding:0 4px 0 2px;gap:10px}
+.ak-ic .ara-kat .ak-ikon{flex:0 0 30px!important;width:30px;height:30px;border-radius:10px}
+.ak-ic .ara-yol{margin-top:6px}
+
+/* 14.21 filtre arama kutusunun icinde; sirala ve kaydet sayi satirinda */
+.ara-filtre-ik{position:relative;flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:34px;height:34px;margin-right:-8px;border:0;border-radius:999px;background:var(--yuzey2);color:var(--murekkep);cursor:pointer;padding:0}
+.ara-filtre-ik svg{stroke:var(--vurgu-ikon,#1064BC)}
+.ara-filtre-ik i{position:absolute;top:-4px;right:-4px;font-style:normal;min-width:17px;height:17px;border-radius:999px;background:var(--birincil);color:var(--birincil-yazi);font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.ara-arac{display:flex;align-items:center;gap:6px;min-width:0}
+.ara-sirala{display:flex;align-items:center;gap:5px;height:34px;padding:0 9px;border:1px solid var(--p-ince);border-radius:12px;background:var(--yuzey);min-width:0}
+.ara-sirala svg{stroke:var(--vurgu-ikon,#1064BC);flex-shrink:0}
+.ara-sirala select{border:0;background:none;font:inherit;font-size:12.5px;font-weight:650;color:var(--murekkep);min-width:0;padding:0;appearance:none;-webkit-appearance:none;max-width:104px;text-overflow:ellipsis}
+.ara-ik{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--p-ince);border-radius:12px;background:var(--yuzey);cursor:pointer;padding:0}
+.ara-ik svg{stroke:var(--vurgu-ikon,#1064BC)}
+.ara-gor button{padding:0 9px}

@@ -667,3 +667,10 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Hızlı filtre çipleri `araHizliHtml`; `aramaYap` içine `foto` ve `video` süzgeci eklendi; çip sonuç vermiyorsa gizlenir.
 - Boş sonuç metni 'haber veririz' yerine gerçek davranışı yazar (Keşfet'te görünür).
 - Test: Playwright ile 390 px, 712 ilan; satır/ızgara, çipler, sonsuz kaydırma, vasıta kategorisi; yatay taşma 0.
+
+
+## 14.21 (15.11.2026): kategori satırları ve filtre yeri
+- `araSekmeHtml(seciliAna, acikIc)`: Emlak ve Vasıta alt alta 44 px açılır satır; seçili satırın altında `araYolHtml` çıktısı. CSS `premium.css` sonunda `.ara-akor`, `.ak-*`. Keşfet'teki `.ara-sekme.firsat-sekme` değişmedi.
+- Ayrı filtre çubuğu (`araCubukHtml`) kaldırıldı. `#filtreBtn` arama kutusunun içinde; `#sirala`, `#kaydetBtn` ve görünüm düğmeleri `.ara-bar2` satırında. "Sonuçlar" başlığı kaldırıldı. İlk ilan 407 yerine 304 birimde başlıyor (390x844).
+- m² fiyatı uzun fiyatta bütün olarak alt satıra iner.
+- Test: Playwright 390 px; filtre sheet açılışı, sıralama, ızgara/liste, Emlak açılışı, Satılık çipi, girişsiz kaydet uyarısı; yatay taşma 0, sayfa hatası yok.
