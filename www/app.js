@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.6 · 14.11.2026 13:35';
+const SURUM = '14.7 · 14.11.2026 15:10';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -927,7 +927,7 @@ EKRAN.ilan = (id) => {
       ${i.ana === 'emlak' && f.islem === 'Satılık' ? `<div class="kart" id="krediK"><h3>Kredi hesabı</h3><div class="izgara3"><label class="alan">Peşinat %<input id="kPes" inputmode="numeric" value="20"></label><label class="alan">Vade (ay)<input id="kVade" inputmode="numeric" value="120" list="kVadeOn"><datalist id="kVadeOn"><option value="60"><option value="120"><option value="180"></datalist></label><label class="alan">Aylık faiz %<input id="kFaiz" inputmode="decimal" placeholder="bankanınki"></label></div><div id="kSonuc" class="k soluk">Bankanın güncel aylık faiz oranını yaz; taksit hesaplansın.</div></div>` : ''}
       ${sahip ? `<div class="bolum-bas"><h2>İlanını güçlendir</h2><a href="#/kredi">${b.kredi ?? 0} kredi · Kredi al</a></div><div class="kart" id="dopingK"><div class="k soluk">Görünürlük paketleri yükleniyor…</div></div>` : ''}
       ${(sahip && fotolar.length) || (f.videolar || []).length ? '<div class="kart" id="videoK"><div class="k soluk">Videolar yükleniyor…</div></div>' : ''}
-      ${sahip && fotolar.length && i.ana === 'emlak' ? `<button class="kart satir" id="dekoAc" style="text-align:left;width:100%;border:0;font:inherit;color:inherit;cursor:pointer">${ic('yildiz', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümDeko ile fotoğraf oluştur</b><div class="k soluk">Odalarını Modern, Klasik, İskandinav ya da Rustik stilde yapay zekâyla döşe · görsel başına 1 kredi</div></div><span class="ok">›</span></button>` : ''}
+      ${sahip && fotolar.length && i.ana === 'emlak' ? `<button class="kart satir" id="dekoAc" style="text-align:left;width:100%;border:0;font:inherit;color:inherit;cursor:pointer">${ic('yildiz', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümDeko ile oda oda döşe</b><div class="k soluk">Her oda kendi fotoğrafından döşenir, odalar karışmaz · tek oda 1 kredi · 4 Oda Paketi 4 kredi</div></div><span class="ok">›</span></button>` : ''}
       ${sahip && eidsAcik() && i.durum === 'onayda' ? `<button class="kart satir" data-eids="${i.id}" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>EİDS doğrulaması sürüyor</b><div class="k soluk">Onaylanınca ilanın otomatik yayına çıkar; bilgileri güncellemek için talebi yenileyebilirsin</div></div><span class="ok">›</span></button>` : sahip && i.ana === 'emlak' && !i.dogrulanmis ? `<button class="kart satir" id="tapuIste" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('kalkan', 22, 'var(--guven)')}<div class="ara"><b>Tapu doğrulaması iste</b><div class="k soluk">Onaylanırsa ilanında "Tapu bilgisi doğrulandı" rozeti çıkar; alıcı güveni artar</div></div><span class="ok">›</span></button>` : ''}
       ${!sahip && !satildi ? `<button class="kart satir" id="randevu" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('takvim', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>Yerinde görmek için randevu iste</b><div class="k soluk">Uygun zamanını seç, satıcıya mesaj olarak gitsin</div></div><span class="ok">›</span></button>` : ''}
       ${(f.deko || []).length ? `<div class="kart" id="dekoKart"><h3>Yapay zekâ ile dekorasyon önerileri</h3>
@@ -1648,36 +1648,109 @@ function dekoKarsilastir(d) {
     <input type="range" min="0" max="100" value="50" aria-label="Karşılaştır"></div>`;
 }
 function dekoBagla(el) { el.querySelectorAll('.deko-kar').forEach((k) => { const r = k.querySelector('input'); r.oninput = () => k.style.setProperty('--k', r.value + '%'); }); }
+// Oda odadır: her oda kendi fotoğrafıyla döşenir; fotoğraflar odalar arasında dolaşmaz.
 function dekoSheet(i) {
-  const s = { foto: i.fotolar[0], oda: DEKO_ODA[0], stil: DEKO_STIL[0], sonuc: null };
+  const EMO = { 'Oturma odası': '🛋️', 'Yatak odası': '🛏️', 'Mutfak': '🍳', 'Banyo': '🛁' };
+  const s = { yuva: {}, oda: null, stil: DEKO_STIL[0], ekran: 'odalar', sonuc: null, durum: {}, basladi: false };
+  const bakiye = () => ben()?.kredi || 0;
+  const mevcut = () => i.alanlar.deko || [];
+  const eksik = () => DEKO_ODA.filter((o) => !s.yuva[o]);
+  const baska = (f, hariç) => DEKO_ODA.find((o) => o !== hariç && s.yuva[o] === f);
+  const ekleyenekle = (d) => dekoKaydet(i, [...mevcut(), d].slice(-16));
+  const stiller = () => DEKO_STIL.map((o) => `<button class="cip ${o === s.stil ? 'secili' : ''}" data-s="${o}">${o}</button>`).join('');
   const cizS = (el) => {
-    const mevcut = (i.alanlar.deko || []);
-    el.innerHTML = `<h2 style="font-size:19px;font-weight:800">MülkümDeko</h2>
-      <div class="k soluk">Bir oda fotoğrafı, oda türü ve stil seç. Duvarlar, pencereler ve ölçüler korunur; yalnız mobilya ve dekorasyon değişir.</div>
-      <div class="deko-fotolar">${i.fotolar.map((u) => `<button data-f="${u}" class="${u === s.foto ? 'secili' : ''}" style="background-image:url('${u}')" aria-label="Fotoğraf seç"></button>`).join('')}</div>
-      <div class="ciplar">${DEKO_ODA.map((o) => `<button class="cip ${o === s.oda ? 'secili' : ''}" data-o="${o}">${o}</button>`).join('')}</div>
-      <div class="ciplar">${DEKO_STIL.map((o) => `<button class="cip ${o === s.stil ? 'secili' : ''}" data-s="${o}">${o}</button>`).join('')}</div>
-      <div id="dekoSonuc">${s.sonuc ? dekoKarsilastir(s.sonuc) : ''}</div>
-      ${s.sonuc ? `<button class="btn tam" id="dekoEkle">İlana ekle</button>` : (ben()?.kredi || 0) < 1
-        ? `<div class="bilgi-k">${ic('kredi', 18)}<div>Kredin yok. MülkümDeko her görsel için <b>1 kredi</b> kullanır.</div></div><a class="btn tam" href="#/kredi">${ic('kredi', 18, '#fff')}Kredi al</a>`
-        : `<button class="btn tam" id="dekoUret">${ic('yildiz', 18, '#fff')}Görseli oluştur · 1 kredi</button><div class="k soluk" style="text-align:center">Bakiyen: <b>${ben().kredi} kredi</b></div>`}
-      ${mevcut.length ? `<div class="k soluk" style="margin-top:6px">İlanda ${mevcut.length} deko görseli var.</div><div class="liste">${mevcut.map((d, n) => `<div class="oge">${kac(d.oda)} · ${kac(d.stil)}<button class="btn sade" data-kaldir="${n}" style="margin-left:auto">İlandan kaldır</button></div>`).join('')}</div>` : ''}
-      <div class="k soluk">Oluşturulan görseller ilanda "yapay zekâ ile oluşturuldu" uyarısıyla gösterilir. Her görsel 1 kredi; görsel oluşturulamazsa kredi iade edilir.</div>`;
-    el.querySelectorAll('[data-f]').forEach((x) => (x.onclick = () => { s.foto = x.dataset.f; s.sonuc = null; cizS(el); }));
-    el.querySelectorAll('[data-o]').forEach((x) => (x.onclick = () => { s.oda = x.dataset.o; s.sonuc = null; cizS(el); }));
+    if (s.ekran === 'tek' && !s.yuva[s.oda]) s.ekran = 'foto';
+    const me = mevcut();
+    const baslik = s.ekran === 'odalar' ? 'MülkümDeko' : s.ekran === 'paket' ? 'MülkümDeko · 4 oda paketi' : `${EMO[s.oda]} ${s.oda}`;
+    const geri = s.ekran !== 'odalar' ? `<button class="btn sade" id="dekoGeri" style="margin-bottom:10px">${ic('geri', 16)}Odalar</button>` : '';
+    let govde = '';
+    if (s.ekran === 'odalar') {
+      const eks = eksik();
+      govde = `<h2 style="font-size:19px;font-weight:800">${baslik}</h2>
+      <div class="k soluk">Odayı seç, o odaya ait fotoğrafı seç — fotoğraf o odaya bağlanır, başka odayla karışmaz. Duvarlar ve pencereler korunur, yalnız mobilya değişir.</div>
+      <div class="izgara2" style="margin-top:10px">${DEKO_ODA.map((o) => {
+        const f = s.yuva[o], varMi = me.some((d) => d.oda === o);
+        return `<button class="deko-yuva ${f ? 'dolu' : ''}" data-oda="${o}">
+          ${f ? `<img src="${f}" alt="${kac(o)} fotoğrafı">` : `<span class="deko-emoji">${EMO[o]}</span>`}
+          ${varMi ? '<span class="rozet">Döşendi</span>' : ''}
+          <b>${o}</b><span class="k soluk">${varMi ? 'İlanda hazır' : f ? 'Fotoğraf seçili · değiştir ya da döşe' : 'Dokun · fotoğraf seç'}</span></button>`;
+      }).join('')}</div>
+      <div class="k soluk" style="margin:12px 0 4px">Stil (paket için de hepsi bu stilde döşenir):</div>
+      <div class="ciplar">${stiller()}</div>
+      ${eks.length ? `<div class="bilgi-k" style="margin-top:10px">${ic('foto', 18)}<div>4 oda paketi için <b>${4 - eks.length}/4</b> fotoğraf seçildi — eksik: ${eks.map((o) => `${EMO[o]} ${o.toLocaleLowerCase('tr')}`).join(', ')}</div></div>` : ''}
+      <button class="btn tam" id="dekoPaketGir" style="margin-top:8px" ${eks.length ? 'disabled' : ''}>${ic('yildiz', 18, '#fff')}4 Oda Paketi · 4 foto · 4 kredi</button>
+      <div class="k soluk" style="text-align:center;margin-top:6px">Tek oda 1 kredi · paket 4 kredi · bakiye: <b>${bakiye()} kredi</b></div>
+      ${bakiye() < 1 ? `<div class="bilgi-k" style="margin-top:6px">${ic('kredi', 18)}<div>Kredin yok. Her görsel <b>1 kredi</b>.</div></div><a class="btn tam" href="#/kredi">${ic('kredi', 18, '#fff')}Kredi al</a>` : ''}
+      ${me.length ? `<div class="k soluk" style="margin-top:10px">İlanda <b>${me.length}</b> döşenmiş görsel var.</div><div class="liste">${me.map((d, n) => `<div class="oge">${EMO[d.oda] || ''} ${kac(d.oda)} · ${kac(d.stil)}<button class="btn sade" data-kaldir="${n}" style="margin-left:auto">Kaldır</button></div>`).join('')}</div>` : ''}
+      <div class="k soluk" style="margin-top:8px">Görseller ilanda "yapay zekâyla oluşturuldu" uyarısıyla gösterilir; mobilya ilana dahil değildir. Görsel üretilemezse kredi iade edilir.</div>`;
+    } else if (s.ekran === 'foto') {
+      govde = `${geri}<h2 style="font-size:19px;font-weight:800">${baslik}</h2>
+      <div class="k soluk"><b>${kac(s.oda.toLocaleLowerCase('tr'))} fotoğrafına</b> dokun. Seçim yalnız bu odaya bağlanır; aynı fotoğraf iki odaya kullanılamaz.</div>
+      <div class="deko-izgara">${i.fotolar.map((f) => {
+        const b = baska(f, s.oda), sec = s.yuva[s.oda] === f;
+        return `<button data-f="${f}" class="${sec ? 'secili' : ''}${b ? ' baska' : ''}" style="background-image:url('${f}')" aria-label="${b ? kac(b) + ' için seçili' : kac(s.oda) + ' fotoğrafı'}">${b ? `<span>${kac(b)}</span>` : sec ? '<span>✓ Bu oda</span>' : ''}</button>`;
+      }).join('')}</div>`;
+    } else if (s.ekran === 'tek') {
+      const f = s.yuva[s.oda];
+      govde = `${geri}<h2 style="font-size:19px;font-weight:800">${baslik}</h2>
+      <img src="${f}" alt="${kac(s.oda)} fotoğrafı" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;margin:8px 0">
+      <div class="k soluk">Fotoğraf <b>${kac(s.oda.toLocaleLowerCase('tr'))}</b> olarak bağlandı. Stilini seç, döşet.</div>
+      <div class="ciplar" style="margin:8px 0">${stiller()}</div>
+      ${s.sonuc ? `${dekoKarsilastir(s.sonuc)}
+        <button class="btn tam" id="dekoEkle">${ic('tik', 18, '#fff')}İlana ekle</button>
+        <button class="btn sade tam" id="dekoBitir" style="margin-top:6px">Vazgeç · yeni bir oda seç</button>`
+      : bakiye() < 1 ? `<div class="bilgi-k">${ic('kredi', 18)}<div>Kredin yok. Her görsel <b>1 kredi</b>.</div></div><a class="btn tam" href="#/kredi">${ic('kredi', 18, '#fff')}Kredi al</a>`
+      : `<button class="btn tam" id="dekoUret">${ic('yildiz', 18, '#fff')}${kac(s.oda.toLocaleLowerCase('tr'))} döşe · 1 kredi</button>
+        <button class="btn sade tam" id="dekoSonra" style="margin-top:6px">Şimdi döşetme · fotoğrafları tamamlamaya dön</button>`}`;
+    } else {
+      govde = `${geri}<h2 style="font-size:19px;font-weight:800">${baslik}</h2>
+      <div class="k soluk">Her oda kendi fotoğrafından, seçtiğin <b>${kac(s.stil)}</b> stilde döşenir. Görseller üretildikçe otomatik ilana eklenir.</div>
+      <div class="liste" style="margin-top:8px">${DEKO_ODA.map((o) => `<div class="oge"><img src="${s.yuva[o]}" alt="${kac(o)}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;margin-right:10px;flex-shrink:0">
+        <div class="ara" style="min-width:0"><b>${EMO[o]} ${o}</b><div class="k soluk">${s.durum[o] === 'uretiyor' ? 'Döşeniyor… (10-30 sn)' : s.durum[o] === 'ok' ? '✓ İlana eklendi' : s.durum[o] === 'hata' ? 'Üretilemedi · kredi iade edildi' : s.durum[o] === 'atlandi' ? 'Fotoğraf yok · atlandı' : 'Sırada'}</div></div></div>`).join('')}</div>
+      ${s.basladi ? '<div class="k soluk" style="text-align:center;margin-top:8px">Bu ekranı kapatabilirsin; üretim sürer, görseller ilana eklenir.</div>' : `<div class="bilgi-k" style="margin-top:8px">${ic('kredi', 18)}<div>4 görsel × 1 kredi = <b>4 kredi</b> · bakiyen ${bakiye()}. Üretilemeyen görselin kredisi geri yazılır.</div></div>
+      ${bakiye() < 4 ? `<a class="btn tam" href="#/kredi">${ic('kredi', 18, '#fff')}Kredi al</a>` : `<button class="btn tam" id="dekoBaslat">${ic('yildiz', 18, '#fff')}Paketi başlat · 4 kredi</button>`}`}`;
+    }
+    el.innerHTML = govde;
+    el.querySelectorAll('[data-oda]').forEach((x) => (x.onclick = () => { s.oda = x.dataset.oda; s.ekran = 'foto'; s.sonuc = null; cizS(el); }));
     el.querySelectorAll('[data-s]').forEach((x) => (x.onclick = () => { s.stil = x.dataset.s; s.sonuc = null; cizS(el); }));
-    dekoBagla(el);
+    const g = el.querySelector('#dekoGeri'); if (g) g.onclick = () => { s.ekran = 'odalar'; s.sonuc = null; cizS(el); };
+    const pg = el.querySelector('#dekoPaketGir'); if (pg) pg.onclick = () => { if (!eksik().length) { s.ekran = 'paket'; cizS(el); } };
+    el.querySelectorAll('[data-f]').forEach((x) => (x.onclick = () => {
+      const b = baska(x.dataset.f, s.oda);
+      if (b) return toast(`Bu fotoğraf zaten ${b.toLocaleLowerCase('tr')} için seçili — iki oda aynı fotoğrafı kullanamaz.`);
+      s.yuva[s.oda] = x.dataset.f; s.sonuc = null; s.ekran = 'tek'; cizS(el);
+    }));
     const u = el.querySelector('#dekoUret'); if (u) u.onclick = async () => {
       u.disabled = true; u.textContent = 'Oluşturuluyor… (10-30 sn)';
-      try { s.sonuc = { url: await dekoUret(s.foto, s.oda, s.stil), kaynak: s.foto, oda: s.oda, stil: s.stil }; cizS(el); }
-      catch (x) { toast(x.message); cizS(el); }
+      try { s.sonuc = { url: await dekoUret(s.yuva[s.oda], s.oda, s.stil), kaynak: s.yuva[s.oda], oda: s.oda, stil: s.stil }; }
+      catch (x) { toast(x.message); }
+      cizS(el);
     };
+    const sn = el.querySelector('#dekoSonra'); if (sn) sn.onclick = () => { s.ekran = 'odalar'; cizS(el); };
+    const bk = el.querySelector('#dekoBitir'); if (bk) bk.onclick = () => { s.sonuc = null; s.ekran = 'odalar'; cizS(el); };
     const e = el.querySelector('#dekoEkle'); if (e) e.onclick = async () => {
-      if (await dene(() => dekoKaydet(i, [...mevcut, s.sonuc].slice(-16)), 'Görsel ilana eklendi')) { sheetKapat(); ciz(); }
+      if (await dene(() => ekleyenekle(s.sonuc), 'Görsel ilana eklendi')) { s.sonuc = null; s.ekran = 'odalar'; cizS(el); ciz(); }
+    };
+    const bs = el.querySelector('#dekoBaslat'); if (bs) bs.onclick = async () => {
+      s.basladi = true;
+      for (const o of DEKO_ODA) {
+        if (!s.yuva[o]) { s.durum[o] = 'atlandi'; continue; }
+        s.durum[o] = 'uretiyor'; cizS(el);
+        try {
+          const url = await dekoUret(s.yuva[o], o, s.stil);
+          const ok = await dene(() => ekleyenekle({ url, kaynak: s.yuva[o], oda: o, stil: s.stil }), null);
+          s.durum[o] = ok ? 'ok' : 'hata';
+        } catch (x) { toast(x.message); s.durum[o] = 'hata'; }
+        if (document.body.contains(el)) cizS(el);
+      }
+      const n = DEKO_ODA.filter((o) => s.durum[o] === 'ok').length;
+      toast(n ? `Paket tamam: ${n}/4 görsel ilana eklendi` : 'Hiç görsel üretilemedi — krediler iade edildi');
+      ciz();
     };
     el.querySelectorAll('[data-kaldir]').forEach((x) => (x.onclick = async () => {
-      if (await dene(() => dekoKaydet(i, mevcut.filter((_, n) => n !== +x.dataset.kaldir)), 'Görsel ilandan kaldırıldı')) cizS(el);
+      if (await dene(() => dekoKaydet(i, mevcut().filter((_, n) => n !== +x.dataset.kaldir)), 'Görsel ilandan kaldırıldı')) cizS(el);
     }));
+    dekoBagla(el);
   };
   sheetAc('<div id="dekoS"></div>', (el) => cizS(el.querySelector('#dekoS')));
 }
@@ -2259,7 +2332,7 @@ function yayinSonrasi(i) {
   const foto = (i.fotolar || []).length, b = ben();
   const secenek = [
     foto && i.ana === 'emlak' ? ['foto', 'MülkümVideo Drone', 'Dış cephe fotoğrafından havadan görünüm · 3 kredi', 'video'] : null,
-    foto && i.ana === 'emlak' ? ['yildiz', 'MülkümDeko ile odaları döşe', 'Boş ya da eski odayı lüks stilde göster · 1 kredi', 'deko'] : null,
+    foto && i.ana === 'emlak' ? ['yildiz', 'MülkümDeko ile odaları döşe', 'Oda oda: her oda kendi fotoğrafından; 4 Oda Paketi 4 kredi, tek oda 1 kredi', 'deko'] : null,
     foto ? ['foto', i.ana === 'emlak' ? 'MülkümVideo Tanıtım' : 'MülkümVideo Araç Tanıtımı', i.ana === 'emlak' ? 'Fotoğrafından kısa video; Reels ve WhatsApp durumu için dikey video · 3 kredi' : 'Araç fotoğrafından hareketli tanıtım videosu; Reels ve WhatsApp durumu için · 3 kredi', 'video'] : null,
     i.ana === 'vasita' ? ['grafik', 'Fiyatın piyasaya göre nerede?', 'TSB kasko değeri ve benzer ilanlarla karşılaştır · ücretsiz', 'deger'] : null,
     ['paylas', 'İlanını paylaş', 'WhatsApp, Instagram ve gruplarında ücretsiz duyur', 'paylas']
