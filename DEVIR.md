@@ -674,3 +674,9 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Ayrı filtre çubuğu (`araCubukHtml`) kaldırıldı. `#filtreBtn` arama kutusunun içinde; `#sirala`, `#kaydetBtn` ve görünüm düğmeleri `.ara-bar2` satırında. "Sonuçlar" başlığı kaldırıldı. İlk ilan 407 yerine 304 birimde başlıyor (390x844).
 - m² fiyatı uzun fiyatta bütün olarak alt satıra iner.
 - Test: Playwright 390 px; filtre sheet açılışı, sıralama, ızgara/liste, Emlak açılışı, Satılık çipi, girişsiz kaydet uyarısı; yatay taşma 0, sayfa hatası yok.
+
+
+## 14.22 (15.11.2026): hızlı filtre çipleri kaldırıldı
+- Kullanıcı kararı: Satılık/Fotoğraflı/Videolu çipleri ekranda gereksiz. `araHizliHtml` ve `.ara-hizli` silindi.
+- Fotoğraflı, Videolu, Fiyatı düşen: `filtreSheet` içinde 'Fotoğraf, video, fiyat' grubu (`cok('foto'|'video'|'dusen', ...)`); `aktif` ve `filtreSay` listelerine ve `araEtiketHtml` etiketlerine eklendi. İlk ilan 304 yerine 246 birimde başlıyor (390x844).
+- Test: Playwright 390 px; sheet grubu, 'Videolu' seçince 2 sonuç, uygula, etiketi kaldırınca 585 ilana dönüş; yatay taşma 0, sayfa hatası yok.

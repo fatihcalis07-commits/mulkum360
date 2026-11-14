@@ -968,9 +968,6 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ara-gor button:first-child{border-left:0}
 .ara-gor button.secili{background:var(--birincil);color:var(--birincil-yazi)}
 .ara-gor svg{stroke:currentColor}
-.ara-hizli{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:2px 0;scrollbar-width:none}
-.ara-hizli::-webkit-scrollbar{display:none}
-.ara-hizli .cip{flex:0 0 auto}
 .ara-cubuk>*{font-size:13px;padding:0 9px}
 
 /* 14.21 kategori: alt alta ince acilir satirlar */
