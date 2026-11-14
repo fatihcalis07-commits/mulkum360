@@ -220,7 +220,8 @@ async function videoKaydet(sbY: ReturnType<typeof createClient>, uid: string, ba
 async function videoDurum(id: string, sbY: ReturnType<typeof createClient>, uid: string) {
   const { data: is } = await sbY.from('video_isleri').select('*').eq('id', id).eq('sahip', uid).maybeSingle();
   if (!is) return yanit({ hata: 'Video bulunamadı.' }, 404);
-  if (is.durum !== 'bekliyor') return yanit({ durum: is.durum, url: is.url, hata: is.durum === 'hata' ? 'Video oluşturulamadı. Kredin iade edildi.' : undefined });
+  if (is.durum !== 'bekliyor') return yanit({ durum: is.durum, url: is.url, parcalar: Array.isArray(is.parcalar) ? is.parcalar.map((p: { url?: string }) => p.url).filter(Boolean) : undefined, hata: is.durum === 'hata' ? 'Video oluşturulamadı. Kredin iade edildi.' : undefined });
+  if (is.tur === 'tur') return await turDurum(is, sbY, uid);
   const pk = Deno.env.get('POLLINATIONS_API_KEY')!;
   const basarisiz = async (neden: string) => {
     const { data: k } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: is.kredi, p_aciklama: (is.tur === 'drone' ? 'MülkümVideo drone videosu' : 'MülkümVideo fotoğraftan video') + ' iadesi' });
@@ -240,6 +241,92 @@ async function videoDurum(id: string, sbY: ReturnType<typeof createClient>, uid:
     await sbY.from('video_isleri').update({ durum: 'hazir', url, guncelleme: new Date().toISOString() }).eq('id', id);
     return yanit({ durum: 'hazir', url });
   } catch (x) { console.error('video kaydet', (x as Error).message); return yanit({ durum: 'bekliyor' }); }
+}
+
+// ---------- Çok odalı tur (14.4): 3 ya da 6 fotoğrafın her biri 5 sn'lik klip olur; uygulama klipleri sırayla oynatır ----------
+// Tek iş satırı (tur='tur'), klipler parcalar sütununda. Bir klip başlatılamaz ya da başarısız olursa turun tamamı iptal edilir, kredi iade edilir.
+const TUR_KREDI: Record<number, number> = { 3: 6, 6: 10 };
+const TUR_ACIKLAMA = 'MülkümVideo çok odalı tur';
+type Parca = { foto: string; is_no?: string; model?: string; url?: string };
+
+async function klipBaslat(foto: string, oran: string, pk: string, sbY: ReturnType<typeof createClient>, uid: string): Promise<{ is_no?: string; model?: string; url?: string; hata?: string }> {
+  const hatalar: string[] = [];
+  for (const model of VIDEO_MODELLER) {
+    const q = new URLSearchParams({ model, image: foto, duration: '5', aspectRatio: oran, resolution: '720p', audio: 'false', safe: 'true' });
+    const r = await fetch(`${POLL}/video/${encodeURIComponent(VIDEO_ISTEM.video)}?${q}`, { headers: { Authorization: `Bearer ${pk}`, Prefer: 'respond-async' }, signal: AbortSignal.timeout(60000) }).catch(() => null);
+    if (r?.status === 202) { const j = await r.json().catch(() => ({})); if (j.id) return { is_no: String(j.id), model }; }
+    else if (r?.ok && (r.headers.get('content-type') || '').includes('video')) {
+      try { return { url: await videoKaydet(sbY, uid, new Uint8Array(await r.arrayBuffer())), model }; } catch (x) { hatalar.push(`${model} kayıt ${(x as Error).message}`); continue; }
+    }
+    const m = r ? (await r.text().catch(() => '')).slice(0, 300) : 'zaman aşımı';
+    hatalar.push(`${model} ${r?.status ?? ''} ${m}`); console.error('tur klip başlat', model, m);
+  }
+  return { hata: hatalar.join(' | ') };
+}
+
+async function turBaslat(g: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
+  const oran = g.oran === '9:16' ? '9:16' : '16:9';
+  const fotolar = Array.isArray(g.fotolar) ? (g.fotolar as unknown[]).map(String) : [];
+  const kredi = TUR_KREDI[fotolar.length];
+  if (!kredi) return yanit({ hata: 'Tur için 3 ya da 6 fotoğraf seç.' }, 400);
+  const on = Deno.env.get('SUPABASE_URL') + '/storage/v1/object/public/ilan-fotolari/';
+  if (fotolar.some((f) => !f.startsWith(on)) || new Set(fotolar).size !== fotolar.length) return yanit({ hata: 'Fotoğraf geçersiz.' }, 400);
+  const pk = Deno.env.get('POLLINATIONS_API_KEY');
+  if (!pk) return yanit({ hata: 'MülkümVideo henüz yapılandırılmadı.' }, 503);
+  const { count } = await sbY.from('video_isleri').select('id', { count: 'exact', head: true }).eq('sahip', uid).eq('durum', 'bekliyor').gt('olusturma', new Date(Date.now() - 20 * 60000).toISOString());
+  if ((count || 0) >= 1) return yanit({ hata: 'Hazırlanan videoların bitmesini bekle.' }, 429);
+  const { data: kalan, error: kh } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: -kredi, p_aciklama: TUR_ACIKLAMA });
+  if (kh) return yanit({ hata: /yetersiz/.test(kh.message) ? `Kredin yetmiyor. Bu tur ${kredi} kredi; Hesabım → Kredilerim bölümünden kredi alabilirsin.` : 'Kredi düşülemedi, tekrar dene.' }, 402);
+  const parcalar: Parca[] = fotolar.map((foto) => ({ foto }));
+  const { data: is, error: ih } = await sbY.from('video_isleri').insert({ sahip: uid, ilan: g.ilan || null, tur: 'tur', kaynak: fotolar[0], kredi, parcalar }).select('id').single();
+  const iptal = async (neden: string) => {
+    const { data: iade } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: kredi, p_aciklama: TUR_ACIKLAMA + ' iadesi' });
+    if (is) await sbY.from('video_isleri').update({ durum: 'hata', iade: true, hata: neden.slice(0, 900), parcalar }).eq('id', is.id);
+    return yanit({ hata: 'Tur şu an oluşturulamıyor, biraz sonra tekrar dene. Kredin iade edildi.', kredi: iade }, 502);
+  };
+  if (ih || !is) return await iptal('iş satırı yazılamadı: ' + (ih?.message || ''));
+  for (const p of parcalar) {
+    const k = await klipBaslat(p.foto, oran, pk, sbY, uid);
+    if (k.hata) return await iptal(k.hata);
+    p.is_no = k.is_no; p.model = k.model; p.url = k.url;
+  }
+  await sbY.from('video_isleri').update({ parcalar, model: parcalar[0].model || null }).eq('id', is.id);
+  return yanit({ id: is.id, kredi: kalan });
+}
+
+async function turDurum(is: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
+  const id = String(is.id), pk = Deno.env.get('POLLINATIONS_API_KEY')!;
+  const parcalar: Parca[] = Array.isArray(is.parcalar) ? (is.parcalar as Parca[]) : [];
+  const basarisiz = async (neden: string) => {
+    const { data: k } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: is.kredi, p_aciklama: TUR_ACIKLAMA + ' iadesi' });
+    await sbY.from('video_isleri').update({ durum: 'hata', iade: true, hata: neden.slice(0, 900), parcalar, guncelleme: new Date().toISOString() }).eq('id', id).eq('durum', 'bekliyor');
+    return yanit({ durum: 'hata', hata: 'Tur oluşturulamadı. Kredin iade edildi.', kredi: k });
+  };
+  const yas = Date.now() - new Date(String(is.olusturma)).getTime();
+  if (!parcalar.length) return await basarisiz('klip listesi boş');
+  let indirilen = 0, degisti = false;
+  for (const p of parcalar) {
+    if (p.url) continue;
+    if (!p.is_no) { if (yas > 600000) return await basarisiz('iş numarası yok'); continue; }
+    if (indirilen >= 2) break;   // tek çağrıda en çok 2 klip indirilir (süre sınırı)
+    const r = await fetch(`${POLL}/v1/jobs/${p.is_no}`, { headers: { Authorization: `Bearer ${pk}` }, signal: AbortSignal.timeout(20000) }).catch(() => null);
+    if (!r?.ok) { if (r?.status === 404) return await basarisiz('iş bulunamadı'); continue; }
+    const j = await r.json().catch(() => ({}));
+    if (j.status === 'failed') return await basarisiz(JSON.stringify(j).slice(0, 600));
+    if (j.status !== 'succeeded') continue;
+    const v = await fetch(j.result_url || `${POLL}/v1/jobs/${p.is_no}/result`, { headers: { Authorization: `Bearer ${pk}` }, signal: AbortSignal.timeout(60000) }).catch(() => null);
+    if (!v?.ok) continue;
+    try { p.url = await videoKaydet(sbY, uid, new Uint8Array(await v.arrayBuffer())); indirilen++; degisti = true; }
+    catch (x) { console.error('tur klip kaydet', (x as Error).message); }
+  }
+  const hazir = parcalar.filter((p) => p.url).length;
+  if (hazir === parcalar.length) {
+    await sbY.from('video_isleri').update({ durum: 'hazir', url: parcalar[0].url, parcalar, guncelleme: new Date().toISOString() }).eq('id', id);
+    return yanit({ durum: 'hazir', url: parcalar[0].url, parcalar: parcalar.map((p) => p.url) });
+  }
+  if (degisti) await sbY.from('video_isleri').update({ parcalar, guncelleme: new Date().toISOString() }).eq('id', id);
+  if (yas > 1800000) return await basarisiz('30 dk zaman aşımı');
+  return yanit({ durum: 'bekliyor', hazir, toplam: parcalar.length });
 }
 
 Deno.serve(async (req) => {
@@ -265,6 +352,10 @@ Deno.serve(async (req) => {
     const { data: iade } = await sb.rpc('deko_kredi_iade');
     const j = await sonuc.json().catch(() => ({}));
     return yanit({ ...j, hata: (j.hata || 'Görsel oluşturulamadı.') + (iade != null ? ' Kredin iade edildi.' : ''), kredi: iade ?? kalan }, sonuc.status);
+  }
+  if (g.gorev === 'tur_baslat') {
+    const sbY = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    return await turBaslat(g, sbY, kul.user.id);
   }
   if (g.gorev === 'video_baslat' || g.gorev === 'video_durum') {
     const sbY = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
