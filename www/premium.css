@@ -934,3 +934,4 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 /* 14.11 İlan sayfası MülkümVideo kartı: başlık satırı + altında videolar */
 .mv-kart-ic{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--yuzey2)}
 .mv-kart-ad{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px}
+.mv-taslak{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--yuzey);border:1px solid var(--yuzey2)}

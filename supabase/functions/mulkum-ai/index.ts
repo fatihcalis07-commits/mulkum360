@@ -430,6 +430,23 @@ async function inisIade(g: Record<string, unknown>, sbY: ReturnType<typeof creat
   return yanit({ kredi: iade });
 }
 
+// ---------- Video silme (14.12): hazırlanmış ama ilanda olmayan videoyu kalıcı siler (kayıt + dosyalar) ----------
+async function videoSil(g: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
+  const { data: is } = await sbY.from('video_isleri').select('*').eq('id', String(g.id || '')).eq('sahip', uid).maybeSingle();
+  if (!is || is.tur === 'inis' || is.durum === 'bekliyor') return yanit({ hata: 'Video bulunamadı.' }, 404);
+  const on = Deno.env.get('SUPABASE_URL') + '/storage/v1/object/public/ilan-videolari/';
+  const adresler = [is.url, is.ses, ...(Array.isArray(is.parcalar) ? is.parcalar.map((p: { url?: string }) => p?.url) : [])].filter((u): u is string => typeof u === 'string' && u.startsWith(on));
+  if (is.ilan) {
+    const { data: il } = await sbY.from('ilanlar').select('alanlar').eq('id', is.ilan).maybeSingle();
+    const ekli = new Set(((il?.alanlar?.videolar || []) as { url?: string; parcalar?: string[]; ses?: string }[]).flatMap((v) => [v.url, v.ses, ...(v.parcalar || [])]));
+    if (adresler.some((u) => ekli.has(u))) return yanit({ hata: 'Bu video ilanda yayında. Önce ilandan kaldır.' }, 409);
+  }
+  const yollar = [...new Set(adresler.map((u) => decodeURIComponent(u.slice(on.length))).filter((y) => y.startsWith(uid + '/')))];
+  if (yollar.length) await sbY.storage.from('ilan-videolari').remove(yollar);
+  await sbY.from('video_isleri').delete().eq('id', is.id);
+  return yanit({ tamam: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return yanit({ hata: 'yöntem' }, 405);
@@ -455,6 +472,7 @@ Deno.serve(async (req) => {
     const j = await sonuc.json().catch(() => ({}));
     return yanit({ ...j, hata: (j.hata || 'Görsel oluşturulamadı.') + (iade != null ? ' Kredin iade edildi.' : ''), kredi: iade ?? kalan }, sonuc.status);
   }
+  if (g.gorev === 'video_sil') return await videoSil(g, createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!), kul.user.id);
   if (g.gorev === 'inis_ode' || g.gorev === 'inis_iade') {
     const sbY = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     return g.gorev === 'inis_ode' ? await inisOde(g, sbY, kul.user.id) : await inisIade(g, sbY, kul.user.id);

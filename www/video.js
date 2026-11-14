@@ -21,6 +21,8 @@ async function videoListesiKaydet(i, liste) {
 }
 
 // İlan sayfası kartı (#videoK): ilandaki videolar herkese; üretim düğmesi ve işler yalnız ilan sahibine
+function videoOynatHtml(v) { const l = klipListe(v); return `<video src="${kac(l[0] || v.url)}" poster="${kac(v.kaynak || '')}"${l.length > 1 ? ` data-liste="${kac(JSON.stringify(l))}"${v.ses ? ` data-ses="${kac(v.ses)}"` : ''}` : ''} controls playsinline preload="metadata" style="width:100%;border-radius:12px;background:#000;display:block"></video>`; }
+
 async function videoKartiYukle(i) {
   const kap = document.getElementById('videoK'); if (!kap) return;
   const sahip = ben() && i.sahip === ben().id;
@@ -30,29 +32,24 @@ async function videoKartiYukle(i) {
   if (!document.body.contains(kap)) return;
   const ekli = new Set(videolar.map((v) => v.url));
   const klipler = klipListe;
-  const oynat = (v) => { const l = klipler(v); return `<video src="${kac(l[0] || v.url)}" poster="${kac(v.kaynak || '')}"${l.length > 1 ? ` data-liste="${kac(JSON.stringify(l))}"${v.ses ? ` data-ses="${kac(v.ses)}"` : ''}` : ''} controls playsinline preload="metadata" style="width:100%;border-radius:12px;background:#000;display:block"></video>`; };
+  const oynat = videoOynatHtml;
   const bekleyen = isler.filter((x) => x.durum === 'bekliyor');
-  const hazirEklenmemis = isler.filter((x) => x.durum === 'hazir' && !ekli.has(x.url));
+  const taslakSayi = isler.filter((x) => x.durum === 'hazir' && x.url && !ekli.has(x.url)).length;   // hazır ama ilanda değil: MülkümVideo penceresinde
   const sonHata = isler.find((x) => x.durum === 'hata' && Date.now() - new Date(x.olusturma).getTime() < 3600000);
   if (!videolar.length && !sahip) { kap.remove(); return; }
   kap.className = 'kart';
   const adSatir = (v) => kac((VIDEO_TUR[v.tur] || VIDEO_TUR.video).kisa);
   const baslik = sahip
-    ? `<button class="satir mv-kart-bas" id="videoAc" style="text-align:left;width:100%;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümVideo</b><div class="k soluk">Fotoğraf turu, AI klibi, drone, uzaydan konuma iniş ve çok odalı tur · kaydet ve paylaş</div></div><span class="ok">›</span></button>`
+    ? `<button class="satir mv-kart-bas" id="videoAc" style="text-align:left;width:100%;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümVideo</b><div class="k soluk">${taslakSayi ? taslakSayi + ' hazır video seni bekliyor · ' : ''}Fotoğraf turu, AI klibi, drone, uzaydan konuma iniş ve çok odalı tur</div></div><span class="ok">›</span></button>`
     : `<h3>MülkümVideo</h3>`;
   const parca = (html) => `<div class="mv-kart-ic">${html}</div>`;
   kap.innerHTML = baslik
     + bekleyen.map((x) => parca(`<div class="bilgi-k">${ic('yildiz', 18)}<div><b>${VIDEO_TUR[x.tur].kisa} hazırlanıyor…</b><br>Genelde ${x.tur === 'tur' ? '3-10' : '1-3'} dakika sürer. Bu sayfadan çıkabilirsin; hazır olunca burada görünür.</div></div>`)).join('')
-    + hazirEklenmemis.map((x) => parca(`<div class="mv-kart-ad"><b>${adSatir(x)}</b><span class="mv-fiyat ucretsiz">Hazır</span></div>${oynat(x)}<button class="btn tam" data-vekle="${x.id}">İlana ekle</button>`)).join('')
     + videolar.map((v, n) => parca(`<div class="mv-kart-ad"><b>${adSatir(v)}</b><span class="k soluk">AI ile oluşturuldu</span></div>${oynat(v)}<div class="satir">${sahip && klipler(v).length > 1 ? `<button class="btn cizgili" style="flex:1" data-vtek="${n}">${ic('indir', 18)}Tek video olarak kaydet</button>` : ''}${sahip ? `<button class="btn sade" data-vkaldir="${n}">İlandan kaldır</button>` : ''}</div>`)).join('')
     + (videolar.length ? `<div class="k soluk" style="margin-top:8px">Videolar ilan fotoğrafından AI ile üretildi; gerçeği birebir yansıtmayabilir.</div>` : '')
     + (sonHata && !bekleyen.length ? `<div class="k soluk" style="margin-top:8px">Son video oluşturulamadı; kredin iade edildi.</div>` : '');
   kap.querySelectorAll('[data-vkaldir]').forEach((b) => (b.onclick = async () => {
     if (await dene(() => videoListesiKaydet(i, videolar.filter((_, n) => n !== +b.dataset.vkaldir)), 'Video ilandan kaldırıldı')) videoKartiYukle(i);
-  }));
-  kap.querySelectorAll('[data-vekle]').forEach((b) => (b.onclick = async () => {
-    const x = isler.find((y) => y.id === b.dataset.vekle);
-    if (await dene(() => videoListesiKaydet(i, [...videolar, { url: x.url, tur: x.tur, kaynak: x.kaynak, ...(klipler(x).length > 1 ? { parcalar: klipler(x) } : {}), ...(x.ses ? { ses: x.ses } : {}) }].slice(-6)), 'Video ilana eklendi')) videoKartiYukle(i);
   }));
   videoListeBagla(kap);
   const ac = kap.querySelector('#videoAc'); if (ac) ac.onclick = () => videoSheet(i);
@@ -67,7 +64,7 @@ function videoTakip(id, i) {
     let d = null; try { d = await videoCagir('video_durum', { id }); } catch (_) {}
     if (d && d.durum && d.durum !== 'bekliyor') {
       VIDEO_BEKLE.delete(id);
-      toast(d.durum === 'hazir' ? 'Videon hazır' : (d.hata || 'Video oluşturulamadı'));
+      toast(d.durum === 'hazir' ? 'Videon hazır. MülkümVideo penceresinden ilana ekleyebilirsin' : (d.hata || 'Video oluşturulamadı'));
       if (document.getElementById('videoK')) videoKartiYukle(i);
       return;
     }
@@ -320,7 +317,9 @@ function videoSheet(i, ilkTur) {
       : `<div class="bilgi-k">${ic('konum', 18)}<div>Bu ilanın konumu bulunamadı. İlanı düzenleyip haritadan işaretle ya da ada/parsel gir.</div></div>`;
     const fotoIpucu = { video: 'Videoya dönüşecek fotoğrafı seç.', drone: 'Binanın dışarıdan çekilmiş fotoğrafını seç.', tur: `Odaları gezilecek sırayla seç (${adet} seçili). 3 oda ${COK_ODA_KREDI[3]} kredi, 6 oda ${COK_ODA_KREDI[6]} kredi.` }[s.tur];
     const n0 = turler.length > 1 ? 1 : 0;
+    const taslakHtml = (s.taslaklar && s.taslaklar.length) ? `<div class="mv-adim"><b style="background:var(--guven)">✓</b>Hazırladığın videolar (${s.taslaklar.length})</div><div class="k soluk" style="margin-top:-6px">Bunlar ilanında görünmüyor. İstersen ilana ekle, istersen sil.</div>${s.taslaklar.map((x) => `<div class="mv-taslak"><div class="mv-kart-ad"><b>${kac((VIDEO_TUR[x.tur] || VIDEO_TUR.video).kisa)}</b><span class="k soluk">İlanda değil</span></div>${videoOynatHtml(x)}<div class="izgara2"><button class="btn" data-tekle="${x.id}">İlana ekle</button><button class="btn sade" data-tsil="${x.id}">Sil</button></div></div>`).join('')}` : '';
     el.innerHTML = `<div class="mv-bas"><h2>MülkümVideo</h2><div class="k soluk">İlanın için tanıtım videosu hazırla, kaydet ya da paylaş.</div></div>
+      ${taslakHtml}
       ${turler.length > 1 ? `<div class="mv-adim"><b>1</b>Video türü</div>
       <div class="liste mv-tur">${turler.map(([k, a, f, d]) => `<button class="oge ${k === s.tur || (k === 'drone' && s.tur === 'uzay') ? 'secili' : ''}" data-t="${k}">${ic(k === 'foto' ? 'foto' : 'yildiz', 18)}<div class="ara"><div>${a}</div><div class="k soluk">${d}</div></div><span class="mv-fiyat${k === 'foto' ? ' ucretsiz' : ''}">${f}</span></button>`).join('')}</div>` : ''}
       ${s.tur === 'drone' || s.tur === 'uzay' ? `<div class="mv-adim"><b>${n0 + 1}</b>Drone türü</div><div class="ciplar"><button class="cip ${s.tur === 'drone' ? 'secili' : ''}" data-d="drone">Bina fotoğrafından · ${VIDEO_TUR.drone.kredi} kredi</button><button class="cip ${s.tur === 'uzay' ? 'secili' : ''}" data-d="uzay">Uzaydan konuma · ${INIS_KREDI} kredi</button></div><div class="k soluk" style="margin-top:-6px">${ACIKLAMA[s.tur]}</div>${konumSatir}` : ''}
@@ -350,6 +349,19 @@ function videoSheet(i, ilkTur) {
         drone: '720p, sessiz. 1-3 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
         tur: `720p. 3-10 dakikada hazır olur, bu sayfadan çıkabilirsin. Oluşturulamazsa kredinin tamamı iade edilir.`
       }[s.tur]}${YEREL.includes(s.tur) ? '' : ' İlanda "AI ile oluşturuldu" notuyla gösterilir.'}</div>`;
+    const tekle = (x) => { const m = (i.alanlar && i.alanlar.videolar) || []; return [...m, { url: x.url, tur: x.tur, kaynak: x.kaynak, ...(klipListe(x).length > 1 ? { parcalar: klipListe(x) } : {}), ...(x.ses ? { ses: x.ses } : {}) }].slice(-6); };
+    el.querySelectorAll('[data-tekle]').forEach((x) => (x.onclick = async () => {
+      const v = (s.taslaklar || []).find((y) => y.id === x.dataset.tekle); if (!v) return;
+      if (await dene(() => videoListesiKaydet(i, tekle(v)), 'Video ilana eklendi')) { s.taslaklar = s.taslaklar.filter((y) => y.id !== v.id); ciz(el); videoKartiYukle(i); }
+    }));
+    el.querySelectorAll('[data-tsil]').forEach((x) => (x.onclick = async () => {
+      const id = x.dataset.tsil;
+      if (await onayla('Video silinsin mi?', 'Bu video kalıcı olarak silinir ve geri alınamaz.', 'Sil', true)) {
+        try { await videoCagir('video_sil', { id }); toast('Video silindi'); } catch (e) { toast(e.message); }
+        videoKartiYukle(i);
+      }
+      videoSheet(i, s.tur);
+    }));
     const kilit = () => s.calisiyor;
     el.querySelectorAll('[data-t]').forEach((x) => (x.onclick = () => { if (kilit()) return; s.tur = x.dataset.t; ciz(el); }));
     el.querySelectorAll('[data-o]').forEach((x) => (x.onclick = () => { if (kilit()) return; s.oran = x.dataset.o; ciz(el); }));
@@ -391,7 +403,15 @@ function videoSheet(i, ilkTur) {
       } catch (x) { toast(x.message); ciz(el); }
     };
   };
-  sheetAc('<div id="videoS" class="mv"></div>', (el) => ciz(el.querySelector('#videoS')));
+  sheetAc('<div id="videoS" class="mv"></div>', (kok) => {
+    const el = kok.querySelector('#videoS'); ciz(el); videoListeBagla(el);
+    if (!(ben() && i.sahip === ben().id)) return;
+    sb.from('video_isleri').select('*').eq('ilan', i.id).neq('tur', 'inis').eq('durum', 'hazir').order('olusturma', { ascending: false }).limit(10).then(({ data }) => {
+      const ekli = new Set(((i.alanlar && i.alanlar.videolar) || []).map((v) => v.url));
+      s.taslaklar = (data || []).filter((x) => x.url && !ekli.has(x.url));
+      if (document.body.contains(el) && !s.calisiyor && !s.sonuc && s.taslaklar.length) { ciz(el); videoListeBagla(el); }
+    }, () => {});
+  });
 }
 
 // ---------- Uzaydan konuma iniş (14.10, ücretsiz): uydu görüntüsünde dünyadan ilanın konumuna yaklaşan video ----------
