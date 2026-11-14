@@ -5,10 +5,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const t = Deno.env.get('MAPBOX_TOKEN');
   if (!t) return new Response('anahtar yok', { status: 503, headers: CORS });
-  const u = new URL(req.url), lat = +(u.searchParams.get('lat') || NaN), lon = +(u.searchParams.get('lon') || NaN), z = Math.max(12, Math.min(18, +(u.searchParams.get('z') || 16)));
+  const u = new URL(req.url), lat = +(u.searchParams.get('lat') || NaN), lon = +(u.searchParams.get('lon') || NaN), kare = u.searchParams.get('boy') === 'kare', z = Math.max(kare ? 1 : 12, Math.min(18, Math.round(+(u.searchParams.get('z') || 16))));   // 14.10: kare = konuma iniş videosu karesi (1280x1280, z1-18)
   // Yalnız Türkiye ve çevresi (kötüye kullanım sınırı)
   if (!(lat > 34 && lat < 43.5 && lon > 24 && lon < 46)) return new Response('konum', { status: 400, headers: CORS });
-  const r = await fetch(`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon.toFixed(6)},${lat.toFixed(6)},${z},0/682x420@2x?attribution=false&logo=false&access_token=${t}`, { signal: AbortSignal.timeout(20000) });
+  const r = await fetch(`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon.toFixed(6)},${lat.toFixed(6)},${z},0/${kare ? '1280x1280' : '682x420@2x'}?attribution=false&logo=false&access_token=${t}`, { signal: AbortSignal.timeout(20000) });
   if (!r.ok) return new Response('mapbox ' + r.status, { status: 502, headers: CORS });
   return new Response(await r.arrayBuffer(), { headers: { ...CORS, 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=2592000' } });
 });
