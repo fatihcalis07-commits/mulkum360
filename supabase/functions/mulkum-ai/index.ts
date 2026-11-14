@@ -65,7 +65,7 @@ const ODA_ESYA: Record<string, string> = {
   bathroom: 'This is a BATHROOM and must stay a bathroom. Keep the toilet, sink, shower or bathtub and plumbing in the same places. But fully renovate the look into a luxury spa bathroom: new floating vanity with stone top, designer faucets and fittings, large backlit mirror, new large-format marble or stone tiles on walls and floor, frameless glass shower screen, fluffy towels, plants. Remove all toiletries, laundry and clutter. Never add sofas, beds or other furniture.'
 };
 // deno-lint-ignore no-explicit-any
-async function deko(g: Record<string, unknown>, sb: any, uid: string, anahtar: string) {
+async function deko(g: Record<string, unknown>, sb: any, uid: string, anahtar: string, pollen = false) {
   const foto = String(g.foto || ''), stil = STILLER[String(g.stil)], oda = ODALAR[String(g.oda)];
   if (!stil || !oda) return yanit({ hata: 'Oda ve stil seç.' }, 400);
   // Yalnız uygulamanın kendi deposundaki fotoğraflar işlenir.
@@ -84,7 +84,8 @@ async function deko(g: Record<string, unknown>, sb: any, uid: string, anahtar: s
     return yanit({ url: sb.storage.from('ilan-fotolari').getPublicUrl(yol).data.publicUrl });
   };
   // 1) Pollinations (POLLINATIONS_API_KEY varsa): OpenAI uyumlu /v1/images/edits, FLUX Kontext Pro → yedek FLUX.2 Klein
-  const pk = Deno.env.get('POLLINATIONS_API_KEY'); const pHata: string[] = [];
+  // 14.6 (kullanıcı kararı): ücretli Pollinations bakiyesini şimdilik yalnız yönetici harcar; diğer üyelerde doğrudan Gemini yolu çalışır.
+  const pk = pollen ? Deno.env.get('POLLINATIONS_API_KEY') : undefined; const pHata: string[] = [];
   if (pk) {
     for (const model of ['black-forest-labs/flux.1-kontext-pro', 'black-forest-labs/flux.2-klein-4b']) {
       const fd = new FormData();
@@ -417,6 +418,7 @@ Deno.serve(async (req) => {
 
   const yetki = req.headers.get('Authorization') || '';
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: yetki } } });
+  const yoneticiMi = async () => { try { const { data } = await sb.rpc('yonetici'); return data === true; } catch (_) { return false; } };
   const { data: kul } = await sb.auth.getUser();
   if (!kul?.user) return yanit({ hata: 'MülkümAI için giriş yapmalısın.' }, 401);
 
@@ -427,12 +429,14 @@ Deno.serve(async (req) => {
     if (!STILLER[String(g.stil)] || !ODALAR[String(g.oda)] || !String(g.foto || '').startsWith(Deno.env.get('SUPABASE_URL') + '/storage/v1/object/public/ilan-fotolari/')) return yanit({ hata: 'Oda, stil ve fotoğraf seç.' }, 400);
     const { data: kalan, error: kh } = await sb.rpc('deko_kredi_kullan');
     if (kh) return yanit({ hata: /yetersiz/.test(kh.message) ? 'Kredin yok. MülkümDeko her görsel için 1 kredi kullanır; Hesabım → Kredilerim bölümünden kredi alabilirsin.' : 'Kredi düşülemedi, tekrar dene.', kredi: 0 }, 402);
-    const sonuc = await deko(g, sb, kul.user.id, anahtar);
+    const sonuc = await deko(g, sb, kul.user.id, anahtar, await yoneticiMi());
     if (sonuc.status === 200) { const j = await sonuc.json(); return yanit({ ...j, kredi: kalan }); }
     const { data: iade } = await sb.rpc('deko_kredi_iade');
     const j = await sonuc.json().catch(() => ({}));
     return yanit({ ...j, hata: (j.hata || 'Görsel oluşturulamadı.') + (iade != null ? ' Kredin iade edildi.' : ''), kredi: iade ?? kalan }, sonuc.status);
   }
+  // 14.6 (kullanıcı kararı): video üretimi (Pollinations) şimdilik yalnız yöneticiye açık. Durum sorgusu herkese açık kalır.
+  if ((g.gorev === 'tur_baslat' || g.gorev === 'video_baslat') && !(await yoneticiMi())) return yanit({ hata: 'MülkümVideo yapay zekâ videoları şu an yalnızca yöneticiye açık. Ücretsiz fotoğraf turunu kullanabilirsin.' }, 403);
   if (g.gorev === 'tur_baslat') {
     const sbY = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     return await turBaslat(g, sbY, kul.user.id);

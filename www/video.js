@@ -37,7 +37,7 @@ async function videoKartiYukle(i) {
   const yalnizDugme = !videolar.length && !bekleyen.length && !hazirEklenmemis.length && !sonHata;
   kap.className = yalnizDugme ? '' : 'kart';
   const dugme = yalnizDugme
-    ? `<button class="kart satir" id="videoAc" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>${i.ana === 'emlak' ? 'MülkümVideo: drone ve tanıtım videosu' : 'MülkümVideo: araç tanıtım videosu'}</b><div class="k soluk">Ücretsiz fotoğraf turu, yapay zekâ videosu${i.ana === 'emlak' ? ', drone görünümü' : ''} ve çok odalı tur</div></div><span class="ok">›</span></button>`
+    ? `<button class="kart satir" id="videoAc" style="text-align:left;width:100%;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>${i.ana === 'emlak' ? 'MülkümVideo: drone ve tanıtım videosu' : 'MülkümVideo: araç tanıtım videosu'}</b><div class="k soluk">${typeof S !== 'undefined' && S.yonetici ? `Ücretsiz fotoğraf turu, yapay zekâ videosu${i.ana === 'emlak' ? ', drone görünümü' : ''} ve çok odalı tur` : 'İlan fotoğraflarından ücretsiz tanıtım videosu'}</div></div><span class="ok">›</span></button>`
     : `<button class="btn cizgili tam" id="videoAc" style="margin-top:10px">${ic('foto', 18)}Yeni video oluştur</button>`;
   kap.innerHTML =`${videolar.length ? `<h3>Videolar</h3>${videolar.map((v, n) => `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${oynat(v)}<div class="satir k soluk"><span class="ara">${kac((VIDEO_TUR[v.tur] || VIDEO_TUR.video).ad)} · yapay zekâ ile oluşturuldu</span>${sahip ? `<button class="btn sade" data-vkaldir="${n}">İlandan kaldır</button>` : ''}</div>${sahip && klipler(v).length > 1 ? `<button class="btn cizgili tam" data-vtek="${n}">${ic('indir', 18)}Tek video olarak kaydet</button>` : ''}</div>`).join('')}
     <div class="k soluk">Videolar ilan fotoğrafından yapay zekâyla üretildi; gerçeği birebir yansıtmayabilir.</div>` : ''}
@@ -289,9 +289,12 @@ function tekVideoSheet(i, v) {
 
 // MülkümVideo penceresi (MülkümDeko düzeniyle): tür çipleri, fotoğraf şeridi, seçenek çipleri, düğme, not
 function videoSheet(i, ilkTur) {
-  const turler = [['foto', 'Fotoğraf turu', 'ücretsiz'], ['video', 'Tanıtım', VIDEO_TUR.video.kredi + ' kredi']];
-  if (i.ana === 'emlak') turler.push(['drone', 'Drone', VIDEO_TUR.drone.kredi + ' kredi']);
-  if (i.fotolar.length >= 3) turler.push(['tur', 'Çok odalı tur', COK_ODA_KREDI[3] + ' ya da ' + COK_ODA_KREDI[6] + ' kredi']);
+  // 14.6: yapay zekâ videoları şimdilik yalnız yöneticiye açık (sunucu da reddeder); diğer üyeler ücretsiz fotoğraf turunu görür
+  const yz = typeof S !== 'undefined' && !!S.yonetici;
+  const turler = [['foto', 'Fotoğraf turu', 'ücretsiz']];
+  if (yz) turler.push(['video', 'Tanıtım', VIDEO_TUR.video.kredi + ' kredi']);
+  if (yz && i.ana === 'emlak') turler.push(['drone', 'Drone', VIDEO_TUR.drone.kredi + ' kredi']);
+  if (yz && i.fotolar.length >= 3) turler.push(['tur', 'Çok odalı tur', COK_ODA_KREDI[3] + ' ya da ' + COK_ODA_KREDI[6] + ' kredi']);
   const s = { tur: turler.some((t) => t[0] === ilkTur) ? ilkTur : 'foto', foto: i.fotolar[0], secili: [], oran: '9:16', sure: 15, anlatim: true, sonuc: null, calisiyor: false, iptal: false };
   const ACIKLAMA = {
     foto: 'İlan fotoğraflarından fiyat, özet ve konum yazılı bir tanıtım videosu hazırlar. Ücretsizdir, telefonunda oluşturulur; görüntüler değiştirilmez.',
