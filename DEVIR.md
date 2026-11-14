@@ -639,3 +639,4 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - **14.7 APK:** versionCode 147 / versionName 14.7; SURUM 14.7 · 14.11.2026 15:10.
 
 - 14.8 (14.11, Claude): MülkümVideo adım adım pencere (tür listesi, fotoğraf, ayarlar), tek klip 5 kredi, çok odalı tur 9/15 kredi + sesli anlatım (Gemini TTS, test edilmedi), tek video olarak kaydet. 14.6 adlı APK aslında 147 içerikliydi, silindi.
+- 14.9 (14.11, Claude): MülkümVideo paneli herkese görünür; yapay zekâ üretimi kullanıcı onayına kadar yalnız yöneticide (istemci "Çok yakında" + sunucu 403). Açmak için video.js VIDEO_URETIM_ACIK=true ve mulkum-ai yönetici kapısını kaldır.
