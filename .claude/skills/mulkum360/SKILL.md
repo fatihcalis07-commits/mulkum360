@@ -3,14 +3,14 @@ name: mulkum360
 description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, MülkümVideo) için güncel durum, sürüm, derleme, sunucu, yayın (mulkum360.com) ve değişmez kurallar. Mülküm360 kodu, APK, Supabase, video özelliği, alan adı/Pages veya @mulkum360 Instagram hesabıyla ilgili her işte kullan.
 ---
 
-# Mülküm360: güncel durum (14 Kasım 2026, sürüm 14.19)
+# Mülküm360: güncel durum (14 Kasım 2026, sürüm 14.20)
 
 > **Senkron:** Bu skill iki yerde birebir aynı tutulur: Claude `C:\Users\fcali\vitrin-app\.claude\skills\mulkum360\SKILL.md` ve DeepSeek Harness `C:\Users\fcali\.dsh\skills\mulkum360\SKILL.md`. Hangisi düzenlenirse düzenlensin diğerine de kopyalanır (hash ile doğrula). Ayrıntılı geçmiş `C:\Users\fcali\vitrin-app\DEVIR.md` sonunda, proje tanıtımı `AGENTS.md`'de. Önce bu skill, sonra DEVIR.md'nin son bölümleri okunur.
 
 ## Ürün ve teknoloji
 - Türkiye için emlak + vasıta ilan uygulaması, MülkümAI değerleme/PDF rapor, MülkümVideo. Slogan "Hayalindekine bir adım". Dil Türkçe.
 - Klasör `C:\Users\fcali\vitrin-app`. Vanilla JS (`www/`), Capacitor 8 Android, Supabase proje `klnabwqduyavaqmbzxpo` (Frankfurt). Yönetici e-postası `public.yonetici()` ile tanımlı.
-- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.19 / versionCode 159**.
+- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.20 / versionCode 160**.
 
 ## Yayın ve alan adı (ÖNEMLİ)
 - Uygulama adresi `https://mulkum360.com/` (`WEB_ADRES`, `www/app.js` satır ~1033; ilan paylaşım bağlantısı, video karekodu ve künye paylaşımı bunu kullanır).
@@ -37,6 +37,9 @@ description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, Mülküm
 - **Yapay zekâ video türleri şimdilik YALNIZ yönetici** (`VIDEO_URETIM_ACIK=false`); diğer kullanıcılar paneli görür ama "Çok yakında". Kullanıcı onay verene kadar açılmaz.
 - Video kapağı kat yazımı düzeltildi (14.19): "1. Kat" gibi hazır değerler olduğu gibi, düz sayı "3. kat" olarak yazılır.
 - Pollinations/kie.ai gibi ücretli üretimler önce tek örnekle onaya sunulur.
+
+## Arama sonuçları ekranı (14.20)
+- `EKRAN.ara` (www/app.js): liste satırında metrekare fiyatı (yalnız satılık emlak), tapu/ruhsat doğrulandı, video ve kimden rozetleri, kalp, kategori seçili değilken tür öneki; hızlı filtre çipleri (Satılık, Kiralık, Fiyatı düşen, Fotoğraflı, Videolu; sonucu olmayan çip gizlenir); Liste/Izgara/Harita seçimi (`araGorunum`, localStorage); `aramaYap` yeni `foto` ve `video` süzgeçleri. Arama kaydı yeni ilan bildirimi göndermez, yalnız Keşfet'te gösterir.
 
 ## Tanıtım sitesi
 - `scrollcraft/builds/mulkum360-tanitim/` (yerel, commit edilmedi): scroll-craft ile yapılmış tanıtım sayfası, uydu inişi + gerçek ekran görüntüleri. Yayına alınmadı; yayın kararı kullanıcıya ait.

@@ -659,3 +659,11 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 14.19 (15.11.2026)
 - Video kapağında kat "1. Kat. kat" yazıyordu: `f.kat` zaten "1. Kat" gibi geliyor. `video.js` satır 107: harf içeren değer olduğu gibi, düz sayı "N. kat" yazılır.
+
+
+## 14.20 (15.11.2026): arama sonuçları ekranı
+- `ilanSatir(i, ek, tur)`: m² fiyatı (satılık emlak), Tapu/Ruhsat doğrulandı, Video, Kimden rozetleri, `etiketHtml` (Yeni, Fiyat düştü, Fiyatı uygun) fotoğrafın üstünde, kalp (`data-kfav`), başlık 2 satır.
+- Filtre çubuğu 3 sütun (Filtrele, Sırala, Aramayı kaydet), taşma yok; Harita düğmesi sonuç sayısı satırındaki Liste/Izgara/Harita grubuna taşındı.
+- Hızlı filtre çipleri `araHizliHtml`; `aramaYap` içine `foto` ve `video` süzgeci eklendi; çip sonuç vermiyorsa gizlenir.
+- Boş sonuç metni 'haber veririz' yerine gerçek davranışı yazar (Keşfet'te görünür).
+- Test: Playwright ile 390 px, 712 ilan; satır/ızgara, çipler, sonsuz kaydırma, vasıta kategorisi; yatay taşma 0.
