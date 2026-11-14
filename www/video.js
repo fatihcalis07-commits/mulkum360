@@ -26,7 +26,7 @@ async function videoListesiKaydet(i, liste) {
 // İlan sayfası kartı (#videoK): ilandaki videolar herkese; üretim düğmesi ve işler yalnız ilan sahibine
 function videoOynatHtml(v, i) {
   const l = klipListe(v), poster = kac(v.kaynak || ''), liste = l.length ? l : [v.url];
-  if (videoAiMi(v)) return `<div class="mv-oy" data-liste="${kac(JSON.stringify(liste))}"${v.ses ? ` data-ses="${kac(v.ses)}"` : ''}${i ? ` data-ilan="${kac(i.id)}"` : ''}><div class="mv-oy-ekran"><video playsinline muted preload="auto" poster="${poster}"></video><video playsinline muted preload="auto"></video><canvas class="mv-oy-marka" hidden></canvas><button type="button" class="mv-oy-oyna" aria-label="Oynat">▶</button></div><div class="mv-oy-alt"><input type="range" class="mv-oy-cubuk" min="0" max="1000" value="0" aria-label="Video ilerleme"><span class="mv-oy-sn">0:00</span></div></div>`;
+  if (videoAiMi(v)) return `<div class="mv-oy" data-liste="${kac(JSON.stringify(liste))}"${v.tur === 'drone' ? ' data-hiz="0.9"' : ''}${v.ses ? ` data-ses="${kac(v.ses)}"` : ''}${i ? ` data-ilan="${kac(i.id)}"` : ''}><div class="mv-oy-ekran"><video playsinline muted preload="auto" poster="${poster}"></video><video playsinline muted preload="auto"></video><canvas class="mv-oy-marka" hidden></canvas><button type="button" class="mv-oy-oyna" aria-label="Oynat">▶</button></div><div class="mv-oy-alt"><input type="range" class="mv-oy-cubuk" min="0" max="1000" value="0" aria-label="Video ilerleme"><span class="mv-oy-sn">0:00</span></div></div>`;
   return `<video src="${kac(v.url)}" poster="${poster}" controls controlslist="nodownload noplaybackrate" disablepictureinpicture playsinline preload="metadata" style="width:100%;border-radius:12px;background:#000;display:block"></video>`;
 }
 
@@ -307,9 +307,10 @@ function videoListeBagla(kok) {
     let marka = null, MK = 0, MB = 0, faz = 'oyun', kT = 0, bT = 0, kapakBas = 0, bitisBas = 0, gecisBas = 0;
     let n = 0, on = 0, calis = false, zm = 0;
     const klipToplam = () => sure.reduce((a, b) => a + b, 0);
-    const bas = (k) => sure.slice(0, k).reduce((a, b) => a + b, 0), top = () => MK + klipToplam() + MB;
+    const hiz = parseFloat(p.dataset.hiz) || 1, gercek = () => klipToplam() / hiz;   // hiz: oynatma hızı (bina drone'u 0,9); süreler gerçek saniye
+    const bas = (k) => sure.slice(0, k).reduce((a, b) => a + b, 0), top = () => MK + gercek() + MB;
     const bic = (t) => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
-    const zamanSn = () => (faz === 'kapak' ? Math.min(kT, MK) : faz === 'bitis' ? MK + klipToplam() + Math.min(bT, MB) : MK + bas(n) + (vs[on].currentTime || 0));
+    const zamanSn = () => (faz === 'kapak' ? Math.min(kT, MK) : faz === 'bitis' ? MK + gercek() + Math.min(bT, MB) : MK + (bas(n) + (vs[on].currentTime || 0)) / hiz);
     const guncelle = () => { const t = zamanSn(); if (!cubuk.dataset.surukle) cubuk.value = Math.round(Math.min(1, t / top()) * 1000); sn.textContent = bic(t) + ' / ' + bic(top()); };
     const boyut = (w, h) => { const dik = h > w; kat.width = dik ? 720 : 1280; kat.height = dik ? 1280 : 720; };
     boyut(16, 9);
@@ -325,11 +326,11 @@ function videoListeBagla(kok) {
     };
     const yukle = (v, k) => {
       if (!l[k]) { v.removeAttribute('src'); delete v.dataset.k; return; }
-      if (v.dataset.k !== String(k)) { v.dataset.k = String(k); v.src = l[k]; v.load(); } else { try { v.currentTime = 0; } catch (_) {} }
+      if (v.dataset.k !== String(k)) { v.dataset.k = String(k); v.defaultPlaybackRate = hiz; v.src = l[k]; v.load(); v.playbackRate = hiz; } else { try { v.currentTime = 0; } catch (_) {} }
     };
     const goster = () => vs.forEach((v, j) => { v.style.opacity = j === on ? '1' : '0'; });
     vs.forEach((v) => v.addEventListener('loadedmetadata', () => {
-      const k = +v.dataset.k;
+      const k = +v.dataset.k; v.playbackRate = hiz;
       if (isFinite(v.duration) && v.duration > 0) sure[k] = v.duration;
       if (k === 0 && v.videoWidth && !p.dataset.oran) { p.dataset.oran = '1'; ekran.style.aspectRatio = v.videoWidth + ' / ' + v.videoHeight; boyut(v.videoWidth, v.videoHeight); katman(); }
       guncelle();
@@ -359,10 +360,10 @@ function videoListeBagla(kok) {
     const git = (t) => new Promise((ok) => {
       if (calis) durdur();
       t = Math.max(0, Math.min(top() - 0.05, t));
-      const kt = t - MK;
+      const kt = (t - MK) * hiz;
       vs.forEach((v) => v.pause()); if (ses) ses.pause();
       if (marka && t < MK) { faz = 'kapak'; kT = t; n = 0; on = 0; yukle(vs[0], 0); yukle(vs[1], 1); goster(); katman(); guncelle(); return ok(); }
-      if (marka && kt >= klipToplam()) { faz = 'bitis'; bT = kt - klipToplam(); n = l.length - 1; katman(); guncelle(); return ok(); }
+      if (marka && kt >= klipToplam()) { faz = 'bitis'; bT = (kt - klipToplam()) / hiz; n = l.length - 1; katman(); guncelle(); return ok(); }
       faz = 'oyun'; gecisBas = 0; const tk = Math.max(0, Math.min(klipToplam() - 0.05, kt)); let k = 0; while (l[k + 1] && bas(k + 1) <= tk) k++;
       on = 0; n = k; yukle(vs[0], k); yukle(vs[1], k + 1); goster();
       const a = vs[0], hedef = tk - bas(k);
@@ -446,11 +447,11 @@ async function videoDisaAktar(i, v, mod) {
 
 // Tur kliplerini (ve varsa anlatım sesini) telefonda tek video dosyasına çevirir. Kayıt gerçek zamanlıdır.
 // İki video katmanı: sıradaki klip önceden yüklenir ve 0,2 sn çapraz geçişle devralır (geçişte siyah kare olmaz).
-async function tekVideoUret(liste, sesUrl, s, ilerleme, marka) {
+async function tekVideoUret(liste, sesUrl, s, ilerleme, marka, hiz = 1) {
   const destek = (m) => { try { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); } catch (_) { return false; } };
   const mime = (sesUrl ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'] : []).find(destek) || turMime();
   if (!mime) throw new Error('Bu telefon video kaydını desteklemiyor.');
-  const yap = () => { const v = document.createElement('video'); v.crossOrigin = 'anonymous'; v.muted = true; v.playsInline = true; v.preload = 'auto'; return v; };
+  const yap = () => { const v = document.createElement('video'); v.crossOrigin = 'anonymous'; v.muted = true; v.playsInline = true; v.preload = 'auto'; v.defaultPlaybackRate = hiz; v.playbackRate = hiz; return v; };
   const yukle = (v, u) => new Promise((ok, no) => { v.onloadeddata = () => ok(); v.onerror = () => no(new Error('Klip okunamadı.')); v.src = u; v.load(); });
   const vs = [yap(), yap()], GEC = 0.2;
   ilerleme('Klipler hazırlanıyor…');
@@ -504,7 +505,7 @@ async function tekVideoUret(liste, sesUrl, s, ilerleme, marka) {
       ilerleme('Tek video hazırlanıyor ' + (n + 1) + '/' + liste.length);
       const v = vs[n % 2], sonraki = vs[(n + 1) % 2], son = liste[n + 1] ? GEC : 0.05;
       await new Promise((ok) => {
-        const sinir = Date.now() + ((isFinite(v.duration) ? v.duration : 5) + 6) * 1000;
+        const sinir = Date.now() + ((isFinite(v.duration) ? v.duration : 5) / hiz + 6) * 1000;
         const kontrol = () => { if (s.iptal || v.ended || Date.now() > sinir || (isFinite(v.duration) && v.duration - v.currentTime <= son)) return ok(); setTimeout(kontrol, 20); };
         kontrol();
       });
@@ -548,11 +549,11 @@ function tekVideoSheet(i, v, mod) {
   sheetAc('<div id="tekS" style="display:flex;flex-direction:column;gap:12px"></div>', async (kok) => {
     const el = kok.querySelector('#tekS');
     el.innerHTML = `<h2 style="font-size:19px;font-weight:800">Tek video hazırlanıyor</h2>
-      <div class="k soluk">Klipler${v.ses ? ' ve sesli anlatım' : ''} tek dosyada birleştiriliyor. Marka kapağı ve bitiş ekranıyla birlikte yaklaşık ${liste.length * 5 + 6} saniye sürer; bu sırada ekranı kapatma.</div>
+      <div class="k soluk">Klipler${v.ses ? ' ve sesli anlatım' : ''} tek dosyada birleştiriliyor. Marka kapağı ve bitiş ekranıyla birlikte yaklaşık ${Math.round(liste.length * (v.tur === 'drone' ? 9 / 0.9 : 5) + 6)} saniye sürer; bu sırada ekranı kapatma.</div>
       <div class="bilgi-k">${ic('yildiz', 18)}<div id="tekDurum">Başlıyor…</div></div>`;
     try {
       const marka = await markaHazirla(i, true);
-      const r = await tekVideoUret(liste, v.ses || '', s, (m) => { if (!document.body.contains(el)) s.iptal = true; else el.querySelector('#tekDurum').textContent = m; }, marka);
+      const r = await tekVideoUret(liste, v.ses || '', s, (m) => { if (!document.body.contains(el)) s.iptal = true; else el.querySelector('#tekDurum').textContent = m; }, marka, v.tur === 'drone' ? 0.9 : 1);
       if (!document.body.contains(el)) return;
       const sonuc = { ...r, url: URL.createObjectURL(r.blob), ad: videoAd(i, r.uzanti) };
       videoSonucCiz(el, i, sonuc, 'Tek video hazır', 'Video ilan fotoğraflarından AI ile üretildi; gerçeği birebir yansıtmayabilir.', null);
@@ -568,7 +569,7 @@ function videoSheet(i, ilkTur) {
   const yz = VIDEO_URETIM_ACIK || (typeof S !== 'undefined' && !!S.yonetici);
   const turler = [['foto', 'Fotoğraf turu', 'ücretsiz', 'Fotoğraflar fiyat ve konum yazısıyla akar. Telefonda hazırlanır.']];
   turler.push(['video', 'AI klibi', VIDEO_TUR.video.kredi + ' kredi', 'Tek fotoğraftan kameranın ilerlediği 5 saniyelik video.']);
-  if (i.ana === 'emlak') turler.push(['drone', 'Drone görünümü', INIS_KREDI + '–' + VIDEO_TUR.drone.kredi + ' kredi', 'Bina fotoğrafından drone çekimi ya da uydudan konuma iniş.']);
+  if (i.ana === 'emlak') turler.push(['drone', 'Drone görünümü', INIS_KREDI + '–' + VIDEO_TUR.drone.kredi + ' kredi', 'Bina fotoğrafından 9 saniyelik drone çekimi ya da uydudan konuma iniş.']);
   if (i.fotolar.length >= 3) turler.push(['tur', 'Çok odalı tur', COK_ODA_KREDI[3] + '–' + COK_ODA_KREDI[6] + ' kredi', '3 ya da 6 odayı sırayla gezen, sesli anlatımlı video.']);
   const YEREL = ['foto', 'uzay'];   // telefonda üretilen ücretsiz türler (uzay = drone altında "uzaydan konuma")
   const s = { konum: undefined, tur: turler.some((t) => t[0] === ilkTur) ? ilkTur : 'foto', foto: i.fotolar[0], secili: [], oran: '9:16', sure: 15, anlatim: true, sonuc: null, calisiyor: false, iptal: false };
@@ -623,7 +624,7 @@ function videoSheet(i, ilkTur) {
         foto: `${turAdet(i, s.sure)} fotoğraf kullanılır. Kapak ve bitiş ekranıyla ${s.sure + 6} saniye sürer; ekranı kapatma.`,
         uzay: '18 saniyelik video (marka kapağı ve karekodlu bitiş ekranı dahil). Uydu görüntüleri indirilir ve telefonda birleştirilir; hazırlanırken ekranı kapatma.',
         video: '720p, sessiz. 1-3 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
-        drone: '720p, sessiz. 1-3 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
+        drone: '9 saniyelik, 720p, sessiz; oynatılırken yüzde 10 yavaşlatılır (yaklaşık 10 sn). 1-4 dakikada hazır olur; oluşturulamazsa kredi iade edilir.',
         tur: `720p. 3-10 dakikada hazır olur, bu sayfadan çıkabilirsin. Oluşturulamazsa kredinin tamamı iade edilir.`
       }[s.tur]}${YEREL.includes(s.tur) ? '' : ' İlanda "AI ile oluşturuldu" notuyla gösterilir.'}</div>`;
     const tekle = (x) => { const m = (i.alanlar && i.alanlar.videolar) || []; return [...m, { url: x.url, tur: x.tur, kaynak: x.kaynak, ...(klipListe(x).length > 1 ? { parcalar: klipListe(x) } : {}), ...(x.ses ? { ses: x.ses } : {}) }].slice(-6); };

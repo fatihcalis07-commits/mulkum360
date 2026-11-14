@@ -191,7 +191,7 @@ async function videoBaslat(g: Record<string, unknown>, sbY: ReturnType<typeof cr
   const { data: is } = await sbY.from('video_isleri').insert({ sahip: uid, ilan: g.ilan || null, tur, kaynak: foto, kredi }).select('id').single();
   const hatalar: string[] = [];
   for (const model of VIDEO_MODELLER) {
-    const q = new URLSearchParams({ model, image: foto, duration: '5', aspectRatio: oran, resolution: '720p', audio: 'false', safe: 'true' });
+    const q = new URLSearchParams({ model, image: foto, duration: tur === 'drone' ? '9' : '5', aspectRatio: oran, resolution: '720p', audio: 'false', safe: 'true' });
     const r = await fetch(`${POLL}/video/${encodeURIComponent(VIDEO_ISTEM[tur])}?${q}`, { headers: { Authorization: `Bearer ${pk}`, Prefer: 'respond-async' }, signal: AbortSignal.timeout(60000) }).catch(() => null);
     if (r?.status === 202) {
       const j = await r.json().catch(() => ({}));
