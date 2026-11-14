@@ -410,6 +410,26 @@ async function turDurum(is: Record<string, unknown>, sbY: ReturnType<typeof crea
   return yanit({ durum: 'bekliyor', hazir, toplam: parcalar.length });
 }
 
+// ---------- Uzaydan konuma iniş (14.11): video telefonda üretilir; kredi burada düşülür, başarısızlıkta bir kez iade edilir ----------
+const INIS_KREDI = 1;
+async function inisOde(g: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
+  const { data: kalan, error: kh } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: -INIS_KREDI, p_aciklama: 'MülkümVideo konuma iniş' });
+  if (kh) return yanit({ hata: /yetersiz/.test(kh.message) ? `Kredin yetmiyor. Bu video ${INIS_KREDI} kredi; Hesabım → Kredilerim bölümünden kredi alabilirsin.` : 'Kredi düşülemedi, tekrar dene.' }, 402);
+  const { data: is } = await sbY.from('video_isleri').insert({ sahip: uid, ilan: g.ilan || null, tur: 'inis', kaynak: 'inis', kredi: INIS_KREDI, durum: 'hazir' }).select('id').single();
+  if (!is) {
+    const { data: iade } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: INIS_KREDI, p_aciklama: 'MülkümVideo konuma iniş iadesi' });
+    return yanit({ hata: 'İşlem başlatılamadı, kredin iade edildi.', kredi: iade }, 500);
+  }
+  return yanit({ id: is.id, kredi: kalan });
+}
+async function inisIade(g: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
+  const { data: is } = await sbY.from('video_isleri').update({ durum: 'hata', iade: true, hata: 'iniş videosu oluşturulamadı', guncelleme: new Date().toISOString() })
+    .eq('id', String(g.id || '')).eq('sahip', uid).eq('tur', 'inis').eq('iade', false).select('id').maybeSingle();
+  if (!is) return yanit({ hata: 'İade edilecek işlem yok.' }, 404);
+  const { data: iade } = await sbY.rpc('video_kredi', { p_kullanici: uid, p_miktar: INIS_KREDI, p_aciklama: 'MülkümVideo konuma iniş iadesi' });
+  return yanit({ kredi: iade });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return yanit({ hata: 'yöntem' }, 405);
@@ -435,8 +455,12 @@ Deno.serve(async (req) => {
     const j = await sonuc.json().catch(() => ({}));
     return yanit({ ...j, hata: (j.hata || 'Görsel oluşturulamadı.') + (iade != null ? ' Kredin iade edildi.' : ''), kredi: iade ?? kalan }, sonuc.status);
   }
+  if (g.gorev === 'inis_ode' || g.gorev === 'inis_iade') {
+    const sbY = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    return g.gorev === 'inis_ode' ? await inisOde(g, sbY, kul.user.id) : await inisIade(g, sbY, kul.user.id);
+  }
   // 14.6 (kullanıcı kararı): video üretimi (Pollinations) şimdilik yalnız yöneticiye açık. Durum sorgusu herkese açık kalır.
-  if ((g.gorev === 'tur_baslat' || g.gorev === 'video_baslat') && !(await yoneticiMi())) return yanit({ hata: 'MülkümVideo yapay zekâ videoları şu an yalnızca yöneticiye açık. Ücretsiz fotoğraf turunu kullanabilirsin.' }, 403);
+  if ((g.gorev === 'tur_baslat' || g.gorev === 'video_baslat') && !(await yoneticiMi())) return yanit({ hata: 'MülkümVideo AI videoları şu an yalnızca yöneticiye açık. Ücretsiz fotoğraf turunu kullanabilirsin.' }, 403);
   if (g.gorev === 'tur_baslat') {
     const sbY = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     return await turBaslat(g, sbY, kul.user.id);

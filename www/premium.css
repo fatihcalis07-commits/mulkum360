@@ -931,3 +931,6 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .mv-fiyat{flex-shrink:0;font-size:12px;font-weight:700;color:var(--vurgu-koyu);background:var(--vurgu-acik);padding:4px 9px;border-radius:99px;white-space:nowrap}
 .mv-fiyat.ucretsiz{color:var(--guven);background:var(--guven-acik)}
 .mv-tur button.oge.secili .mv-fiyat{background:var(--zemin)}
+/* 14.11 İlan sayfası MülkümVideo kartı: başlık satırı + altında videolar */
+.mv-kart-ic{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--yuzey2)}
+.mv-kart-ad{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px}
