@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.13 · 14.11.2026 20:00';
+const SURUM = '14.14 · 14.11.2026 21:30';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -40,8 +40,12 @@ const rozet = (k, ana = 'emlak') => k?.anlasmali ? `<span class="rozet kurum anl
 const kimden = (i) => (i.ana === 'emlak' ? (kullanici(i.sahip).ofis ? 'Emlak ofisinden' : 'Sahibinden') : i.alanlar?.kimden || '');
 const basHarf = (ad) => kac(String(ad || '?').split(' ').map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR'));
 function git(h) { if (location.hash === h) ciz(); else location.hash = h; }
-function toast(m) {
-  toastEl.textContent = m; toastEl.classList.add('acik'); clearTimeout(toast.z); toast.z = setTimeout(() => toastEl.classList.remove('acik'), 2400);
+function toast(m, eylem) {
+  toastEl.textContent = m; toastEl.classList.add('acik'); clearTimeout(toast.z);
+  // eylem verilirse bildirime dokununca çalışır ve bildirim biraz daha uzun kalır (ör. "Videon hazır · dokun")
+  toastEl.classList.toggle('tikla', !!eylem);
+  toastEl.onclick = eylem ? () => { toastEl.classList.remove('acik'); eylem(); } : null;
+  toast.z = setTimeout(() => toastEl.classList.remove('acik'), eylem ? 7000 : 2400);
   if (/Hayırlı olsun|yayında!|Rapor hazır|ilan yayınlandı|ilana eklendi/.test(m)) kutla();
 }
 // Başarı anlarında kısa konfeti ve titreşim (hareket azaltma tercihine saygılı)

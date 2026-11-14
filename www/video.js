@@ -3,8 +3,11 @@
 const VIDEO_TUR = {
   drone: { ad: 'MülkümVideo Drone', kisa: 'Drone', aciklama: 'Dış cephe fotoğrafından havadan çekilmiş gibi, yükselen ve binanın çevresinde dönen video', kredi: 5 },
   video: { ad: 'MülkümVideo Tanıtım', kisa: 'Video', aciklama: 'Oda ya da dış cephe fotoğrafını kameranın yavaşça ilerlediği kısa bir videoya çevirir', kredi: 5 },
-  tur: { ad: 'MülkümVideo Çok Odalı Tur', kisa: 'Tur', aciklama: 'Seçtiğin 3 ya da 6 fotoğrafı 5 saniyelik kliplere çevirir ve sırayla oynatır', kredi: 9 }
+  tur: { ad: 'MülkümVideo Çok Odalı Tur', kisa: 'Tur', aciklama: 'Seçtiğin 3 ya da 6 fotoğrafı 5 saniyelik kliplere çevirir ve sırayla oynatır', kredi: 9 },
+  foto: { ad: 'MülkümVideo Fotoğraf Turu', kisa: 'Fotoğraf turu', aciklama: 'İlan fotoğraflarından telefonda hazırlanan tanıtım videosu', kredi: 0, ai: false },
+  inis: { ad: 'MülkümVideo Konuma İniş', kisa: 'Konuma iniş', aciklama: 'Uydu görüntüsünde konuma inen video', kredi: 1, ai: false }
 };
+const videoAiMi = (v) => !!v && (VIDEO_TUR[v.tur] || {}).ai !== false;   // fotoğraf turu ve uydu videosu AI üretimi değildir
 const VIDEO_URETIM_ACIK = false; // kullanıcı onay verene kadar AI videosu yalnız yöneticide üretilir
 const VIDEO_BEKLE = new Map(); // iş id → zamanlayıcı
 
@@ -32,7 +35,7 @@ async function videoKartiYukle(i) {
   const sahip = ben() && i.sahip === ben().id;
   const videolar = (i.alanlar && i.alanlar.videolar) || [];
   let isler = [];
-  if (sahip) { try { const { data } = await sb.from('video_isleri').select('*').eq('ilan', i.id).neq('tur', 'inis').order('olusturma', { ascending: false }).limit(10); isler = data || []; } catch (_) {} }
+  if (sahip) { try { const { data } = await sb.from('video_isleri').select('*').eq('ilan', i.id).order('olusturma', { ascending: false }).limit(20); isler = data || []; } catch (_) {} }
   if (!document.body.contains(kap)) return;
   const ekli = new Set(videolar.map((v) => v.url));
   const klipler = klipListe;
@@ -44,19 +47,21 @@ async function videoKartiYukle(i) {
   kap.className = 'kart';
   const adSatir = (v) => kac((VIDEO_TUR[v.tur] || VIDEO_TUR.video).kisa);
   const baslik = sahip
-    ? `<button class="satir mv-kart-bas" id="videoAc" style="text-align:left;width:100%;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümVideo</b><div class="k soluk">${taslakSayi ? taslakSayi + ' hazır video seni bekliyor · ' : ''}Fotoğraf turu, AI klibi, drone, uzaydan konuma iniş ve çok odalı tur</div></div><span class="ok">›</span></button>`
+    ? `<button class="satir mv-kart-bas" id="videoAc" style="text-align:left;width:100%;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer">${ic('foto', 22, 'var(--vurgu-ikon)')}<div class="ara"><b>MülkümVideo</b><div class="k soluk">Fotoğraf turu, AI klibi, drone, uzaydan konuma iniş ve çok odalı tur</div></div><span class="ok">›</span></button>`
     : `<h3>MülkümVideo</h3>`;
   const parca = (html) => `<div class="mv-kart-ic">${html}</div>`;
   kap.innerHTML = baslik
+    + (sahip && taslakSayi ? `<button class="btn tam" data-vtaslak style="margin-top:12px">${ic('yildiz', 18, '#fff')}${taslakSayi} hazır video seni bekliyor · Göster</button>` : '')
     + bekleyen.map((x) => parca(`<div class="bilgi-k">${ic('yildiz', 18)}<div><b>${VIDEO_TUR[x.tur].kisa} hazırlanıyor…</b><br>Genelde ${x.tur === 'tur' ? '3-10' : '1-3'} dakika sürer. Bu sayfadan çıkabilirsin; hazır olunca burada görünür.</div></div>`)).join('')
-    + videolar.map((v, n) => parca(`<div class="mv-kart-ad"><b>${adSatir(v)}</b><span class="k soluk">AI ile oluşturuldu</span></div>${oynat(v)}${sahip ? `<div class="izgara2"><button class="btn sade" data-vk="kaydet" data-vn="${n}">${ic('indir', 18)}Telefona kaydet</button><button class="btn sade" data-vk="paylas" data-vn="${n}">Paylaş</button></div><button class="btn sade tam" data-vkaldir="${n}">İlandan kaldır</button>` : ''}`)).join('')
-    + (videolar.length ? `<div class="k soluk" style="margin-top:8px">Videolar ilan fotoğrafından AI ile üretildi; gerçeği birebir yansıtmayabilir.</div>` : '')
+    + videolar.map((v, n) => parca(`<div class="mv-kart-ad"><b>${adSatir(v)}</b><span class="k soluk">${videoAiMi(v) ? 'AI ile oluşturuldu' : v.tur === 'inis' ? 'Uydu görüntüsü' : ''}</span></div>${oynat(v)}${sahip ? `<div class="izgara2"><button class="btn sade" data-vk="kaydet" data-vn="${n}">${ic('indir', 18)}Telefona kaydet</button><button class="btn sade" data-vk="paylas" data-vn="${n}">Paylaş</button></div><button class="btn sade tam" data-vkaldir="${n}">İlandan kaldır</button>` : ''}`)).join('')
+    + (videolar.some(videoAiMi) ? `<div class="k soluk" style="margin-top:8px">AI videoları ilan fotoğrafından üretildi; gerçeği birebir yansıtmayabilir.</div>` : '')
     + (sonHata && !bekleyen.length ? `<div class="k soluk" style="margin-top:8px">Son video oluşturulamadı; kredin iade edildi.</div>` : '');
   kap.querySelectorAll('[data-vkaldir]').forEach((b) => (b.onclick = async () => {
     if (await dene(() => videoListesiKaydet(i, videolar.filter((_, n) => n !== +b.dataset.vkaldir)), 'Video ilandan kaldırıldı')) videoKartiYukle(i);
   }));
   videoListeBagla(kap);
   const ac = kap.querySelector('#videoAc'); if (ac) ac.onclick = () => videoSheet(i);
+  kap.querySelectorAll('[data-vtaslak]').forEach((b) => (b.onclick = () => videoSheet(i)));
   kap.querySelectorAll('[data-vk]').forEach((b) => (b.onclick = () => videoDisaAktar(i, videolar[+b.dataset.vn], b.dataset.vk)));
   bekleyen.forEach((x) => videoTakip(x.id, i));
 }
@@ -68,7 +73,7 @@ function videoTakip(id, i) {
     let d = null; try { d = await videoCagir('video_durum', { id }); } catch (_) {}
     if (d && d.durum && d.durum !== 'bekliyor') {
       VIDEO_BEKLE.delete(id);
-      toast(d.durum === 'hazir' ? 'Videon hazır. MülkümVideo penceresinden ilana ekleyebilirsin' : (d.hata || 'Video oluşturulamadı'));
+      toast(d.durum === 'hazir' ? 'Videon hazır · görmek için dokun' : (d.hata || 'Video oluşturulamadı'), d.durum === 'hazir' ? () => videoSheet(i) : undefined);
       if (document.getElementById('videoK')) videoKartiYukle(i);
       return;
     }
@@ -231,6 +236,14 @@ function videoListeBagla(kok) {
   });
 }
 
+// Telefonda üretilen videoyu (fotoğraf turu, konuma iniş) "Hazırladığın videolar" listesine yükler; 30 gün sonra eklenmemişse silinir
+async function videoListeyeKaydet(i, blob, uzanti, tur, inisId) {
+  const u = await videoCagir('yukle_url', { uzanti });
+  const { error } = await sb.storage.from('ilan-videolari').uploadToSignedUrl(u.yol, u.token, blob, { contentType: blob.type || (uzanti === 'webm' ? 'video/webm' : 'video/mp4') });
+  if (error) throw error;
+  await videoCagir('video_ekle', { yol: u.yol, tur, ilan: i.id, kaynak: (i.fotolar || [])[0] || '', id: inisId || undefined });
+}
+
 // Dosya işlemleri: telefona kaydet / paylaş (WhatsApp, Instagram… sistem paylaşım listesi)
 const videoAd = (i, uzanti) => 'mulkum360-ilan-' + (i.no || String(i.id).slice(-6)) + '-' + Date.now().toString(36).slice(-4) + '.' + uzanti;
 const blobB64 = (blob) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(blob); });
@@ -349,6 +362,7 @@ function videoSonucCiz(el, i, sonuc, baslik, not, geri) {
     <video src="${sonuc.url}" controls controlslist="nodownload" playsinline autoplay muted loop style="width:100%;max-height:52vh;border-radius:12px;background:#000;display:block"></video>
     <div class="izgara2"><button class="btn sade" id="tKaydet">${ic('indir', 18)}Telefona Kaydet</button><button class="btn" id="tPaylas">Paylaş</button></div>
     <div class="k soluk" style="text-align:center">Paylaş'a basınca WhatsApp, Instagram ve diğer uygulamalar listelenir.</div>
+    <div class="k soluk" id="tKayitDurum" style="text-align:center">${sonuc.kayitMetin || ''}</div>
     ${geri ? '<button class="btn cizgili tam" id="tYeni">Ayarları değiştir</button>' : ''}
     <div class="k soluk">${not}${sonuc.uzanti === 'webm' ? ' Bu telefon videoyu WebM türünde kaydetti; bazı uygulamalar bu türü kabul etmeyebilir.' : ''}</div>`;
   el.querySelector('#tPaylas').onclick = () => dene(() => videoPaylasDosya(i, sonuc.blob, ad));
@@ -407,7 +421,7 @@ function videoSheet(i, ilkTur) {
       : `<div class="bilgi-k">${ic('konum', 18)}<div>Bu ilanın konumu bulunamadı. İlanı düzenleyip haritadan işaretle ya da ada/parsel gir.</div></div>`;
     const fotoIpucu = { video: 'Videoya dönüşecek fotoğrafı seç.', drone: 'Binanın dışarıdan çekilmiş fotoğrafını seç.', tur: `Odaları gezilecek sırayla seç (${adet} seçili). 3 oda ${COK_ODA_KREDI[3]} kredi, 6 oda ${COK_ODA_KREDI[6]} kredi.` }[s.tur];
     const n0 = turler.length > 1 ? 1 : 0;
-    const taslakHtml = (s.taslaklar && s.taslaklar.length) ? `<div class="mv-adim"><b style="background:var(--guven)">✓</b>Hazırladığın videolar (${s.taslaklar.length})</div><div class="k soluk" style="margin-top:-6px">Bunlar ilanında görünmüyor. İstersen ilana ekle, istersen sil.</div>${s.taslaklar.map((x) => `<div class="mv-taslak"><div class="mv-kart-ad"><b>${kac((VIDEO_TUR[x.tur] || VIDEO_TUR.video).kisa)}</b><span class="k soluk">İlanda değil</span></div>${videoOynatHtml(x)}<div class="izgara2"><button class="btn" data-tekle="${x.id}">İlana ekle</button><button class="btn sade" data-tsil="${x.id}">Sil</button></div><div class="izgara2"><button class="btn sade" data-tvk="kaydet" data-tid="${x.id}">${ic('indir', 18)}Telefona kaydet</button><button class="btn sade" data-tvk="paylas" data-tid="${x.id}">Paylaş</button></div></div>`).join('')}<div class="k soluk">Paylaş'a basınca WhatsApp, Instagram ve diğer uygulamalar listelenir.</div>` : '';
+    const taslakHtml = (s.taslaklar && s.taslaklar.length) ? `<div class="mv-adim"><b style="background:var(--guven)">✓</b>Hazırladığın videolar (${s.taslaklar.length})</div><div class="k soluk" style="margin-top:-6px">Bunlar ilanında görünmüyor. İstersen ilana ekle, istersen sil.</div>${s.taslaklar.map((x) => `<div class="mv-taslak"><div class="mv-kart-ad"><b>${kac((VIDEO_TUR[x.tur] || VIDEO_TUR.video).kisa)}</b><span class="k soluk">${videoAiMi(x) ? 'İlanda değil · AI' : 'İlanda değil'}</span></div>${videoOynatHtml(x)}<div class="izgara2"><button class="btn" data-tekle="${x.id}">İlana ekle</button><button class="btn sade" data-tsil="${x.id}">Sil</button></div><div class="izgara2"><button class="btn sade" data-tvk="kaydet" data-tid="${x.id}">${ic('indir', 18)}Telefona kaydet</button><button class="btn sade" data-tvk="paylas" data-tid="${x.id}">Paylaş</button></div></div>`).join('')}<div class="k soluk">Paylaş'a basınca WhatsApp, Instagram ve diğer uygulamalar listelenir.</div>` : '';
     el.innerHTML = `<div class="mv-bas"><h2>MülkümVideo</h2><div class="k soluk">İlanın için tanıtım videosu hazırla, kaydet ya da paylaş.</div></div>
       ${taslakHtml}
       ${turler.length > 1 ? `<div class="mv-adim"><b>1</b>Video türü</div>
@@ -479,7 +493,11 @@ function videoSheet(i, ilkTur) {
           let r;
           try { r = s.tur === 'uzay' ? await inisUret(i, s.konum, s, ilerle) : await turUret(i, s, ilerle); }
           catch (x) { if (odeme) { try { await videoCagir('inis_iade', { id: odeme.id }); toast('Video oluşturulamadı; kredin iade edildi'); } catch (_) {} } throw x; }
-          s.sonuc = { ...r, url: URL.createObjectURL(r.blob) };
+          s.sonuc = { ...r, url: URL.createObjectURL(r.blob), kayitMetin: 'Hazırladığın videolara kaydediliyor…' };
+          videoListeyeKaydet(i, r.blob, r.uzanti, s.tur === 'uzay' ? 'inis' : 'foto', odeme && odeme.id).then(
+            () => { s.sonuc.kayitMetin = 'Hazırladığın videolara kaydedildi. MülkümVideo penceresinden tekrar açabilirsin.'; videoKartiYukle(i); },
+            () => { s.sonuc.kayitMetin = 'Videolar listesine kaydedilemedi; videoyu şimdi telefonuna kaydetmeyi unutma.'; }
+          ).then(() => { const e = document.getElementById('tKayitDurum'); if (e && s.sonuc) e.textContent = s.sonuc.kayitMetin; });
           if (typeof kayit === 'function') kayit(s.tur === 'uzay' ? 'konum_inis' : 'foto_turu', s.oran + ' · ' + (s.tur === 'uzay' ? s.konum.duzey : s.sure + ' sn') + ' · ' + r.uzanti);
         } catch (x) { if (document.body.contains(el)) toast(x.message || 'Video oluşturulamadı'); }
         s.calisiyor = false;
@@ -498,7 +516,7 @@ function videoSheet(i, ilkTur) {
   sheetAc('<div id="videoS" class="mv"></div>', (kok) => {
     const el = kok.querySelector('#videoS'); ciz(el); videoListeBagla(el);
     if (!(ben() && i.sahip === ben().id)) return;
-    sb.from('video_isleri').select('*').eq('ilan', i.id).neq('tur', 'inis').eq('durum', 'hazir').order('olusturma', { ascending: false }).limit(10).then(({ data }) => {
+    sb.from('video_isleri').select('*').eq('ilan', i.id).eq('durum', 'hazir').not('url', 'is', null).order('olusturma', { ascending: false }).limit(20).then(({ data }) => {
       const ekli = new Set(((i.alanlar && i.alanlar.videolar) || []).map((v) => v.url));
       s.taslaklar = (data || []).filter((x) => x.url && !ekli.has(x.url));
       if (document.body.contains(el) && !s.calisiyor && !s.sonuc && s.taslaklar.length) { ciz(el); videoListeBagla(el); }

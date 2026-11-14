@@ -433,7 +433,7 @@ async function inisIade(g: Record<string, unknown>, sbY: ReturnType<typeof creat
 // ---------- Video silme (14.12): hazırlanmış ama ilanda olmayan videoyu kalıcı siler (kayıt + dosyalar) ----------
 async function videoSil(g: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
   const { data: is } = await sbY.from('video_isleri').select('*').eq('id', String(g.id || '')).eq('sahip', uid).maybeSingle();
-  if (!is || is.tur === 'inis' || is.durum === 'bekliyor') return yanit({ hata: 'Video bulunamadı.' }, 404);
+  if (!is || is.durum === 'bekliyor' || (is.tur === 'inis' && !is.url)) return yanit({ hata: 'Video bulunamadı.' }, 404);
   const on = Deno.env.get('SUPABASE_URL') + '/storage/v1/object/public/ilan-videolari/';
   const adresler = [is.url, is.ses, ...(Array.isArray(is.parcalar) ? is.parcalar.map((p: { url?: string }) => p?.url) : [])].filter((u): u is string => typeof u === 'string' && u.startsWith(on));
   if (is.ilan) {
@@ -445,6 +445,34 @@ async function videoSil(g: Record<string, unknown>, sbY: ReturnType<typeof creat
   if (yollar.length) await sbY.storage.from('ilan-videolari').remove(yollar);
   await sbY.from('video_isleri').delete().eq('id', is.id);
   return yanit({ tamam: true });
+}
+
+// ---------- Telefonda üretilen videoyu "Hazırladığın videolar" listesine kaydetme (14.14) ----------
+// 1) yukle_url: imzalı yükleme adresi verir (dosya doğrudan depoya gider) 2) video_ekle: yüklenen dosyayı iş kaydına bağlar.
+async function yukleUrl(g: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
+  const { count } = await sbY.from('video_isleri').select('id', { count: 'exact', head: true }).eq('sahip', uid).eq('durum', 'hazir').gt('olusturma', new Date(Date.now() - 30 * 86400000).toISOString());
+  if ((count || 0) >= 40) return yanit({ hata: 'Kayıtlı video sayın çok fazla. Eskilerini silip tekrar dene.' }, 429);
+  const yol = `${uid}/${crypto.randomUUID()}.${g.uzanti === 'webm' ? 'webm' : 'mp4'}`;
+  const { data, error } = await sbY.storage.from('ilan-videolari').createSignedUploadUrl(yol);
+  if (error || !data) return yanit({ hata: 'Yükleme başlatılamadı.' }, 500);
+  return yanit({ yol, token: data.token });
+}
+async function videoEkle(g: Record<string, unknown>, sbY: ReturnType<typeof createClient>, uid: string) {
+  const yol = String(g.yol || ''), tur = g.tur === 'inis' ? 'inis' : 'foto';
+  if (!yol.startsWith(uid + '/') || yol.includes('..') || yol.split('/').length !== 2) return yanit({ hata: 'Geçersiz dosya.' }, 400);
+  const dosya = yol.split('/')[1];
+  const { data: liste } = await sbY.storage.from('ilan-videolari').list(uid, { search: dosya, limit: 5 });
+  if (!liste?.some((f: { name: string }) => f.name === dosya)) return yanit({ hata: 'Dosya bulunamadı.' }, 404);
+  const url = sbY.storage.from('ilan-videolari').getPublicUrl(yol).data.publicUrl;
+  const k = String(g.kaynak || ''), kaynak = k.startsWith(Deno.env.get('SUPABASE_URL') + '/storage/v1/object/public/ilan-fotolari/') ? k : 'yerel';
+  if (tur === 'inis' && g.id) {
+    const { data: is } = await sbY.from('video_isleri').update({ url, kaynak, guncelleme: new Date().toISOString() }).eq('id', String(g.id)).eq('sahip', uid).eq('tur', 'inis').eq('iade', false).select('id').maybeSingle();
+    return is ? yanit({ id: is.id }) : yanit({ hata: 'İşlem bulunamadı.' }, 404);
+  }
+  let ilan: string | null = null;
+  if (g.ilan) { const { data: il } = await sbY.from('ilanlar').select('id').eq('id', String(g.ilan)).eq('sahip', uid).maybeSingle(); ilan = il?.id || null; }
+  const { data: is, error } = await sbY.from('video_isleri').insert({ sahip: uid, ilan, tur: 'foto', kaynak, kredi: 0, durum: 'hazir', url }).select('id').single();
+  return error || !is ? yanit({ hata: 'Kaydedilemedi.' }, 500) : yanit({ id: is.id });
 }
 
 Deno.serve(async (req) => {
@@ -471,6 +499,10 @@ Deno.serve(async (req) => {
     const { data: iade } = await sb.rpc('deko_kredi_iade');
     const j = await sonuc.json().catch(() => ({}));
     return yanit({ ...j, hata: (j.hata || 'Görsel oluşturulamadı.') + (iade != null ? ' Kredin iade edildi.' : ''), kredi: iade ?? kalan }, sonuc.status);
+  }
+  if (g.gorev === 'yukle_url' || g.gorev === 'video_ekle') {
+    const sbY = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    return g.gorev === 'yukle_url' ? await yukleUrl(g, sbY, kul.user.id) : await videoEkle(g, sbY, kul.user.id);
   }
   if (g.gorev === 'video_sil') return await videoSil(g, createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!), kul.user.id);
   if (g.gorev === 'inis_ode' || g.gorev === 'inis_iade') {
