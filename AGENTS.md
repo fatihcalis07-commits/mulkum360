@@ -2,7 +2,7 @@
 
 Bu belge, projeyi devralan kodlama ajanının (DeepSeek harness vb.) ilk okuması gereken dosyadır. Ayrıntılı geçmiş: `DEVIR.md`.
 
-> **Güncel durum için önce** `.claude/skills/mulkum360/SKILL.md` (DSH kopyası `C:Userscali.dshskillsmulkum360SKILL.md`) okunur: sürüm 14.18, mulkum360.com yayını (şu an bakım modunda, EİDS sonucu beklenir), video özellikleri, derleme komutları. Bu belgedeki `assembleDebug` ve eski sürüm notları yerine o geçerlidir.
+> **Güncel durum için önce** `.claude/skills/mulkum360/SKILL.md` (DSH kopyası `C:\Users\fcali\.dsh\skills\mulkum360\SKILL.md`) okunur: sürüm 14.18, mulkum360.com yayını (şu an bakım modunda, EİDS sonucu beklenir), video özellikleri, derleme komutları. Bu belgedeki `assembleDebug` ve eski sürüm notları yerine o geçerlidir.
 
 ## 1. Ürün
 - **Mülküm360**: Türkiye için emlak + vasıta ilan uygulaması (Sahibinden benzeri) ve **MülkümAI** değerleme/PDF rapor (Endeksa benzeri).
