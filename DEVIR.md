@@ -709,3 +709,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 15.11.2026: 14.25, fotoğrafsız ilan kapağı
 - Fotoğrafı olmayan ilan kartlarına premium kapak (gece mavisi, altın çerçeve, halkalı simge, mülküm360 yazısı). Fotoğraflılar değişmedi. APK/AAB v14.25 masaüstünde; v14.24 kullanıcı isteğiyle yerinde bırakıldı.
+
+
+## 15.11.2026: tanıtım sayfası canlı
+- pages.yml GitHub web arayüzünden güncellendi (bcef22e); mulkum360.com artık anasayfa/ tanıtım sayfasını gösteriyor. Uygulama (www) hâlâ kapalı, mod bakim.
