@@ -4,7 +4,7 @@ name: Pages yayını
 on:
   push:
     branches: [main]
-    paths: ['.github/pages-modu', '.github/workflows/pages.yml', 'www/**', 'index.html', 'gizlilik.html', 'CNAME']
+    paths: ['.github/pages-modu', '.github/workflows/pages.yml', 'www/**', 'anasayfa/**', 'index.html', 'gizlilik.html', 'CNAME']
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,7 +34,8 @@ jobs:
           modu=$(head -1 .github/pages-modu | tr -d '\r ')
           echo "mod=$modu"
           mkdir _site
-          if [ "$modu" = "acik" ]; then cp -r www/. _site/; else cp index.html _site/index.html; fi
+          # bakim: anasayfa/ (tanıtım sayfası) kökte, uygulama yok. acik: www/ kökte (yalnız EİDS sonucu ve kullanıcı onayıyla).
+          if [ "$modu" = "acik" ]; then cp -r www/. _site/; else cp -r anasayfa/. _site/; fi
           cp gizlilik.html _site/gizlilik.html
           cp CNAME _site/CNAME
           touch _site/.nojekyll
