@@ -80,11 +80,45 @@ h1 em{font-style:normal;background:linear-gradient(100deg,#F6DFA0 0%,#D8A94E 45%
 [data-g]{opacity:0;translate:0 16px;animation:g .9s var(--ease) forwards;animation-delay:calc(var(--s,0)*110ms + 150ms)}
 @keyframes g{to{opacity:1;translate:0 0}}
 
-@media(max-width:860px){
+/* Güvenlik ağları: eski tarayıcı yedekleri, çentikli ekranlar, dar parçalar */
+.sahne{min-height:100vh;min-height:100svh;padding-left:max(clamp(1.5rem,5vw,4.5rem),env(safe-area-inset-left));padding-right:max(clamp(1.5rem,5vw,4.5rem),env(safe-area-inset-right));padding-bottom:max(clamp(1.6rem,3.4vw,3rem),env(safe-area-inset-bottom))}
+html,body{overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+.orta>*,.sol>*{min-width:0}
+.ust{flex-wrap:wrap;row-gap:.8rem}
+.liste span,.not,.giris-p,h1{overflow-wrap:anywhere;hyphens:auto}
+/* Çok geniş ekran: her şey orantılı büyür */
+@media(min-width:1700px){html{font-size:calc(16px + (100vw - 1700px)*.011)}}
+@media(min-width:2200px){.sahne{max-width:none}.orta{gap:8rem}}
+/* Dar telefon ve katlanır cihaz */
+@media(max-width:380px){
+  .marka img{width:34px;height:34px}.marka span{font-size:1rem}
+  .rozet{font-size:.62rem;letter-spacing:.14em;padding:.45rem .7rem}
+  .ust-yazi{letter-spacing:.16em;font-size:.68rem}.ust-yazi::before{width:1.4rem}
+  .liste li{grid-template-columns:1.9rem 1fr}
+  h1{font-size:clamp(1.7rem,9.4vw,2.3rem)}
+}
+@media(max-width:300px){.marka span{display:none}.alt nav{gap:1rem}}
+/* Yatay telefon: iki sütun korunur, dikey alan sıkılaşır */
+@media(max-height:520px) and (orientation:landscape){
+  .sahne{padding-top:.9rem;padding-bottom:.9rem}
+  .orta{padding-block:1rem;gap:2rem;grid-template-columns:minmax(0,7fr) minmax(0,3fr)}
+  .sol{gap:.7rem}
+  h1{font-size:clamp(1.7rem,10vh,2.8rem)}
+  .giris-p{font-size:.88rem;line-height:1.5}
+  .liste{margin-top:0}.liste li{padding:.45rem 0;font-size:.88rem}
+  .not{font-size:.82rem}
+  .halka{width:min(100%,10.5rem)}.halka span{font-size:.95rem;padding:0 .6rem}
+  .etiket{display:none}
+  .alt{padding-top:.7rem;font-size:.75rem}
+}
+@media(max-width:860px) and (min-height:521px){
   .orta{grid-template-columns:1fr;gap:2.4rem}
   .sag{justify-self:center;order:-1}
   .halka{width:min(64%,13rem)}
   .halka span{font-size:1.15rem;padding:0 1rem}
+}
+@media(max-width:860px){
   .perde{background:linear-gradient(to bottom,rgba(7,15,29,.55),rgba(7,15,29,.9) 55%,var(--derin) 100%)}
   .rozet{letter-spacing:.2em;padding:.5rem .85rem;backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(7,15,29,.7)}
   .etiket{backdrop-filter:none;-webkit-backdrop-filter:none}
