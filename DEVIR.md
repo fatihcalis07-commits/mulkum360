@@ -728,3 +728,10 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Ayrıca 14.25 boşluğu kapatıldı: `.vitrin-k`, `.kiyas-bas`, `.harp-alt` foto kutuları lacivert premium yer tutucu seçicilerine eklendi (vitrinde soluk gri kutu görünüyordu).
 - Test: promo/v1427-fokus.mjs 9/9 — VW kartı %61,2'ye indi (plaka + ızgara görünüyor; A/B ekranlar %TEMP%\m360-v1427), 8 kartlık önbellek + tutarlılık, ikinci ziyarette yeniden analiz yok, vitrin yer tutucusu lacivert+altın, sayfa hatası yok. Regresyon: v1425 11/11, v1424 25/25.
 - Not: eski ilanların sunucudaki kapakK görsellerini akıllı kırpımla YENİDEN ÜRETMEK DB yazmasıdır — ayrı onay gerekir; şimdilik yapılmadı. Kapak üretiminde (sb.js kapakUret) akıllı kırpım sonraki adım olarak duruyor.
+
+
+## 14.28 (15.11.2026): fotoFokus GERİ ALINDI — fotoğraflar yine merkez kırpım
+- Kullanıcı 14.27 APK'sını kurar kurmaz: "iyice bozdun resimleri, dünkü derlemede düzgündü". Yerinde doğrulandı: enerji sezgisi (kenar + doygunluk) dokulu/zemin bölgeleri konu sanıyor; VW kartı düzelirken vitrindeki Kültür (mermer zemin) ve Utku (asfalt + teker kenarı) kartları daha kötü göründü.
+- Geri alma: app.js'den fotoFokus modülü tamamen söküldü; `bgYukle` 14.26 öncesi satıra döndü (background-position hiç yazılmıyor → CSS `center/cover`); açılışta eski `fotoFokus` localStorage anahtarı temizlenir. **Korunanlar:** lacivert premium yer tutucunun vitrin/kıyas/harita kutuları (14.25 tasarımı, fotoğrafsız ilanlar) ve 14.26 kaydırma düzeltmeleri.
+- DERS: "kayıt/kayık" şikâyeti kadraj değil KAYDIRMA idi (14.26'nın konusu) — kadraj denemesi kullanıcı onaysız görsel davranış değiştirmemeliydi. Bundan sonra kadraj değişikliği yalnız sunucu tarafı akıllı kırpım + kullanıcı onayıyla (DB yazması zaten onay ister).
+- Test: promo/v1428-geri.mjs 6/6 (vitrin+arama kartlarında satır içi konum YOK, eski önbellek temizlendi, yer tutucu duruyor, SURUM 14.28, hatasız); v1425 11/11; v1424 25/25. v1427-fokus.mjs geçersizdir (geri alınan davranışı doğruluyordu), çalıştırılmıyor.
