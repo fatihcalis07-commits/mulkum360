@@ -1018,9 +1018,12 @@ body.ai-acik .ic{padding-bottom:52px}
 .ara-ik svg{stroke:var(--vurgu-ikon,#1064BC)}
 .ara-gor button{padding:0 9px}
 
-/* ===== Fotoğrafsız ilan kapağı: premium (14.25) ===== */
+/* ===== Fotoğrafsız ilan kapağı: premium (14.25 · 14.27'de vitrin/harita/kıyas kutuları eklendi) ===== */
 .ilan-k .foto:not([style*="background-image"]):not([data-bg]),
 .ilan-satir .foto:not([style*="background-image"]):not([data-bg]),
+.vitrin-k .foto:not([style*="background-image"]):not([data-bg]),
+.kiyas-bas .foto:not([style*="background-image"]):not([data-bg]),
+.harp-alt .foto:not([style*="background-image"]):not([data-bg]),
 .firsat-k .foto:not([style*="background-image"]):not([data-bg]){
   position:relative;overflow:hidden;
   background:
@@ -1031,6 +1034,9 @@ body.ai-acik .ic{padding-bottom:52px}
 }
 .ilan-k .foto:not([style*="background-image"]):not([data-bg])::before,
 .ilan-satir .foto:not([style*="background-image"]):not([data-bg])::before,
+.vitrin-k .foto:not([style*="background-image"]):not([data-bg])::before,
+.kiyas-bas .foto:not([style*="background-image"]):not([data-bg])::before,
+.harp-alt .foto:not([style*="background-image"]):not([data-bg])::before,
 .firsat-k .foto:not([style*="background-image"]):not([data-bg])::before{
   content:"";position:absolute;inset:6px;border:1px solid rgba(226,188,106,.38);border-radius:9px;pointer-events:none}
 .foto-yok.fy-p{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;opacity:1;color:#E2BC6A}

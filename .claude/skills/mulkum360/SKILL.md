@@ -3,14 +3,14 @@ name: mulkum360
 description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, MülkümVideo) için güncel durum, sürüm, derleme, sunucu, yayın (mulkum360.com) ve değişmez kurallar. Mülküm360 kodu, APK, Supabase, video özelliği, alan adı/Pages veya @mulkum360 Instagram hesabıyla ilgili her işte kullan.
 ---
 
-# Mülküm360: güncel durum (15 Kasım 2026, sürüm 14.26)
+# Mülküm360: güncel durum (15 Kasım 2026, sürüm 14.27)
 
 > **Senkron:** Bu skill iki yerde birebir aynı tutulur: Claude `C:\Users\fcali\vitrin-app\.claude\skills\mulkum360\SKILL.md` ve DeepSeek Harness `C:\Users\fcali\.dsh\skills\mulkum360\SKILL.md`. Hangisi düzenlenirse düzenlensin diğerine de kopyalanır (hash ile doğrula). Ayrıntılı geçmiş `C:\Users\fcali\vitrin-app\DEVIR.md` sonunda, proje tanıtımı `AGENTS.md`'de. Önce bu skill, sonra DEVIR.md'nin son bölümleri okunur.
 
 ## Ürün ve teknoloji
 - Türkiye için emlak + vasıta ilan uygulaması, MülkümAI değerleme/PDF rapor, MülkümVideo. Slogan "Hayalindekine bir adım". Dil Türkçe.
 - Klasör `C:\Users\fcali\vitrin-app`. Vanilla JS (`www/`), Capacitor 8 Android, Supabase proje `klnabwqduyavaqmbzxpo` (Frankfurt). Yönetici e-postası `public.yonetici()` ile tanımlı.
-- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.26 / versionCode 166**.
+- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.27 / versionCode 167**.
 
 ## Yayın ve alan adı (ÖNEMLİ)
 - Uygulama adresi `https://mulkum360.com/` (`WEB_ADRES`, `www/app.js` satır ~1033; ilan paylaşım bağlantısı, video karekodu ve künye paylaşımı bunu kullanır).
@@ -47,7 +47,13 @@ description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, Mülküm
 ## Fotoğrafsız ilan kapağı (14.25)
 - Yalnız fotoğrafı OLMAYAN ilanlarda (kart `ilanKart`, liste `ilanSatir`, fırsat kartı) premium kapak: gece mavisi gradyan, ince altın harita ızgarası, altın iç çerçeve, altın halkalı tür simgesi, "mülküm360" yazısı (yalnız kart boyunda; liste küçük resminde yalnız halka). Fotoğraflı ilanlara dokunulmaz, onlarda yazı/rozet eklenmez.
 - Kod: `fotoKutu` (www/app.js, `.foto-yok.fy-p`), stil `www/premium.css` sonu "Fotoğrafsız ilan kapağı". Açık ve koyu temada, 320 px'te denendi (örnek kayıtlarla yerelde çizim, sunucuya yazma yok).
-- Masaüstünde kullanıcı isteğiyle eski `Mulkum360-v14.24.apk/.aab` silinmedi (genel kuraldan istisna, o dosyaya dokunma).
+- Masaüstünde kullanıcı isteğiyle eski `Mulkum360-v14.24.apk/.aab` silinmedi (genel kuraldan istisna, o dosyaya dokunma). 14.27'de yer tutucu kutuları `.vitrin-k`, `.kiyas-bas`, `.harp-alt` ile genişletildi.
+
+## Konuya duyarlı fotoğraf çerçevesi (14.27 — "fotoğraflar kayık" kapatıldı)
+- Kök neden (kanıtlı): orijinaller portre 960×1280, konu alt/üst şeritte; 1:1 ve 4:3 kart kutuları `center/cover` ile orta bandı gösteriyordu. Kaydırma düzeltmesi (14.26) başka sorundu.
+- `fotoFokus` modülü (www/app.js, bgYukle üstü): kapak fotoğrafı bir kez `crossOrigin=anonymous` indirilir (bucket ACAO:*), 64 px canvas'ta satır enerjisi (parlaklık gradyanı + %30 doygunluk) → en iyi kare pencere {t,w}; `background-position:"50% Y%"` uygulanır (alçak kutularda pencere ortalanır). Kalıcı önbellek localStorage `fotoFokus` (debounce 800 ms, 420 kayıt budama); ≤2 eşzamanlı analiz; hata/yatay foto → orta kalır. **DB'ye yazma yok.**
+- Eski kapakK'ları sunucuda akıllı kırpımla yeniden üretmek DB yazmasıdır — ayrı onay ister, yapılmadı. `kapakUret`'e (sb.js) akıllı kırpım sonraki adım.
+- Test: promo/v1427-fokus.mjs 9/9 (VW kartı %61,2, plaka görünüyor; A/B: %TEMP%\m360-v1427).
 
 ## Arama sonuçları ekranı (14.20 - 14.22)
 - 14.22: ekrandaki hızlı filtre çipleri (Satılık, Fotoğraflı, Videolu) kaldırıldı. Satılık/Kiralık zaten filtre ekranında (İşlem); Fotoğraflı, Videolu ve Fiyatı düşen filtre ekranına "Fotoğraf, video, fiyat" grubu olarak taşındı (`foto`, `video`, `dusen` anahtarları, seçiliyken üstte çıkarılabilir etiket olarak görünür).

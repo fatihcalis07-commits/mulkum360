@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.26 · 15.11.2026 10:20';
+const SURUM = '14.27 · 15.11.2026 11:05';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -130,9 +130,68 @@ function baslikDuzelt(kok = document) {
     for (let n; (n = w.nextNode());) { const y = basHarfBuyuk(n.nodeValue); if (y !== n.nodeValue) n.nodeValue = y; }
   });
 }
+// ===== 14.27: Konuya duyarlı fotoğraf çerçevesi ("kayıklık" düzeltmesi) =====
+// Dikey (portre) fotoğraflar kutu içinde center/cover ile orta banttan kırpılıyor;
+// araba/bina gibi konu kadraj dışı kalıyordu. Fotoğraf bir kez indirilip en "enerjik"
+// kare pencere bulunur, arka plan konuya kaydırılır. Sonuç localStorage'da kalıcıdır;
+// hiçbir sunucu/DB yazması yoktur. Hata/uyumsuzlukta eski davranış (orta) korunur.
+const FOKUS_AD = 'fotoFokus';
+let fokusOdb = {}; try { fokusOdb = JSON.parse(localStorage.getItem(FOKUS_AD) || '{}') || {}; } catch (_) { fokusOdb = {}; }
+const fokusIs = new Set(), fokusBekle = new Map(), fokusKuyruk = []; let fokusAktif = 0;
+const fokusKaydet = (() => { let t; return () => { clearTimeout(t); t = setTimeout(() => { try { const k = Object.keys(fokusOdb); if (k.length > 420) k.slice(0, k.length - 320).forEach((x) => delete fokusOdb[x]); localStorage.setItem(FOKUS_AD, JSON.stringify(fokusOdb)); } catch (_) {} }, 800); }; })();
+const odakDize = (f) => '50% ' + (Math.max(0, Math.min(1, f)) * 100).toFixed(1) + '%';
+function fokusUygula(el, u) {
+  const r = fokusOdb[u]; if (!r || typeof r !== 'object') return;          // 0.5 işareti: çerçeve gerekmiyor (yatay) ya da hata
+  const bw = el.clientWidth || 1, bh = el.clientHeight || 0, a = bh ? bh / bw : 1, wf = Math.min(1, a * r.w);
+  if (wf >= 0.995) return;                                                  // kutuda dikey kırpma yok — orta zaten doğru
+  const ust = r.t + Math.max(0, (r.w - wf) / 2);                            // 4:3 gibi alçak kutularda konu penceresinin ortasına bak
+  el.style.backgroundPosition = odakDize(ust / (1 - wf));                   // t: pencere üstü oranı, wf: görünen dikey oran
+}
+function fokusHesapla(img) {
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if (!(w > 40 && h > w * 1.05)) return null;                                // yatay/kare: zaten sığar — ortaya bırak
+  const Wc = 64, Hc = Math.max(8, Math.round(Wc * h / w)), cv = document.createElement('canvas');
+  cv.width = Wc; cv.height = Hc;
+  const cx = cv.getContext('2d', { willReadFrequently: true }); cx.drawImage(img, 0, 0, Wc, Hc);
+  const d = cx.getImageData(0, 0, Wc, Hc).data, N = Wc * Hc, g = new Float64Array(N), st = new Float64Array(N);
+  for (let p = 0; p < N; p++) { const j = p * 4, q = d[j], r = d[j + 1], s = d[j + 2], mx = Math.max(q, r, s), mn = Math.min(q, r, s); g[p] = .299 * q + .587 * r + .114 * s; st[p] = mx ? (mx - mn) / mx : 0; }
+  const e = new Float64Array(Hc);                                            // satır enerjisi: kenar (parlaklık farkı) + renk doygunluğu
+  for (let y = 0; y < Hc; y++) { let grad = 0, sat = 0; const row = y * Wc;
+    for (let x = 1; x < Wc; x++) grad += Math.abs(g[row + x] - g[row + x - 1]);
+    if (y) { let dy = 0; for (let x = 0; x < Wc; x++) dy += Math.abs(g[row + x] - g[row - Wc + x]); grad += dy * 1.5; }
+    for (let x = 0; x < Wc; x++) sat += st[row + x];
+    e[y] = grad / Wc + .3 * sat / Wc;
+  }
+  const sm = new Float64Array(Hc), K = [1, 2, 3, 2, 1];
+  for (let y = 0; y < Hc; y++) { let topla = 0, agir = 0; for (let k = -2; k <= 2; k++) { const yy = y + k; if (yy >= 0 && yy < Hc) { topla += e[yy] * K[k + 2]; agir += K[k + 2]; } } sm[y] = topla / agir; }
+  const wh = Math.max(4, Math.round(Wc * w / h)), pre = new Float64Array(Hc + 1);  // kare kutuda görünen pencere
+  for (let y = 0; y < Hc; y++) pre[y + 1] = pre[y] + sm[y];
+  let best = -1, bestT = 0;
+  for (let t = 0; t + wh <= Hc; t++) { const v = pre[t + wh] - pre[t]; if (v > best) { best = v; bestT = t; } }
+  return { t: +(bestT / Hc).toFixed(3), w: +(w / h).toFixed(3) };
+}
+function fokusBitir(u, rec) {
+  if (rec) fokusOdb[u] = rec; fokusKaydet();
+  const s = fokusBekle.get(u); if (!s) return; fokusBekle.delete(u);
+  if (rec && typeof rec === 'object') s.forEach((el) => { if (document.contains(el)) fokusUygula(el, u); });
+}
+function fokusAnaliz(u) { return new Promise((res) => {
+  let done = false; const bit = () => { if (!done) { done = true; res(); } };
+  const zafer = setTimeout(() => { fokusBitir(u, .5); bit(); }, 12000);      // takılırsa ortaya dokunma
+  const img = new Image(); img.crossOrigin = 'anonymous';                    // bucket ACAO:* — piksel okuma serbest
+  img.onload = () => { clearTimeout(zafer); let rec = .5; try { rec = fokusHesapla(img) || .5; } catch (_) {} fokusBitir(u, rec); bit(); }; // .5: çerçeve gerekmez/hata — orta kalır
+  img.onerror = () => { clearTimeout(zafer); fokusBitir(u, .5); bit(); };
+  img.src = u;
+}); }
+function fokusPompa() { while (fokusAktif < 2 && fokusKuyruk.length) { const u = fokusKuyruk.shift(); fokusAktif++; fokusAnaliz(u).then(() => { fokusAktif--; fokusIs.delete(u); setTimeout(fokusPompa, 80); }); } }
+function fokusIzle(u, el) {
+  if (!/^https?:/i.test(u) || u in fokusOdb) return;
+  let s = fokusBekle.get(u); if (!s) fokusBekle.set(u, s = new Set()); s.add(el);
+  if (!fokusIs.has(u)) { fokusIs.add(u); fokusKuyruk.push(u); fokusPompa(); }
+}
 // Kapak fotoğrafları ekrana yaklaşınca yüklenir (uzun listelerde yüzlerce görsel birden inmesin)
 const BG_YUKLU = new Set();
-const bgYukle = (el) => { const u = el.dataset.bg; if (!u) return; BG_YUKLU.add(u); el.style.backgroundImage = "url('" + u.replace(/'/g, '%27') + "')"; el.removeAttribute('data-bg'); bgGoz?.unobserve(el); };
+const bgYukle = (el) => { const u = el.dataset.bg; if (!u) return; BG_YUKLU.add(u); el.style.backgroundImage = "url('" + u.replace(/'/g, '%27') + "')"; if (u in fokusOdb) fokusUygula(el, u); else fokusIzle(u, el); el.removeAttribute('data-bg'); bgGoz?.unobserve(el); };
 const bgGoz = 'IntersectionObserver' in window ? new IntersectionObserver((l) => l.forEach((e) => e.isIntersecting && bgYukle(e.target)), { rootMargin: '600px' }) : null;
 const bgIzle = (kok) => [...(kok.matches?.('[data-bg]') ? [kok] : []), ...kok.querySelectorAll('[data-bg]')].forEach((el) => (!bgGoz || BG_YUKLU.has(el.dataset.bg) ? bgYukle(el) : bgGoz.observe(el)));
 new MutationObserver((l) => { for (const m of l) for (const n of m.addedNodes) if (n.nodeType === 1) { baslikDuzelt(n); bgIzle(n); } }).observe(document.documentElement, { childList: true, subtree: true });
