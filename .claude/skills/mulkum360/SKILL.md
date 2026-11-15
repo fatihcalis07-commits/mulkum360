@@ -17,6 +17,9 @@ description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, Mülküm
 - Pages **GitHub Actions** ile yayınlanır: `.github/workflows/pages.yml`. Yalnız derlenen `_site` yayınlanır, depo belgeleri yayınlanmaz.
 - Mod dosyası `.github/pages-modu` (ilk satır). **Şu an `bakim`**: kökte "Mülküm360 · Yakında" sayfası. `acik` yapılınca `www/` kökte açılır.
 - **EİDS sonucu (başvuru 13.11.2026, eids@ticaret.gov.tr) gelmeden ve kullanıcı onaylamadan `acik` YAPILMAZ.** Web uygulamasını kimseye açma.
+- **Bakım modunda kökte tanıtım sayfası (15.11.2026):** `anasayfa/` klasörü (scroll-craft tanıtım sayfasının yayın kopyası; uydu kapaklı, cam üst çubuk, 56 karelik iniş, gerçek ekranlar) `bakim` modunda kökte yayınlanır. Düğmeler "Yakında açılıyor" der ve `#kunye`ye gider (uygulama kapalı; EİDS notu künyede). `acik`a geçerken `anasayfa/` yerine `www/` yayınlanır, tanıtım sayfası ayrı bir adrese alınmazsa kaybolur; o gün karar verilir. `index.html` (eski "Yakında" kartı) yedek olarak kökte durur.
+- **Bekleyen elle iş:** `.github/workflows/pages.yml` değişikliği (bakımda `cp -r anasayfa/. _site/`, tetik yollarına `anasayfa/**`) OAuth `workflow` izni olmadığı için push edilemedi; yerel dosyada duruyor, kopyası masaüstünde `pages.yml`. GitHub web arayüzünde dosyayı bu içerikle değiştirmek gerekir. Yapılana kadar canlı site eski "Yakında" kartını gösterir. Yapıldıktan sonra bu madde silinir.
+- Tanıtım sayfasında değişiklik: önce `scrollcraft\builds\mulkum360-tanitim\` (kaynak, `node ... sunucu` ile yerelde bak), sonra `anasayfa/` kopyasına (robocopy, `node_modules lab _ham` hariç) ve CTA metinleri korunarak taşınır.
 - `/www/` adresi köke yönlenir. Pages ayarı: Settings → Pages → Source = GitHub Actions (kuruldu, 15.11.2026).
 - GitHub'a workflow dosyası push'u OAuth belirteciyle reddedilir (`workflow` izni yok); workflow dosyaları GitHub web arayüzünden değiştirilir.
 
@@ -45,7 +48,7 @@ description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, Mülküm
 - `EKRAN.ara` (www/app.js): liste satırında metrekare fiyatı (yalnız satılık emlak), tapu/ruhsat doğrulandı, video ve kimden rozetleri, kalp, kategori seçili değilken tür öneki; hızlı filtre çipleri (Satılık, Kiralık, Fiyatı düşen, Fotoğraflı, Videolu; sonucu olmayan çip gizlenir); Liste/Izgara/Harita seçimi (`araGorunum`, localStorage); `aramaYap` yeni `foto` ve `video` süzgeçleri. Arama kaydı yeni ilan bildirimi göndermez, yalnız Keşfet'te gösterir.
 
 ## Tanıtım sitesi
-- `scrollcraft/builds/mulkum360-tanitim/` (yerel, commit edilmedi): scroll-craft ile yapılmış tanıtım sayfası, uydu inişi + gerçek ekran görüntüleri. Yayına alınmadı; yayın kararı kullanıcıya ait.
+- `scrollcraft/builds/mulkum360-tanitim/` (kaynak, yerel): scroll-craft ile yapılmış tanıtım sayfası. 15.11.2026'da premium sürüm: uydu karesi arka planlı kapak, altın "bir adım." başlığı, eğik gerçek ilan ekranı, cam üst çubuk (aşağı kaydırınca gizlenir), yetenek şeridi (4 madde, sayı yok), genişletilmiş künye, OG etiketleri. Giriş animasyonu `translate` özelliğiyle yapılır (kart `transform`unu ezmesin). Yayın kopyası `anasayfa/` (commit `a2f698f`).
 - Tasarım iş akışı skill'i: `vitrin-app\.claude\skills\mulkum-tasarim-akisi`.
 
 ## Değişmez kurallar

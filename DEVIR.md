@@ -685,3 +685,9 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 ## 14.23 (15.11.2026): vasıtada çok odalı tur yok
 - `videoSheet` (video.js): `Çok odalı tur` yalnız `i.ana === 'emlak'` ilanlarında listelenir (drone zaten emlak). İlan sayfasındaki MülkümVideo kartının açıklaması ve AI klibi metni vasıtada araca göre yazılır. Sunucu (`mulkum-ai`) ilan türünü denetlemez; yalnız arayüz.
 - Test: Playwright ile gerçek vasıta ve emlak ilanında `videoSheet` açıldı; vasıtada çok odalı ve drone yok, emlakta ikisi de var.
+
+
+## 15.11.2026: premium tanıtım sayfası
+- `anasayfa/` eklendi (tanıtım sayfasının yayın kopyası, commit a2f698f). Kapak yenilendi, cam üst çubuk, yetenek şeridi, künye genişledi; düğmeler "Yakında açılıyor".
+- pages.yml (bakımda anasayfa/ kökte) push edilemedi: OAuth workflow izni yok. Dosya yerelde değişik, kopya masaüstünde; GitHub web arayüzünden elle yapıştırılacak.
+- mulkum360 skill güncellendi, DSH kopyasıyla MD5 eşit.
