@@ -198,3 +198,42 @@ body { background: var(--derin); font-family: var(--sc-font-text); }
   .folio__ad { transition: none; }
 }
 @media (max-width: 380px) { .kapak__baslik { font-size: 1.85rem; } .kapak__alt { font-size: var(--sc-t-base); } }
+
+/* ===== Tüm cihazlar: güvenlik ağları (15.11.2026) ===== */
+html, body { overflow-x: hidden; max-width: 100%; }
+@supports (overflow: clip) { html, body { overflow-x: clip; } }
+.duzen, .duzen--sag, .duzen--sol, .duzen--liste { min-width: 0; }
+.duzen > *, .kapak__ic > *, .serit__ic > div { min-width: 0; }
+.metin .sc-display, .madde h3, .serit h3, .kunye__soz { overflow-wrap: anywhere; hyphens: auto; text-wrap: balance; }
+.sc-body, .kapak__alt, .madde p, .kunye__yazi { overflow-wrap: break-word; }
+.ust { flex-wrap: nowrap; padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+.ust__marka { min-width: 0; flex: 0 1 auto; }
+.ust .marka__ad { white-space: nowrap; overflow: hidden; text-overflow: clip; }
+.eylem--kucuk { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 860px) { .duzen--sag, .duzen--sol, .duzen--liste { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 420px) {
+  .ust { padding: 7px 7px 7px 11px; gap: 8px; }
+  .ust .marka__logo { width: 30px; height: 30px; }
+  .ust .marka__ad { font-size: .88rem; }
+  .eylem--kucuk { min-height: 36px; padding: 0 .85rem; font-size: .72rem; }
+  .kapak__ust { letter-spacing: .16em; font-size: .68rem; }
+  .kapak__ust::before { width: 1.4rem; }
+}
+@media (max-width: 330px) { .ust .marka__ad { display: none; } .kapak__baslik { font-size: 1.7rem; } }
+/* Yatay telefon: kapak tek ekrana sığar */
+@media (max-height: 520px) and (orientation: landscape) {
+  .kapak { padding-block: 4.5rem 2rem; min-height: 0; }
+  .kapak__ic { grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); padding-top: 0; gap: 2rem; }
+  .kapak__baslik { font-size: clamp(1.8rem, 11vh, 3rem); }
+  .kapak__kart { width: min(100%, 9rem); }
+  .kapak__kaydir { display: none; }
+  .ust { top: .6rem; padding-block: 5px; }
+  .b:not(.b1) { min-height: 0; }
+}
+/* Geniş ekran: oranlı büyür */
+@media (min-width: 1700px) { html { font-size: calc(16px + (100vw - 1700px) * .011); } }
+@media (max-height: 520px) and (orientation: landscape) {
+  .kapak { padding-block: 6rem 2rem; }
+  .kapak__kart figcaption { display: none; }
+}
+.kapak__kart figcaption { white-space: nowrap; }
