@@ -2,7 +2,7 @@
    1) Folio: geçilen bölümün adı kenarda güncellenir.
    2) Ölçek göstergesi (imza hareket): iniş sırasında ekranın kapsadığı gerçek genişlik yazılır.
       Kareler uydu fonksiyonundan z3..z17 düzeylerinden üretildi; 1280 px'lik kare, Mapbox 512 px karo ölçeğinde,
-      enlem 36,9361: görüş genişliği = 1280 * 78271,517 * cos(enlem) / 2^zoom metre. */
+      enlem 40,958168: görüş genişliği = 1280 * 78271,517 * cos(enlem) / 2^zoom metre. */
 (function () {
   'use strict';
   var folio = document.getElementById('folio'), folioAd = document.getElementById('folioAd');
@@ -43,7 +43,7 @@
 
   var inis = document.getElementById('inis'), deger = document.getElementById('olcekDeger');
   if (!inis || !deger) return;
-  var N = 56, Z0 = 3, Z1 = 17, ENLEM = 36.9361 * Math.PI / 180, vur = false, sonYazi = '';
+  var N = 56, Z0 = 3, Z1 = 17, ENLEM = 40.958168 * Math.PI / 180, vur = false, sonYazi = '';
   var ease = function (p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; };
   function bicim(m) {
     if (m >= 1000) {

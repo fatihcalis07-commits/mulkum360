@@ -237,3 +237,8 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .kapak__kart figcaption { display: none; }
 }
 .kapak__kart figcaption { white-space: nowrap; }
+.ekran-not { margin: var(--sc-3) 0 0; font: 400 .78rem/1.4 var(--sc-font-text); color: color-mix(in oklab, var(--sc-ink) 62%, transparent); text-align: center; text-wrap: balance; }
+.ekran--uzun + .ekran-not, .ekran figcaption.ekran-not { }
+.video-yigin .ekran-not--video { position: absolute; left: 0; right: 0; bottom: -1.8rem; }
+.video-yigin .ekran-not--video { left: 0; right: auto; width: 55%; bottom: -2.2rem; text-align: left; z-index: 3; }
+@media (max-width: 860px) { .video-yigin { margin-bottom: 2.6rem; } .video-yigin .ekran-not--video { width: 58%; } }
