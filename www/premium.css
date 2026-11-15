@@ -1017,3 +1017,28 @@ body.ai-acik .ic{padding-bottom:52px}
 .ara-ik{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--p-ince);border-radius:12px;background:var(--yuzey);cursor:pointer;padding:0}
 .ara-ik svg{stroke:var(--vurgu-ikon,#1064BC)}
 .ara-gor button{padding:0 9px}
+
+/* ===== Fotoğrafsız ilan kapağı: premium (14.25) ===== */
+.ilan-k .foto:not([style*="background-image"]):not([data-bg]),
+.ilan-satir .foto:not([style*="background-image"]):not([data-bg]),
+.firsat-k .foto:not([style*="background-image"]):not([data-bg]){
+  position:relative;overflow:hidden;
+  background:
+    radial-gradient(90% 80% at 88% 0%,rgba(226,188,106,.30),transparent 62%),
+    repeating-linear-gradient(0deg,transparent 0 17px,rgba(226,188,106,.07) 17px 18px),
+    repeating-linear-gradient(90deg,transparent 0 17px,rgba(226,188,106,.07) 17px 18px),
+    linear-gradient(155deg,#0B1B33 0%,#13294B 52%,#0A1830 100%);
+}
+.ilan-k .foto:not([style*="background-image"]):not([data-bg])::before,
+.ilan-satir .foto:not([style*="background-image"]):not([data-bg])::before,
+.firsat-k .foto:not([style*="background-image"]):not([data-bg])::before{
+  content:"";position:absolute;inset:6px;border:1px solid rgba(226,188,106,.38);border-radius:9px;pointer-events:none}
+.foto-yok.fy-p{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;opacity:1;color:#E2BC6A}
+.foto-yok.fy-p svg{stroke:currentColor;opacity:1}
+.fy-halka{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;font-style:normal;color:#E2BC6A;
+  background:radial-gradient(circle at 30% 25%,rgba(226,188,106,.22),rgba(226,188,106,.04) 70%);
+  box-shadow:inset 0 0 0 1px rgba(226,188,106,.55),0 6px 18px -8px rgba(226,188,106,.55)}
+.fy-k .fy-halka{width:32px;height:32px}
+.fy-marka{font:700 9.5px/1 Tektur,system-ui,sans-serif;letter-spacing:.16em;color:rgba(242,243,245,.82);text-transform:lowercase;white-space:nowrap}
+.fy-marka em{font-style:normal;color:#E2BC6A}
+@media (max-width:359px){.fy-marka{font-size:8px;letter-spacing:.1em}.fy-halka{width:34px;height:34px}}

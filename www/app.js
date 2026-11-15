@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.24 · 15.11.2026 09:37';
+const SURUM = '14.25 · 15.11.2026 09:58';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -229,7 +229,7 @@ const gercekOnce = (l) => (l.some((i) => i.ornek) ? [...l.filter((i) => !i.ornek
 const kapak = (i) => { const a = (i.fotolar && i.fotolar[0]) || ''; return a && i.alanlar?.kapakK && i.alanlar.kapakKk === a ? i.alanlar.kapakK : a; };
 function fotoKutu(i, boy = 40) {
   const a = ALT[i.alt] || ALT.konut;
-  return kapak(i) ? '' : `<span class="foto-yok">${ic(a.ikon, boy, 'currentColor', 1.4)}${boy >= 40 ? '<small>Fotoğraf Yok</small>' : ''}</span>`;
+  return kapak(i) ? '' : `<span class="foto-yok fy-p${boy >= 40 ? '' : ' fy-k'}"><i class="fy-halka">${ic(a.ikon, boy >= 40 ? 20 : 17, 'currentColor', 1.6)}</i>${boy >= 40 ? '<b class="fy-marka">mülküm<em>360</em></b>' : ''}</span>`;
 }
 function konum(i) { return [i.alanlar?.mahalle && i.alanlar.mahalle + ' Mah.', i.ilce, i.il].filter(Boolean).map(kac).join(', '); }
 function ozetSatir(i) {

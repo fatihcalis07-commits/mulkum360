@@ -44,6 +44,11 @@ description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, Mülküm
 - Video kapağı kat yazımı düzeltildi (14.19): "1. Kat" gibi hazır değerler olduğu gibi, düz sayı "3. kat" olarak yazılır.
 - Pollinations/kie.ai gibi ücretli üretimler önce tek örnekle onaya sunulur.
 
+## Fotoğrafsız ilan kapağı (14.25)
+- Yalnız fotoğrafı OLMAYAN ilanlarda (kart `ilanKart`, liste `ilanSatir`, fırsat kartı) premium kapak: gece mavisi gradyan, ince altın harita ızgarası, altın iç çerçeve, altın halkalı tür simgesi, "mülküm360" yazısı (yalnız kart boyunda; liste küçük resminde yalnız halka). Fotoğraflı ilanlara dokunulmaz, onlarda yazı/rozet eklenmez.
+- Kod: `fotoKutu` (www/app.js, `.foto-yok.fy-p`), stil `www/premium.css` sonu "Fotoğrafsız ilan kapağı". Açık ve koyu temada, 320 px'te denendi (örnek kayıtlarla yerelde çizim, sunucuya yazma yok).
+- Masaüstünde kullanıcı isteğiyle eski `Mulkum360-v14.24.apk/.aab` silinmedi (genel kuraldan istisna, o dosyaya dokunma).
+
 ## Arama sonuçları ekranı (14.20 - 14.22)
 - 14.22: ekrandaki hızlı filtre çipleri (Satılık, Fotoğraflı, Videolu) kaldırıldı. Satılık/Kiralık zaten filtre ekranında (İşlem); Fotoğraflı, Videolu ve Fiyatı düşen filtre ekranına "Fotoğraf, video, fiyat" grubu olarak taşındı (`foto`, `video`, `dusen` anahtarları, seçiliyken üstte çıkarılabilir etiket olarak görünür).
 - 14.21: Emlak ve Vasıta alt alta 44 px açılır satırlar (`araSekmeHtml`, seçili satırın içinde alt kategoriler). Filtrele düğmesi arama kutusunun içinde (`.ara-filtre-ik`, aktif filtre sayısı rozetle); Sırala, Aramayı kaydet (zil) ve Liste/Izgara/Harita (yalnız simge) sonuç sayısı satırında. Ayrı filtre çubuğu ve "Sonuçlar" başlığı kaldırıldı.

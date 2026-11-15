@@ -705,3 +705,7 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - Danışmanlar: şehir çipleri + metin arama (DAN_DURUM) + portföy fotoğraf şeridi + "Danışman bulunamadı".
 - Proje izleme: yer imli projelerin yeni ilanları için uygulama-önplan bildirim düğmesi; yalnız localStorage (sunucu pushu şema onayı ister, yapılmadı). Son gezdiklerin ZATEN vardı (S.gorulen) — değişiklik yok.
 - Test: kafasız Chrome 384×800; 25/25 geçti (promo/v1424-test.mjs, ekranlar %TEMP%\m360-v1424). Amortisman bakiye 0 + anapara toplamı ±%1; pinç ileri/geri; kutu sürükleyince kalkar; endeks önbellek 3 anahtar, ikinci açılış 629 ms.
+
+
+## 15.11.2026: 14.25, fotoğrafsız ilan kapağı
+- Fotoğrafı olmayan ilan kartlarına premium kapak (gece mavisi, altın çerçeve, halkalı simge, mülküm360 yazısı). Fotoğraflılar değişmedi. APK/AAB v14.25 masaüstünde; v14.24 kullanıcı isteğiyle yerinde bırakıldı.
