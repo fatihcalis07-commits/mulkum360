@@ -26,12 +26,14 @@ html{background:var(--derin);color-scheme:dark}
 body{min-height:100svh;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--yazi);background:var(--derin);overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 .sahne{position:relative;min-height:100svh;display:grid;grid-template-rows:auto 1fr auto;isolation:isolate;padding:clamp(1.6rem,3.4vw,3rem) clamp(1.5rem,5vw,4.5rem)}
-.zemin{position:absolute;inset:-5%;z-index:-4}
-.zemin img{width:100%;height:100%;object-fit:cover;filter:saturate(.65) brightness(.5) contrast(1.12);animation:yaklas 40s ease-in-out infinite alternate}
-@keyframes yaklas{from{transform:scale(1)}to{transform:scale(1.16) translate(-1.5%,-1%)}}
-.perde{position:absolute;inset:0;z-index:-3;background:radial-gradient(60% 80% at 82% 45%,transparent 0%,rgba(7,15,29,.6) 75%),linear-gradient(90deg,rgba(7,15,29,.97) 0%,rgba(7,15,29,.8) 45%,rgba(7,15,29,.3) 100%),linear-gradient(to top,var(--derin) 0%,transparent 30%)}
-.tane{position:absolute;inset:0;z-index:-2;opacity:.09;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.cerceve{position:absolute;inset:clamp(.7rem,1.8vw,1.5rem);z-index:-1;border:1px solid rgba(226,188,106,.32);pointer-events:none}
+html,body{overflow-x:clip;max-width:100%}
+.sahne{overflow:clip}
+.zemin{position:fixed;inset:0;z-index:-4;overflow:hidden;contain:strict}
+.zemin img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.65) brightness(.5) contrast(1.12);transform-origin:60% 50%;will-change:transform;animation:yaklas 40s ease-in-out infinite alternate}
+@keyframes yaklas{from{transform:scale(1.02)}to{transform:scale(1.14)}}
+.perde{position:fixed;inset:0;z-index:-3;pointer-events:none;background:radial-gradient(60% 80% at 82% 45%,transparent 0%,rgba(7,15,29,.6) 75%),linear-gradient(90deg,rgba(7,15,29,.97) 0%,rgba(7,15,29,.8) 45%,rgba(7,15,29,.3) 100%),linear-gradient(to top,var(--derin) 0%,transparent 30%)}
+.tane{position:fixed;inset:0;z-index:-2;opacity:.06;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.cerceve{position:fixed;inset:clamp(.7rem,1.8vw,1.5rem);z-index:-1;border:1px solid rgba(226,188,106,.32);pointer-events:none}
 .cerceve::after{content:"";position:absolute;inset:8px;border:1px solid rgba(226,188,106,.12)}
 
 .ust{display:flex;align-items:center;justify-content:space-between;gap:1rem}
@@ -84,7 +86,11 @@ h1 em{font-style:normal;background:linear-gradient(100deg,#F6DFA0 0%,#D8A94E 45%
   .halka{width:min(64%,13rem)}
   .halka span{font-size:1.15rem;padding:0 1rem}
   .perde{background:linear-gradient(to bottom,rgba(7,15,29,.55),rgba(7,15,29,.9) 55%,var(--derin) 100%)}
-  .rozet{letter-spacing:.2em;padding:.5rem .85rem}
+  .rozet{letter-spacing:.2em;padding:.5rem .85rem;backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(7,15,29,.7)}
+  .etiket{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .zemin img{animation:none;transform:scale(1.06)}
+  .halka::before{animation:none}
+  .rozet i{animation:none}
 }
 @media(prefers-reduced-motion:reduce){
   .zemin img,h1 em,.halka::before,.halka::after,.rozet i{animation:none}
