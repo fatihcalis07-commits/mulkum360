@@ -1042,3 +1042,10 @@ body.ai-acik .ic{padding-bottom:52px}
 .fy-marka{font:700 9.5px/1 Tektur,system-ui,sans-serif;letter-spacing:.16em;color:rgba(242,243,245,.82);text-transform:lowercase;white-space:nowrap}
 .fy-marka em{font-style:normal;color:#E2BC6A}
 @media (max-width:359px){.fy-marka{font-size:8px;letter-spacing:.1em}.fy-halka{width:34px;height:34px}}
+
+/* ===== 14.26: fotoğraf şeridi kaydırması — akışkanlık ===== */
+/* Kenarlarda kayma sayfaya/geri hareketine zincirlenmesin */
+.galeri .seritler,.tf-serit{overscroll-behavior-x:contain}
+/* Görücüde dikey jest yatay kaydırmayı çalmasın; uzun parmak savurması tek fotoğrafta dursun */
+.tf-serit{touch-action:pan-x pinch-zoom}
+.galeri img,.tf-serit img{scroll-snap-stop:always;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}

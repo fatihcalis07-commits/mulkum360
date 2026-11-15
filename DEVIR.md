@@ -713,3 +713,10 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 
 ## 15.11.2026: tanıtım sayfası canlı
 - pages.yml GitHub web arayüzünden güncellendi (bcef22e); mulkum360.com artık anasayfa/ tanıtım sayfasını gösteriyor. Uygulama (www) hâlâ kapalı, mod bakim.
+
+
+## 14.26 (15.11.2026): ilan fotoğrafı kaydırması düzeltildi
+- Kullanıcı: "ilan fotoğraflarının kaydı düzgün değil". Ölçülen kusurlar: `scroll-snap-stop:normal` (hızlı savurma çok fotoğraf atlayabilir), `overscroll-behavior-x:auto` (şerit kenarda hareketi sayfaya/geri jestine zincirler), sayaç her scroll olayında DOM yazıyordu, 2. fotoğraftan sonrası lazy olduğu için savurunca gri boşluk görünüyordu, tam ekran görücü açılınca TÜM fotoğrafları indiriyordu.
+- Düzeltme (premium.css sonu + app.js galeri): `.galeri .seritler` ve `.tf-serit` → `overscroll-behavior-x:contain`; img'ler → `scroll-snap-stop:always` + seçme/uzun-basma kapalı; görücüye `touch-action:pan-x pinch-zoom`. Sayaçlar rAF ile güncellenir; şeritte yaklaşılan sonraki 2 fotoğrafın `loading=lazy`'si kaldırılır (önden yükleme). Görücüde yalnız bas±1 fotoğrafı eager, gerisi lazy; kaydırma sonrası istem dışa kapanmayı önlemek için kapatma tıklaması scrollLeft imzasıyla korunur.
+- Fotoğraf SIRASI doğrulandı: yükleme döngüsü sıralı `await` (bozulma yok); `galeriSec` yalnız tarayıcı sekmesi için, detay galerisine dokunmaz.
+- Test: promo/v1425-foto.mjs — CDP `synthesizeScrollGesture` ile gerçek momentum: 5.000 ve 10.000 px/s savurmada kayma tek fotoğraf; yavaş bırakınca 0,0 px oturma hatası; sayaç "2 / 23"; önceden yükleme; görücüde 2/23 hazır + tek adımlık savurma + dokununca kapanma. 11/11. v1424 dumanı 25/25 (G5 beklentisi 14.25 marka kapağına uyarlandı).

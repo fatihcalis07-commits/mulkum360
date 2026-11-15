@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.25 · 15.11.2026 09:58';
+const SURUM = '14.26 · 15.11.2026 10:20';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -1024,7 +1024,16 @@ EKRAN.ilan = (id) => {
   const acD = $('#acDevam'); if (acD) acD.onclick = () => { const m = $('#acMetin'), k = m.classList.toggle('kisa'); acD.textContent = k ? 'Devamını oku' : 'Daha az göster'; if (k) $('#aciklamaK').scrollIntoView({ block: 'start', behavior: 'smooth' }); };
   const serit = $('#serit');
   if (serit) serit.querySelectorAll('img').forEach((im, n) => (im.onclick = () => fotoGoster(fotolar, n)));
-  if (serit && $('#sayac')) serit.onscroll = () => ($('#sayac').textContent = Math.round(serit.scrollLeft / serit.clientWidth) + 1 + ' / ' + fotolar.length);
+  if (serit && $('#sayac')) {
+    const sayacEl = $('#sayac');
+    let raf = 0;
+    serit.onscroll = () => { if (raf) return; raf = requestAnimationFrame(() => {
+      raf = 0;
+      const p = Math.max(0, Math.min(fotolar.length - 1, Math.round(serit.scrollLeft / serit.clientWidth)));
+      sayacEl.textContent = (p + 1) + ' / ' + fotolar.length;
+      for (const k of [p + 1, p + 2]) { const im = serit.children[k]; if (im && im.getAttribute('loading')) im.removeAttribute('loading'); }
+    }); };
+  }
   $('#paylas').onclick = () => ilanPaylasSheet(i);
   const fv = $('#fav'); if (fv) fv.onclick = async () => { await favDegis(id); fv.innerHTML = ic('kalp', 20, favMi(id) ? 'var(--vurgu)' : 'currentColor'); };
   const mj = $('#mesaj'); if (mj) mj.onclick = async () => { if (girisGerek('Mesaj göndermek için giriş yap')) return; const s = await dene(() => sohbetGetir(i)); if (s) git('#/sohbet/' + s.id); };
@@ -1125,12 +1134,14 @@ async function fiyatGecmisiYukle(i) {
 function fotoGoster(l, bas = 0) {
   const el = document.createElement('div');
   el.className = 'tam-foto';
-  el.innerHTML = `<div class="tf-serit">${l.map((u) => `<img src="${u}" alt="">`).join('')}</div><span class="tf-sayac">${bas + 1} / ${l.length}</span><button class="ikon-btn tf-kapat" aria-label="Kapat">${ic('kapat')}</button>`;
+  el.innerHTML = `<div class="tf-serit">${l.map((u, k) => `<img src="${u}" alt=""${Math.abs(k - bas) <= 1 ? '' : ' loading="lazy"'} decoding="async">`).join('')}</div><span class="tf-sayac">${bas + 1} / ${l.length}</span><button class="ikon-btn tf-kapat" aria-label="Kapat">${ic('kapat')}</button>`;
   document.body.appendChild(el);
   const s = el.querySelector('.tf-serit'); s.scrollLeft = s.clientWidth * bas;
-  s.onscroll = () => (el.querySelector('.tf-sayac').textContent = Math.round(s.scrollLeft / s.clientWidth) + 1 + ' / ' + l.length);
+  let raf = 0, imza = s.scrollLeft;
+  s.addEventListener('pointerdown', () => { imza = s.scrollLeft; });
+  s.onscroll = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; el.querySelector('.tf-sayac').textContent = Math.round(s.scrollLeft / s.clientWidth) + 1 + ' / ' + l.length; }); };
   const kapat = () => { el.classList.add('cik'); setTimeout(() => el.remove(), 180); removeEventListener('hashchange', kapat); };
-  el.querySelector('.tf-kapat').onclick = kapat; s.onclick = kapat; addEventListener('hashchange', kapat);
+  el.querySelector('.tf-kapat').onclick = kapat; s.onclick = () => { if (Math.abs(s.scrollLeft - imza) < 4) kapat(); }; addEventListener('hashchange', kapat);
 }
 
 // Sayı ve metin alanları için dokunarak seçilebilen hazır değerler
