@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.28 · 15.11.2026 11:20';
+const SURUM = '14.29 · 15.11.2026 17:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -130,13 +130,79 @@ function baslikDuzelt(kok = document) {
     for (let n; (n = w.nextNode());) { const y = basHarfBuyuk(n.nodeValue); if (y !== n.nodeValue) n.nodeValue = y; }
   });
 }
-// 14.28: 14.27'deki konuya duyarlı çerçeve (fotoFokus) kullanıcı geri bildirimiyle GERİ ALINDI —
-// enerji sezgisi bazı kartlarda kareyi zemine/karanlık alana kaydırıp kadrajı bozuyordu.
-// Fotoğraflar kalıcı olarak merkez kırpımla (center/cover) gösterilir; eski önbellek temizlenir.
+// 14.27 fotoFokus (enerji sezgisi) kullanıcı geri bildirimiyle 14.28'de GERİ ALINMIŞTI.
+// 14.29 GÖKYÜZÜ BANDLI KADRAJ — kullanıcı onayıyla (15.11.2026 montaj karşılaştırması; promo/kapak-analiz.py
+// ve promo/kapak-43.py tüm gerçek kapaklarda doğrulandı): Yalnızca fotoğrafın ÜSTÜNDE birleşik gökyüzü
+// bandı varsa (satır başına gökyüzü pikseli >%50) kadraj içerik bandına kaydırılır; gökyüzü %30'u geçerse
+// bandı dışarıda bırakacak şekilde kırpılır (pencere 340 px'ten küçükse —düşük çözünürlük— yakınlaştırılmaz).
+// İç mekân/gökyüzüsüz fotoğraflarda davranış BİREBİR merkez/cover — dokunulmaz. Ölçüm URL başına önbellekte.
 try { localStorage.removeItem('fotoFokus'); } catch (_) {}
+const KADRE = (() => { try { return JSON.parse(localStorage.getItem('fotoKadre') || '{}'); } catch (_) { return {}; } })();
+let kadreT = 0;
+const kadreKaydet = () => { clearTimeout(kadreT); kadreT = setTimeout(() => { try { if (Object.keys(KADRE).length < 4000) localStorage.setItem('fotoKadre', JSON.stringify(KADRE)); } catch (_) {} }, 600); };
+addEventListener('pagehide', () => { try { if (Object.keys(KADRE).length < 4000) localStorage.setItem('fotoKadre', JSON.stringify(KADRE)); } catch (_) {} });
+const gokOlc = (u) => new Promise((bitti) => {
+  const im = new Image(); im.crossOrigin = 'anonymous';
+  im.onload = () => {
+    let m = null;
+    try {
+      const W = im.naturalWidth, H = im.naturalHeight;
+      if (W > 40 && H > 40) {
+        const Wc = 96, Hc = Math.max(12, Math.round(Wc * H / W));
+        const tuval = document.createElement('canvas'); tuval.width = Wc; tuval.height = Hc;
+        const cx = tuval.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0, Wc, Hc);
+        const px = cx.getImageData(0, 0, Wc, Hc).data;
+        const satir = (yy) => { let n = 0; for (let x = 0; x < Wc; x++) { const i = (yy * Wc + x) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
+          const lum = (r + g + b) / 3, buyuk = Math.max(r, g, b), kucuk = Math.min(r, g, b), doy = buyuk ? (buyuk - kucuk) / buyuk : 0;
+          if ((b > r + 6 && b >= g - 6 && lum > 105) || (kucuk > 178 && doy < 0.14 && lum > 150)) n++; } return n / Wc; };
+        let ct = 0; while (ct < Hc - 2 && satir(ct) > 0.5) ct++;
+        m = { w: W, h: H, c: ct / Hc };
+      }
+    } catch (_) { m = null; }
+    bitti(m);
+  };
+  im.onerror = () => bitti(null);
+  im.src = u;
+});
+// Kart kutusunun (AR = en/boy) GÖRDÜĞÜ pencere → CSS background-size/position. null = merkez kalsın.
+const kadra = (w, h, c, AR) => {
+  const icerik = (1 - c) * h, dikey = w / h <= AR;
+  let Lw = dikey ? w : h * AR, Lh = dikey ? w / AR : h;
+  const zum = c > 0.30 ? Math.min(h, Math.max(icerik * 1.25, 0.625 * h)) : 0;
+  let x, y;
+  if (zum && zum < Lh - 0.5 && zum >= 340) {
+    Lh = zum; Lw = Lh * AR; if (Lw > w) { Lw = w; Lh = Lw / AR; }
+    y = Math.min(h - Lh, Math.max(0, c * h - 0.08 * h)); x = (w - Lw) / 2;
+  } else if (dikey) {
+    const sv = h - Lh; if (sv <= 0.5) return null;
+    y = Math.min(sv, Math.max(0, c * h - (Lh - icerik) / 2));
+    if (Math.abs(y - sv / 2) < 0.02 * sv) return null;
+    x = 0;
+  } else return null;
+  const xp = w - Lw > 0.5 ? x / (w - Lw) * 100 : 50, yp = h - Lh > 0.5 ? y / (h - Lh) * 100 : 50;
+  return { s: (w / Lw * 100).toFixed(2) + '% ' + (h / Lh * 100).toFixed(2) + '%', p: xp.toFixed(2) + '% ' + yp.toFixed(2) + '%' };
+};
+const KADRE_BEK = {}; const GOK_KUY = []; let gokAktif = 0;
+const gokIsla = () => {
+  while (gokAktif < 2 && GOK_KUY.length) {
+    const u = GOK_KUY.shift(); gokAktif++;
+    gokOlc(u).then((m) => {
+      KADRE[u] = m; kadreKaydet(); gokAktif--;
+      const b = KADRE_BEK[u]; delete KADRE_BEK[u]; if (b) b.forEach((f) => f(m)); gokIsla();
+    });
+  }
+};
+const kadreIzle = (el, u) => {
+  const AR = el.classList.contains('foto') ? (el.closest('.ilan-k') ? 4 / 3 : el.closest('.vitrin-k') ? 1 : 0) : 0;
+  if (!AR) return;
+  const boya = (m) => { if (!m || !el.isConnected) return; const s = kadra(m.w, m.h, m.c, AR); if (!s) return; el.style.backgroundSize = s.s; el.style.backgroundPosition = s.p; };
+  if (u in KADRE) return boya(KADRE[u]);
+  if (KADRE_BEK[u]) KADRE_BEK[u].push(boya);
+  else if (GOK_KUY.length < 200) { KADRE_BEK[u] = [boya]; GOK_KUY.push(u); gokIsla(); }
+};
 // Kapak fotoğrafları ekrana yaklaşınca yüklenir (uzun listelerde yüzlerce görsel birden inmesin)
 const BG_YUKLU = new Set();
-const bgYukle = (el) => { const u = el.dataset.bg; if (!u) return; BG_YUKLU.add(u); el.style.backgroundImage = "url('" + u.replace(/'/g, '%27') + "')"; el.removeAttribute('data-bg'); bgGoz?.unobserve(el); };
+const bgYukle = (el) => { const u = el.dataset.bg; if (!u) return; BG_YUKLU.add(u); el.style.backgroundImage = "url('" + u.replace(/'/g, '%27') + "')"; el.removeAttribute('data-bg'); bgGoz?.unobserve(el); kadreIzle(el, u); };
 const bgGoz = 'IntersectionObserver' in window ? new IntersectionObserver((l) => l.forEach((e) => e.isIntersecting && bgYukle(e.target)), { rootMargin: '600px' }) : null;
 const bgIzle = (kok) => [...(kok.matches?.('[data-bg]') ? [kok] : []), ...kok.querySelectorAll('[data-bg]')].forEach((el) => (!bgGoz || BG_YUKLU.has(el.dataset.bg) ? bgYukle(el) : bgGoz.observe(el)));
 new MutationObserver((l) => { for (const m of l) for (const n of m.addedNodes) if (n.nodeType === 1) { baslikDuzelt(n); bgIzle(n); } }).observe(document.documentElement, { childList: true, subtree: true });

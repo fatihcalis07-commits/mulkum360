@@ -981,8 +981,11 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .amort-satir.amort-bas .amort-yil{color:var(--soluk)}
 /* Yapay zekâ düğmesi görünürken en alt kartın altında tampon */
 body.ai-acik .ic{padding-bottom:52px}
-/* Fotoğrafı olmayan ilan: boş gri kutu yerine markalı yer tutucu */
-.foto:not([data-bg]){background:radial-gradient(120% 100% at 82% 6%,color-mix(in srgb,var(--birincil) 9%,transparent),transparent 58%),linear-gradient(160deg,var(--yuzey2) 0%,color-mix(in srgb,var(--murekkep) 6%,var(--yuzey2)) 100%)}
+/* Fotoğrafı olmayan ilan: boş gri kutu yerine markalı yer tutucu.
+   DİKKAT (14.29 hatası): bgYukle yükleyince data-bg silinir; bu kısayol kurallı
+   yüklenmiş fotoğrafa değerse center/cover'ı siler ve fotoğraf köşeden kırpılır.
+   Bu yüzden satır içi arka planı olan (yüklenmiş) kart kesinlikle dışarıda. */
+.foto:not([data-bg]):not([style*="background-image"]){background:radial-gradient(120% 100% at 82% 6%,color-mix(in srgb,var(--birincil) 9%,transparent),transparent 58%),linear-gradient(160deg,var(--yuzey2) 0%,color-mix(in srgb,var(--murekkep) 6%,var(--yuzey2)) 100%)}
 .foto-yok{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;opacity:1;color:var(--soluk)}
 .foto-yok svg{stroke:currentColor;opacity:.8}
 .foto-yok small{font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;opacity:.72;line-height:1;padding:0 4px;text-align:center}
