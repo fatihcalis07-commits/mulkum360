@@ -967,6 +967,25 @@ header.kartvizit a.kv-foto{display:block;text-decoration:none}
 .ara-gor button{display:flex;align-items:center;gap:5px;height:34px;padding:0 10px;border:0;border-left:1px solid var(--p-ince);background:none;font:inherit;font-size:12.5px;font-weight:650;color:var(--soluk);cursor:pointer}
 .ara-gor button:first-child{border-left:0}
 .ara-gor button.secili{background:var(--birincil);color:var(--birincil-yazi)}
+/* ——— v14.24: harita kutu düğmesi, danışman portföyü, amortisman tablosu, yapay zekâ tamponu, foto yer tutucusu ——— */
+.btn.sade.secili{border-color:var(--birincil);color:var(--birincil);background:color-mix(in srgb,var(--birincil) 8%,var(--yuzey))}
+.dan-fotos{display:flex;gap:6px;margin-top:8px}
+.dan-fotos img{width:calc(25% - 5px);aspect-ratio:1;object-fit:cover;border-radius:9px;background:var(--yuzey2)}
+/* Amortisman tablosu */
+.amort{border:1px solid var(--p-ince,var(--cizgi));border-radius:12px;overflow:hidden}
+.amort-satir{display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;gap:8px;padding:9px 11px;font-size:12.5px;align-items:center;border-top:1px solid var(--p-ince,var(--cizgi));font-variant-numeric:tabular-nums}
+.amort-satir>span{text-align:right;white-space:nowrap}
+.amort-satir .amort-yil{text-align:left;color:var(--soluk);font-weight:600}
+.amort-satir.amort-bas{border-top:0;background:var(--yuzey2);font-weight:700;font-size:11.5px;color:var(--soluk)}
+.amort-satir.amort-bas>span{text-align:right}
+.amort-satir.amort-bas .amort-yil{color:var(--soluk)}
+/* Yapay zekâ düğmesi görünürken en alt kartın altında tampon */
+body.ai-acik .ic{padding-bottom:52px}
+/* Fotoğrafı olmayan ilan: boş gri kutu yerine markalı yer tutucu */
+.foto:not([data-bg]){background:radial-gradient(120% 100% at 82% 6%,color-mix(in srgb,var(--birincil) 9%,transparent),transparent 58%),linear-gradient(160deg,var(--yuzey2) 0%,color-mix(in srgb,var(--murekkep) 6%,var(--yuzey2)) 100%)}
+.foto-yok{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;opacity:1;color:var(--soluk)}
+.foto-yok svg{stroke:currentColor;opacity:.8}
+.foto-yok small{font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;opacity:.72;line-height:1;padding:0 4px;text-align:center}
 .ara-gor svg{stroke:currentColor}
 .ara-cubuk>*{font-size:13px;padding:0 9px}
 

@@ -49,6 +49,8 @@ async function veriYukle() {
   sonYukleme = Date.now();
   // Bir sonraki açılış için son veri (cihazda kalır; çıkışta silinir)
   setTimeout(() => { try { kvYaz('onbellek', { surum: 1, zaman: Date.now(), oturum: S.oturum, ilanlar: S.ilanlar, kullanicilar: S.kullanicilar, sohbetler: S.sohbetler, kayitliAramalar: S.kayitliAramalar, favSayilari: S.favSayilari, yonetici: !!S.yonetici, bildirimler: S.bildirimler || [], doping: S.DOPING || null }); } catch (_) {} }, 1500);
+  // Proje takibi açıksa yeni proje ilanı var mı diye bak (fonksiyon app.js'te; ön plan uyarısı)
+  setTimeout(() => { try { if (typeof projeTakipKontrol === 'function') projeTakipKontrol(); } catch (_) {} }, 2600);
   canliBaglan();
 }
 

@@ -691,3 +691,17 @@ Emlak + vasıta ilan uygulaması. Tek sayfa web uygulaması (vanilla JS), Capaci
 - `anasayfa/` eklendi (tanıtım sayfasının yayın kopyası, commit a2f698f). Kapak yenilendi, cam üst çubuk, yetenek şeridi, künye genişledi; düğmeler "Yakında açılıyor".
 - pages.yml (bakımda anasayfa/ kökte) push edilemedi: OAuth workflow izni yok. Dosya yerelde değişik, kopya masaüstünde; GitHub web arayüzünden elle yapıştırılacak.
 - mulkum360 skill güncellendi, DSH kopyasıyla MD5 eşit.
+
+
+## 14.24 (15.11.2026): P1+P3 paketi — harita, başlık düzeni, kredi tablosu
+- Harita (harita.js): kümeleme birleşti — her yakınlaştırma düzeyinde aynı 72×54 px hücrede 1'den çok ilan varsa balon; z≥16'da yalnız tam çakışık iğneler yelpaze olur. Pinç zoom: pointer olaylarıyla çoklu parmak (2. parmak ≥24 px mesafede açılır; kademe += log2(mesafe oranı), 4–18 arası, merkez sabit). "Bu görünümü ara" düğmesi: liste yalnız görünen kutudaki ilanlarla sınırlı (HARP.kutu); harita oynayınca kendiliğinden kalkar, etiket durumla senkron (harpCiz içinde).
+- Başlık düzeni: `sozluk()` (app.js, tr-TR) her kelimenin başını büyütür — "Emlak Ofisi", "Oto Galeri", "Fiyatı Düşenler", "EİDS Doğrulandı". Rozetler, kart altı, etiketler, hesap türü düğmeleri, kayıt ekranı, kimden süzgeci ('Emlak Ofisinden') birlikte değişti; ortaklik.js `ORTAK_TUR_KISA`.
+- Vitrin: ≥10M fiyat "22,5 M ₺" (fiyatVitrin()); altı tam yazılır.
+- AI FAB: `body.ai-acik` → içerik alt boşluğu 52 px, FAB listeyi kapatmaz; navsız sayfalarda kalkar.
+- Fotosuz ilan: marka gradyanlı yer tutucu + "Fotoğraf Yok" etiketi (fotoKutu + premium.css).
+- Karşılama: alttaki gri şerit gitti (`body:has(.karsilama)` zemini lacivert; sabit boş .nav'ın zemindendi kökü).
+- Endeksler: `endeksSeri` gün önbelleği (localStorage `endeks:…`) + ağ hatasında eski veriyle devam; üç istek Promise.all.
+- Kredi (banka.js): teklif kartında "Amortisman" düğmesi → yıllık özet tablosu (12 ay toplamlı; aylık faiz girdisi; son yıl bakiye 0). İstemci tarafı hesap.
+- Danışmanlar: şehir çipleri + metin arama (DAN_DURUM) + portföy fotoğraf şeridi + "Danışman bulunamadı".
+- Proje izleme: yer imli projelerin yeni ilanları için uygulama-önplan bildirim düğmesi; yalnız localStorage (sunucu pushu şema onayı ister, yapılmadı). Son gezdiklerin ZATEN vardı (S.gorulen) — değişiklik yok.
+- Test: kafasız Chrome 384×800; 25/25 geçti (promo/v1424-test.mjs, ekranlar %TEMP%\m360-v1424). Amortisman bakiye 0 + anapara toplamı ±%1; pinç ileri/geri; kutu sürükleyince kalkar; endeks önbellek 3 anahtar, ikinci açılış 629 ms.

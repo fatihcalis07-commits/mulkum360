@@ -8,7 +8,7 @@ const ORTAK_SOZLESME_SURUM = 'v2-2026-11';
 const ORTAK_DURUM = { basvuru: 'İnceleniyor', aktif: 'Aktif', askida: 'Askıda', red: 'Onaylanmadı', iptal: 'Sona Erdi' };
 const TAHAKKUK_DURUM = { bekliyor: 'Ödeme Bekliyor', odendi: 'Ödendi', gecikti: 'Gecikti', iptal: 'İptal' };
 const ORTAK_TUR_AD = { emlak: 'Anlaşmalı Ofis', galeri: 'Anlaşmalı Galeri', karma: 'Anlaşmalı Ofis ve Galeri' };
-const ORTAK_TUR_KISA = { emlak: 'Emlak ofisi', galeri: 'Oto galeri', karma: 'Emlak + galeri' };
+const ORTAK_TUR_KISA = { emlak: 'Emlak Ofisi', galeri: 'Oto Galeri', karma: 'Emlak + Galeri' };
 const paraTl = (n) => (+n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' TL';
 const gunAy = (d) => (d ? new Date(d).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—');
 const donemAd = (d) => new Date(d).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });

@@ -1,11 +1,17 @@
 // Piyasa Endeksleri (#/endeksler): Mülküm360 Endeks Bankası — son 10 yıl emlak ve otomobil.
 // Veri: endeks_veri (endeks-topla edge fonksiyonu, TCMB EVDS + kendi ilanlarımız). 2016-01 = 100 tabanına göre kendi endekslerimiz hesaplanır.
 const ENDEKS_ONB = {};
+// Endeks serileri ayda bir değişir: gün dolusu cihaz önbelleği tutulur (endeks:<kodlar>|<bölge>),
+// uygulama yeniden açıldığında ekran beklemeden açılır; ağ hatasında bayat önbellek yine de gösterilir.
 async function endeksSeri(kodlar, bolge = 'TR') {
   const k = kodlar.join(',') + '|' + bolge; if (ENDEKS_ONB[k]) return ENDEKS_ONB[k];
+  const bk = 'endeks:' + k, gun = new Date().toISOString().slice(0, 10);
+  let eski = null;
+  try { const e = JSON.parse(localStorage.getItem(bk) || 'null'); if (e && e.s) { eski = e.s; if (e.gun === gun) return (ENDEKS_ONB[k] = e.s); } } catch (_) {}
   const { data, error } = await sb.from('endeks_veri').select('kod,donem,deger').in('kod', kodlar).eq('bolge', bolge).gte('donem', '2016-01-01').order('donem').limit(5000);
-  if (error) throw error;
+  if (error) { if (eski) return (ENDEKS_ONB[k] = eski); throw error; }
   const s = {}; (data || []).forEach((r) => (s[r.kod] = s[r.kod] || []).push([r.donem, +r.deger]));
+  if (data && data.length) { try { localStorage.setItem(bk, JSON.stringify({ gun, s })); } catch (_) {} }
   return (ENDEKS_ONB[k] = s);
 }
 // Taban: ilk değer = 100
@@ -48,9 +54,11 @@ EKRAN.endeksler = async () => {
 };
 
 async function emlakEndeksHtml(st) {
-  const tr = await endeksSeri(['TP.KFE.TR', 'TP.YKFE.TR', 'TP.YOKFEND.TR', 'TP.TUKFIY2025.GENEL', 'TP.DK.USD.S.YTL', 'TP.TUKFIY2025.04110', 'TP.AKONUTSAT1.KTRTOPLAM', 'BIRIMFIYAT', 'BK']);
-  const il = await endeksSeri(['BIRIMFIYAT', 'BK', 'M360.KONUT.M2', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'ENDEKSA.YILLIK', 'ENDEKSA.REEL.YILLIK', 'ENDEKSA.ORT.FIYAT'], st.il);
-  const trR = await endeksSeri(['BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'BIRIMFIYAT', 'ENDEKSA.YILLIK', 'ENDEKSA.REEL.YILLIK', 'ENDEKSA.ORT.FIYAT']);
+  const [tr, il, trR] = await Promise.all([
+    endeksSeri(['TP.KFE.TR', 'TP.YKFE.TR', 'TP.YOKFEND.TR', 'TP.TUKFIY2025.GENEL', 'TP.DK.USD.S.YTL', 'TP.TUKFIY2025.04110', 'TP.AKONUTSAT1.KTRTOPLAM', 'BIRIMFIYAT', 'BK']),
+    endeksSeri(['BIRIMFIYAT', 'BK', 'M360.KONUT.M2', 'BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'ENDEKSA.YILLIK', 'ENDEKSA.REEL.YILLIK', 'ENDEKSA.ORT.FIYAT'], st.il),
+    endeksSeri(['BETAM.SATILIK.M2', 'BETAM.KIRALIK.M2', 'ENDEKSA.M2', 'BIRIMFIYAT', 'ENDEKSA.YILLIK', 'ENDEKSA.REEL.YILLIK', 'ENDEKSA.ORT.FIYAT'])
+  ]);
   const kfe = tabanla(tr['TP.KFE.TR']), reel = tabanla(bol(tr['TP.KFE.TR'] || [], tr['TP.TUKFIY2025.GENEL'] || [])), dolar = tabanla(bol(tr['TP.KFE.TR'] || [], tr['TP.DK.USD.S.YTL'] || []));
   const fiyat = il.BIRIMFIYAT || [], kira = il.BK || [];
   const sonF = fiyat.at(-1), sonK = kira.at(-1);

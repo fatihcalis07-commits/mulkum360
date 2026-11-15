@@ -35,7 +35,27 @@ function teklifListeHtml(teklifler, anapara, vade, tur) {
       <div class="k soluk">Toplam geri ödeme ${tl(h.toplam + tahsis)} · faiz ${tl(h.faiz)}${tahsis ? ` · tahsis ücreti ${tl(tahsis)}` : ''}</div>`
         : `<div class="k soluk">Bu tutar ya da vade için uygun değil (vade ${t.vade_min}–${t.vade_max} ay${t.tutar_max ? `, en çok ${tl(+t.tutar_max)}` : ''}).</div>`}
       ${t.aciklama ? `<div class="k soluk" style="margin-top:4px">${kac(t.aciklama)}</div>` : ''}
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><small class="soluk">Güncelleme: ${tarihKisa(t.guncelleme)}</small>${t.baglanti ? `<a class="btn kucuk" href="${kac(t.baglanti)}" target="_blank" rel="noopener">Bankaya git</a>` : ''}</div></div>`).join('');
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><small class="soluk">Güncelleme: ${tarihKisa(t.guncelleme)}</small><span style="display:flex;gap:6px">${h && uygun ? `<button class="btn cizgili kucuk" data-amort="${t.faiz}" data-anapara="${Math.round(anapara)}" data-vade="${vade}" data-tur="${tur}" data-banka="${kac(t.banka)}">Amortisman</button>` : ''}${t.baglanti ? `<a class="btn kucuk" href="${kac(t.baglanti)}" target="_blank" rel="noopener">Bankaya git</a>` : ''}</span></div></div>`).join('');
+}
+// Yıllık amortisman tablosu: her yıl için toplam ödeme, anapara, faiz ve yıl sonu kalan bakiye. Faiz aylıktır (taksitHesap ile aynı).
+function amortismanTablosu(anapara, aylikFaiz, vade, tur, banka) {
+  const r = (aylikFaiz / 100) * (1 + (VERGI_ORANI[tur] || 0));
+  if (!(anapara > 0 && vade > 0 && r > 0)) return toast('Önce tutar ve vadeyi girin');
+  const taksit = (anapara * r) / (1 - Math.pow(1 + r, -vade));
+  let kalan = anapara; const yillar = [];
+  for (let ay = 1; ay <= vade; ay++) {
+    const faiz = kalan * r; let anp = taksit - faiz, od = taksit;
+    if (ay === vade) { anp = kalan; od = kalan + faiz; }
+    kalan = Math.max(0, kalan - anp);
+    const y = Math.ceil(ay / 12), s = yillar[y - 1] || (yillar[y - 1] = { odeme: 0, anapara: 0, faiz: 0, kalan: 0 });
+    s.odeme += od; s.anapara += anp; s.faiz += faiz; s.kalan = kalan;
+  }
+  const hucre = (v, n) => `<span class="${n === 0 ? 'amort-yil' : ''}">${v}</span>`;
+  const satir = (c, sinif) => `<div class="amort-satir${sinif ? ' ' + sinif : ''}">${c.map(hucre).join('')}</div>`;
+  const bini = (x) => Math.round(x).toLocaleString('tr-TR');
+  sheetAc(`<h2 style="font-size:16px;font-weight:800">Amortisman tablosu</h2><div class="k soluk" style="margin:2px 0 8px">${kac(banka)} · aylık ${yuzde(aylikFaiz)} · ${vade} ay · taksit <b>${tl(taksit)}</b></div>
+    <div class="amort">${satir(['Yıl', 'Yıllık ödeme', 'Anapara', 'Faiz', 'Kalan'], 'amort-bas')}${satir(['Başlangıç', '—', '—', '—', bini(anapara)])}${yillar.map((s, n) => satir([`${n + 1}. yıl`, bini(s.odeme), bini(s.anapara), bini(s.faiz), bini(s.kalan)])).join('')}</div>
+    <div class="k soluk" style="margin-top:8px;line-height:1.5">Tutarlar TL. Son sütun yıl sonu kalan borcu gösterir. Aylık taksit eşit; anapara‑faiz dağılımı her ay değişir. Küçük farklar yuvarlamadandır.</div>`);
 }
 const KREDI_UYARI = `<div class="k soluk" style="font-size:12px;line-height:1.5;margin-top:8px">Oranlar bilgilendirme amaçlıdır ve bankalar tarafından değiştirilebilir. Kesin teklif, sigorta ve masraflar için bankaya başvurun. Taşıt ve ihtiyaç kredisinde KKDF ve BSMV taksite dahil edilmiştir; konut kredisi bu vergilerden muaftır.</div>`;
 
@@ -53,6 +73,7 @@ async function krediHesaplayiciCiz(kap, { tur = 'konut', fiyat = 0, turSec = tru
     const tutar = sayi('bkTutar'), pes = Math.min(90, sayi('bkPes')) / 100, vade = sayi('bkVade'), anapara = tutar * (1 - pes);
     const l = $('#bkListe', kap);
     l.innerHTML = `<div class="k" style="margin:8px 0">Kredi tutarı <b>${tl(anapara)}</b>${pes ? ` · peşinat ${tl(tutar * pes)}` : ''}</div>` + teklifListeHtml(teklifler, anapara, vade, tur);
+    l.querySelectorAll('[data-amort]').forEach((b) => (b.onclick = () => amortismanTablosu(anapara, +b.dataset.amort, vade, tur, b.dataset.banka)));
     const kartlar = [...l.querySelectorAll(':scope > .kart')];
     if (!acik && kartlar.length > 1) {
       kartlar.slice(1).forEach((k) => (k.hidden = true));

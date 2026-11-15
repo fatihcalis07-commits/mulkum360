@@ -198,6 +198,8 @@ h1,h2,h3,.fiyat{letter-spacing:0}
 .sheet-arka[hidden],[hidden]{display:none!important}
 .karsilama{min-height:100dvh}
 body.navsiz{background:var(--zemin)}
+/* Karşılama ekranında ekranın altında boşluk gibi duran açık renkli şeridi kaldırır: body zemini de lacivert olur */
+body:has(.karsilama){background:#0B1B33}
 
 .btn.google{background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:600}
 .ayrac{display:flex;align-items:center;gap:10px;color:var(--soluk);font-size:12px}

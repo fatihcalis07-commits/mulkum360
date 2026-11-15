@@ -8,7 +8,9 @@ const fiyatKisa = (n) => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(
 
 const haritaAday = () => {
   // Arama sayfasında harita, o aramanın sonuçlarını gösterir (HARP.liste)
-  const ham = HARP.liste ? HARP.liste.filter((i) => +i.alanlar?.enlem > 0 && +i.alanlar?.boylam > 0) : yayinda().filter((i) => i.ana === HARP.ana && +i.alanlar?.enlem > 0 && +i.alanlar?.boylam > 0 && (!HARP.islem || i.alanlar?.islem === HARP.islem));
+  let ham = HARP.liste ? HARP.liste.filter((i) => +i.alanlar?.enlem > 0 && +i.alanlar?.boylam > 0) : yayinda().filter((i) => i.ana === HARP.ana && +i.alanlar?.enlem > 0 && +i.alanlar?.boylam > 0 && (!HARP.islem || i.alanlar?.islem === HARP.islem));
+  // "Bu görünümü ara" kutusu açıkken yalnız ekranda görünen dikdörtgen içindekiler kalır
+  if (HARP.kutu) { const u = HARP.kutu; ham = ham.filter((i) => +i.alanlar.enlem <= u.la1 && +i.alanlar.enlem >= u.la2 && +i.alanlar.boylam >= u.lo1 && +i.alanlar.boylam <= u.lo2); }
   let l = ham.map((i) => ({ i, m: Math.round(mesafe(HARP.lat, HARP.lon, +i.alanlar.enlem, +i.alanlar.boylam)) }));
   if (HARP.r) l = l.filter((x) => x.m <= HARP.r);
   l.sort((a, b) => HARP.sirala === 'mesafe' ? a.m - b.m : HARP.sirala === 'ucuz' ? a.i.fiyat - b.i.fiyat : b.i.olusturma - a.i.olusturma);
@@ -23,6 +25,8 @@ function harpBilgi() {
 function harpCiz() {
   const kap = document.getElementById('harp'); if (!kap) return;
   const W = kap.clientWidth || 360, H = kap.clientHeight || 420, z = HARP.z, n = 2 ** z;
+  // Harita kaydırılır ya da yakınlaşırsa "bu görünümü ara" kutusu kendiliğinden kalkar
+  if (HARP.kutu && (HARP.kutu.z !== z || Math.abs(HARP.kutu.lat - HARP.lat) > 1e-7 || Math.abs(HARP.kutu.lon - HARP.lon) > 1e-7)) HARP.kutu = null;
   const p = dunyaPx(HARP.lat, HARP.lon, z), Wpx = n * 256;
   const x0 = ((p.x - W / 2) % Wpx + Wpx) % Wpx, y0 = Math.max(0, Math.min(Wpx - H, p.y - H / 2));
   const tx0 = Math.floor(x0 / 256), ty0 = Math.floor(y0 / 256), tx1 = Math.floor((x0 + W) / 256), ty1 = Math.floor((y0 + H) / 256);
@@ -30,12 +34,12 @@ function harpCiz() {
   for (let tx = tx0; tx <= tx1; tx++) { const wx = tx % n; for (let ty = ty0; ty <= ty1; ty++) karolar += `<img src="https://tile.openstreetmap.org/${z}/${wx}/${ty}.png" crossorigin="anonymous" alt="" loading="lazy" style="position:absolute;left:${tx * 256 - x0}px;top:${ty * 256 - y0}px;width:256px;height:256px">`; }
   const mPx = (156543.03392 * Math.cos((HARP.lat * Math.PI) / 180)) / n;
   const { liste, tum, toplam, kok } = haritaAday();
-  // 58px ızgarada kümele: tek→fiyat etiketi, çok→sayı balonu
+  // 72×54 px ızgarada kümele: fiyat etiketinin genişliği kadar hücre → etiketler üst üste binmez
   const kufeler = new Map();
   for (const { i, m } of tum) { // iğneler tüm ilanlardan; alttaki liste ilk 120 ile sınırlı
     const q = dunyaPx(+i.alanlar.enlem, +i.alanlar.boylam, z), sx = q.x - p.x + W / 2, sy = q.y - p.y + H / 2;
     if (sx < -30 || sy < -30 || sx > W + 30 || sy > H + 30) continue;
-    const k = Math.floor(sx / 58) + ':' + Math.floor(sy / 44);
+    const k = Math.floor(sx / 72) + ':' + Math.floor(sy / 54);
     (kufeler.get(k) || kufeler.set(k, []).get(k)).push({ i, m, sx, sy });
   }
   let iğneler = '';
@@ -44,18 +48,13 @@ function harpCiz() {
   const sirali = gorunen.map((x) => deger(x.i)).sort((a, b) => a - b), RENK = ['#2E7D32', '#7CB342', '#F2B705', '#F08A24', '#C62828'];
   const renk = (i) => { if (sirali.length < 4) return ''; const k = sirali.findIndex((v) => v >= deger(i)); return RENK[Math.min(4, Math.floor((k / sirali.length) * 5))]; };
   const pin = (x, dx = 0, dy = 0) => { const c = renk(x.i), yak = /mahalle|ilçe/.test(x.i.alanlar?.konumDuzey || ''); return '<button class="harp-pin' + (x.i.alanlar?.islem === 'Kiralık' ? ' harp-k' : '') + (HARP.secili === x.i.id ? ' secili' : '') + (yak ? ' yaklasik' : '') + '" data-hp="' + x.i.id + '" style="left:' + (x.sx + dx) + 'px;top:' + (x.sy + dy) + 'px' + (c ? ';--pr:' + c : '') + '">' + fiyatKisa(x.i.fiyat) + ' ₺</button>'; };
-  if (z < 13) {
-    // Uzak ölçek (il / ilçe): yakın ilanlar sayı balonunda toplanır
-    for (const hucre of kufeler.values()) {
-      const sx = hucre.reduce((t, x) => t + x.sx, 0) / hucre.length, sy = hucre.reduce((t, x) => t + x.sy, 0) / hucre.length;
-      if (hucre.length > 2) iğneler += '<button class="harp-kume" data-hk="' + hucre.map((x) => x.i.id).join(' ') + '" style="left:' + sx + 'px;top:' + sy + 'px">' + hucre.length + '</button>';
-      else hucre.forEach((x) => (iğneler += pin(x)));
-    }
-  } else {
-    // Mahalle / sokak ölçeği: her ilan tek tek; aynı noktadakiler yelpaze gibi açılır
-    const nokta = new Map();
-    gorunen.forEach((x) => { const k = Math.round(x.sx / 6) + ':' + Math.round(x.sy / 6); (nokta.get(k) || nokta.set(k, []).get(k)).push(x); });
-    for (const grup of nokta.values()) grup.forEach((x, n) => { if (!n) return (iğneler += pin(x)); const a = n * 2.39996, r = 26 * Math.sqrt(n); iğneler += pin(x, Math.cos(a) * r * 1.7, Math.sin(a) * r * 1.15); });
+  // Her ölçekte kümele: aynı hücrede 2+ ilan varsa sayı balonu (dokununca yaklaşıp açılır); çok yakın ölçek aynı noktadakiler yelpaze gibi açılır
+  for (const hucre of kufeler.values()) {
+    const sx = hucre.reduce((t, x) => t + x.sx, 0) / hucre.length, sy = hucre.reduce((t, x) => t + x.sy, 0) / hucre.length;
+    const ayniNokta = hucre.length > 1 && Math.max(...hucre.map((x) => x.sx)) - Math.min(...hucre.map((x) => x.sx)) < 14 && Math.max(...hucre.map((x) => x.sy)) - Math.min(...hucre.map((x) => x.sy)) < 14;
+    if (hucre.length > 1 && !(z >= 16 && ayniNokta)) iğneler += '<button class="harp-kume" data-hk="' + hucre.map((x) => x.i.id).join(' ') + '" style="left:' + sx + 'px;top:' + sy + 'px">' + hucre.length + '</button>';
+    else if (hucre.length > 1) hucre.forEach((x, n) => { const a = n * 2.39996, r = 26 * Math.sqrt(n); iğneler += pin(x, Math.cos(a) * r * 1.7, Math.sin(a) * r * 1.15); });
+    else iğneler += pin(hucre[0]);
   }
   const halka = HARP.r ? `<svg width="${W}" height="${H}" style="position:absolute;inset:0;pointer-events:none"><circle cx="${W / 2}" cy="${H / 2}" r="${HARP.r / mPx}" fill="var(--vurgu-ikon,#C8553D)" fill-opacity=".06" stroke="var(--vurgu-ikon,#C8553D)" stroke-width="2.5" stroke-dasharray="7 5"/></svg>` : '';
   const benNokta = HARP.kaynak === 'sen' ? `<svg width="${W}" height="${H}" style="position:absolute;inset:0;pointer-events:none"><circle cx="${W / 2}" cy="${H / 2}" r="${Math.min(60, (HARP.hassasiyet || 30) / mPx)}" fill="#2563EB" fill-opacity=".15"/><circle cx="${W / 2}" cy="${H / 2}" r="7" fill="#2563EB" stroke="#fff" stroke-width="3"/></svg>` : '';
@@ -70,7 +69,9 @@ function harpCiz() {
   }));
   document.getElementById('hz+').onclick = () => { HARP.z = Math.min(18, HARP.z + 1); harpCiz(); };
   document.getElementById('hz-').onclick = () => { HARP.z = Math.max(4, HARP.z - 1); harpCiz(); };
-  const bil = document.getElementById('harpBilgi'); if (bil) bil.innerHTML = `${harpBilgi()} · <b>${toplam}</b> ilan${toplam > liste.length ? ` <span style="opacity:.75">(ilk ${liste.length} listelendi)</span>` : ''}${HARP.r ? ' · yarıçap ' + (HARP.r >= 1000 ? HARP.r / 1000 + ' km' : HARP.r + ' m') : ''} · ${toplam === kok ? 'koordinatlı tüm ilanlar' : toplam + '/' + kok + ' ilanın koordinatı var'}`;
+  const bil = document.getElementById('harpBilgi'); if (bil) bil.innerHTML = `${harpBilgi()} · <b>${toplam}</b> ilan${toplam > liste.length ? ` <span style="opacity:.75">(ilk ${liste.length} listelendi)</span>` : ''}${HARP.r ? ' · yarıçap ' + (HARP.r >= 1000 ? HARP.r / 1000 + ' km' : HARP.r + ' m') : ''}${HARP.kutu ? ' · <b style="color:var(--birincil,#1064BC)">yalnız ekran kutusu</b>' : ''} · ${toplam === kok ? 'koordinatlı tüm ilanlar' : toplam + '/' + kok + ' ilanın koordinatı var'}`;
+  // Kutu durumunu çizimden bağımsız düğmeye de yansıt (kendi kendine kalkınca etiket eski haline dönsün)
+  const kb = document.getElementById('hkutu'); if (kb) { kb.classList.toggle('secili', !!HARP.kutu); kb.innerHTML = ic('izgara', 15) + ' ' + (HARP.kutu ? 'Kutuyu kaldır' : 'Bu görünümü ara'); }
   harpListe(liste);
 }
 
@@ -138,19 +139,50 @@ function harpSecimAc(k) {
     s.querySelectorAll('[data-hc]').forEach((b) => (b.onclick = () => { const z = b.dataset.hc; if (z[0] === 'r') HARP.r = +z.slice(1); else if (z[0] === 'i') HARP.islem = z.slice(1); else HARP.sirala = z.slice(1); sheetKapat(); ciz(); }));
   });
 }
-// Haritayı parmakla kaydırma ve tekerlekle yakınlaştırma (harita ve arama sayfası ortak)
+// Haritayı parmakla kaydırma, iki parmakla yakınlaştırma ve tekerlekle zoom (harita ve arama sayfası ortak)
 function harpBagla(kap) {
   if (!kap || kap.dataset.bagli) return; kap.dataset.bagli = '1';
-  let tut = null;
-  kap.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; tut = { x: e.clientX, y: e.clientY }; kap.setPointerCapture(e.pointerId); });
-  kap.addEventListener('pointermove', (e) => { if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; kap.querySelectorAll('.harp-kaydir').forEach((el) => (el.style.transform = `translate(${dx}px,${dy}px)`)); });
-  kap.addEventListener('pointerup', (e) => {
-    if (!tut) return; const dx = e.clientX - tut.x, dy = e.clientY - tut.y; tut = null;
-    if (Math.abs(dx) + Math.abs(dy) < 6) return harpCiz();
-    const p = dunyaPx(HARP.lat, HARP.lon, HARP.z), q = pxDon(p.x - dx, p.y - dy, HARP.z);
-    HARP.lat = Math.max(-85, Math.min(85, q.lat)); HARP.lon = ((q.lon + 540) % 360) - 180; harpCiz();
+  const parmaklar = new Map();
+  let tut = null, kavs = null, kavsZ = 0;
+  const ikiUc = () => { const [a, b] = [...parmaklar.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; };
+  kap.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    parmaklar.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { kap.setPointerCapture(e.pointerId); } catch (_) {}
+    if (parmaklar.size === 2) { // iki parmağa geçince tek parmak sürüklemeyi bırak, açme mesafesini eşikle
+      tut = null; kap.querySelectorAll('.harp-kaydir').forEach((el) => (el.style.transform = ''));
+      const { d } = ikiUc(); kavs = d > 24 ? d : null; kavsZ = HARP.z;
+    } else tut = { x: e.clientX, y: e.clientY };
   });
-  kap.addEventListener('pointercancel', () => { tut = null; harpCiz(); });
+  kap.addEventListener('pointermove', (e) => {
+    if (!parmaklar.has(e.pointerId)) return;
+    parmaklar.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (parmaklar.size === 2) {
+      const { d } = ikiUc();
+      if (!kavs) { if (d < 24) return; kavs = d; kavsZ = HARP.z; return; } // parmaklar yeterli açıklığa ulaşınca ölçümü başlat
+      if (d < 24) return;
+      const z = Math.max(4, Math.min(18, kavsZ + Math.round(Math.log2(d / kavs)))); // parmaklar 2 kat açılınca +1 kademe
+      if (z !== HARP.z) { HARP.z = z; harpCiz(); }
+      return;
+    }
+    if (tut && parmaklar.size === 1) { const dx = e.clientX - tut.x, dy = e.clientY - tut.y; kap.querySelectorAll('.harp-kaydir').forEach((el) => (el.style.transform = `translate(${dx}px,${dy}px)`)); }
+  });
+  const bitir = (e) => {
+    const tek = parmaklar.size === 1 && tut;
+    parmaklar.delete(e.pointerId);
+    if (parmaklar.size < 2) kavs = null;
+    if (parmaklar.size === 1) { const p = [...parmaklar.values()][0]; tut = { x: p.x, y: p.y }; return; } // kalan parmakla kaydırmaya devam et
+    if (!parmaklar.size) {
+      if (tek) {
+        const dx = e.clientX - tut.x, dy = e.clientY - tut.y; tut = null;
+        if (Math.abs(dx) + Math.abs(dy) < 6) return harpCiz();
+        const p = dunyaPx(HARP.lat, HARP.lon, HARP.z), q = pxDon(p.x - dx, p.y - dy, HARP.z);
+        HARP.lat = Math.max(-85, Math.min(85, q.lat)); HARP.lon = ((q.lon + 540) % 360) - 180; harpCiz();
+      } else { tut = null; harpCiz(); }
+    }
+  };
+  kap.addEventListener('pointerup', bitir);
+  kap.addEventListener('pointercancel', bitir);
   kap.addEventListener('wheel', (e) => { e.preventDefault(); HARP.z = Math.max(4, Math.min(18, HARP.z + (e.deltaY > 0 ? -1 : 1))); harpCiz(); }, { passive: false });
 }
 EKRAN.harita = () => {
@@ -170,11 +202,11 @@ EKRAN.harita = () => {
     <div class="filtre-cubuk">
       ${HARP_SECIM.filter(([k]) => k !== 'i' || HARP.ana === 'emlak').map(([k, et, l]) => { const v = k === 'r' ? HARP.r : k === 'i' ? HARP.islem : HARP.sirala, s = l.find(([x]) => String(x) === String(v)) || l[0]; return `<button class="filtre-sec" data-hsec="${k}"><small>${et}</small><b>${s[1]}</b>${ic('asagi', 14)}</button>`; }).join('')}
     </div>
-    <div class="satir" style="gap:8px"><button class="btn sade kucuk" id="hkonum" style="flex:1">${ic('konum', 15)} Konumum</button><button class="btn sade kucuk" id="hilce" style="flex:1">${ic('pusula', 15)} İl / ilçe seç</button></div>
+    <div class="satir" style="gap:8px"><button class="btn sade kucuk" id="hkonum" style="flex:1">${ic('konum', 15)} Konumum</button><button class="btn sade kucuk" id="hilce" style="flex:1">${ic('pusula', 15)} İl / ilçe seç</button><button class="btn sade kucuk ${HARP.kutu ? 'secili' : ''}" id="hkutu" style="flex:1">${ic('izgara', 15)} ${HARP.kutu ? 'Kutuyu kaldır' : 'Bu görünümü ara'}</button></div>
     <div id="harp" style="position:relative;height:52vh;min-height:340px;overflow:hidden;border-radius:16px;background:#dfe7ee;touch-action:none;user-select:none"></div>
     <div class="k soluk" style="font-size:12px;margin:6px 2px 10px" id="harpBilgi"></div>
     <div style="display:flex;flex-direction:column;gap:10px" id="harpListe"></div>
-    <div class="k soluk" style="font-size:12px;margin:10px 2px">Konumlar OpenStreetMap/TKGM'den çözülür; yakın konumlu ilanlar yaklaşıncaya kadar tek etikette toplanır. Kaydırmak için haritayı sürükle.</div></div>`;
+    <div class="k soluk" style="font-size:12px;margin:10px 2px">Konumlar OpenStreetMap/TKGM'den çözülür; yakın konumlu ilanlar tek etikette toplanır. Kaydırmak için sürükle, iki parmakla yakınlaştır; "Bu görünümü ara" listeyi ekranda görünen alanla sınırlar.</div></div>`;
   app.querySelectorAll('[data-hana]').forEach((x) => (x.onclick = () => { HARP.ana = x.dataset.hana; HARP.islem = ''; ciz(); }));
   app.querySelectorAll('[data-hsec]').forEach((x) => (x.onclick = () => harpSecimAc(x.dataset.hsec)));
   document.getElementById('hkonum').onclick = haritaKonum;
@@ -186,6 +218,17 @@ EKRAN.harita = () => {
     $('#hGit', s).onclick = async () => { const il = $('#hIl', s).value, ilce = $('#hIlce', s).value; if (!il) return toast('Önce il seç'); sheetKapat(); await haritaIlceGit(il, ilce); };
   });
   harpBagla(document.getElementById('harp'));
+  document.getElementById('hkutu').onclick = () => {
+    if (HARP.kutu) { HARP.kutu = null; harpCiz(); return; }
+    const kap = document.getElementById('harp'), W = kap.clientWidth || 360, H = kap.clientHeight || 420, z = HARP.z, Wpx = 2 ** z * 256;
+    const p = dunyaPx(HARP.lat, HARP.lon, z);
+    const x0 = ((p.x - W / 2) % Wpx + Wpx) % Wpx, y0 = Math.max(0, Math.min(Wpx - H, p.y - H / 2));
+    const kb = pxDon(x0, y0, z), gd = pxDon(x0 + W, y0 + H, z); // kuzeybatı / güneydoğu köşeler
+    if (gd.lon <= kb.lon || gd.lat >= kb.lat) return toast('Bu görünümde kutu çizilemiyor');
+    HARP.kutu = { z, lat: HARP.lat, lon: HARP.lon, la1: kb.lat, la2: gd.lat, lo1: kb.lon, lo2: gd.lon };
+    toast('Liste yalnız görünen alanla sınırlı — haritayı oynatınca kutu kalkar');
+    harpCiz();
+  };
   harpCiz();
   navCiz('ara');
 };

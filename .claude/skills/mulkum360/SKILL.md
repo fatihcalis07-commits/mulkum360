@@ -3,14 +3,14 @@ name: mulkum360
 description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, MülkümVideo) için güncel durum, sürüm, derleme, sunucu, yayın (mulkum360.com) ve değişmez kurallar. Mülküm360 kodu, APK, Supabase, video özelliği, alan adı/Pages veya @mulkum360 Instagram hesabıyla ilgili her işte kullan.
 ---
 
-# Mülküm360: güncel durum (14 Kasım 2026, sürüm 14.23)
+# Mülküm360: güncel durum (15 Kasım 2026, sürüm 14.24)
 
 > **Senkron:** Bu skill iki yerde birebir aynı tutulur: Claude `C:\Users\fcali\vitrin-app\.claude\skills\mulkum360\SKILL.md` ve DeepSeek Harness `C:\Users\fcali\.dsh\skills\mulkum360\SKILL.md`. Hangisi düzenlenirse düzenlensin diğerine de kopyalanır (hash ile doğrula). Ayrıntılı geçmiş `C:\Users\fcali\vitrin-app\DEVIR.md` sonunda, proje tanıtımı `AGENTS.md`'de. Önce bu skill, sonra DEVIR.md'nin son bölümleri okunur.
 
 ## Ürün ve teknoloji
 - Türkiye için emlak + vasıta ilan uygulaması, MülkümAI değerleme/PDF rapor, MülkümVideo. Slogan "Hayalindekine bir adım". Dil Türkçe.
 - Klasör `C:\Users\fcali\vitrin-app`. Vanilla JS (`www/`), Capacitor 8 Android, Supabase proje `klnabwqduyavaqmbzxpo` (Frankfurt). Yönetici e-postası `public.yonetici()` ile tanımlı.
-- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.23 / versionCode 163**.
+- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.24 / versionCode 164**.
 
 ## Yayın ve alan adı (ÖNEMLİ)
 - Uygulama adresi `https://mulkum360.com/` (`WEB_ADRES`, `www/app.js` satır ~1033; ilan paylaşım bağlantısı, video karekodu ve künye paylaşımı bunu kullanır).
@@ -47,6 +47,14 @@ description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, Mülküm
 - 14.22: ekrandaki hızlı filtre çipleri (Satılık, Fotoğraflı, Videolu) kaldırıldı. Satılık/Kiralık zaten filtre ekranında (İşlem); Fotoğraflı, Videolu ve Fiyatı düşen filtre ekranına "Fotoğraf, video, fiyat" grubu olarak taşındı (`foto`, `video`, `dusen` anahtarları, seçiliyken üstte çıkarılabilir etiket olarak görünür).
 - 14.21: Emlak ve Vasıta alt alta 44 px açılır satırlar (`araSekmeHtml`, seçili satırın içinde alt kategoriler). Filtrele düğmesi arama kutusunun içinde (`.ara-filtre-ik`, aktif filtre sayısı rozetle); Sırala, Aramayı kaydet (zil) ve Liste/Izgara/Harita (yalnız simge) sonuç sayısı satırında. Ayrı filtre çubuğu ve "Sonuçlar" başlığı kaldırıldı.
 - `EKRAN.ara` (www/app.js): liste satırında metrekare fiyatı (yalnız satılık emlak), tapu/ruhsat doğrulandı, video ve kimden rozetleri, kalp, kategori seçili değilken tür öneki; hızlı filtre çipleri (Satılık, Kiralık, Fiyatı düşen, Fotoğraflı, Videolu; sonucu olmayan çip gizlenir); Liste/Izgara/Harita seçimi (`araGorunum`, localStorage); `aramaYap` yeni `foto` ve `video` süzgeçleri. Arama kaydı yeni ilan bildirimi göndermez, yalnız Keşfet'te gösterir.
+
+## Harita ve rozetler (14.24)
+- Harita (www/harita.js, Leaflet yok): küme balonu her zoomda (72×54 px hücre, >1 ilan), z≥16'da tam çakışık iğneler yelpaze. Pinç zoom pointer-events ile (≥24 px, kademe 4–18). "Bu görünümü ara" (`HARP.kutu`): liste görünen kutuyla sınırlı, harita oynayınca otomatik kalkar, etiket `harpCiz` sonunda senkronlanır.
+- `sozluk()` (app.js): tr-TR kelime başı büyük — tüm rozet/etiketler ("Emlak Ofisi", "Oto Galeri", "Fiyatı Düşenler", "EİDS Doğrulandı", "Fotoğraf Yok"). kimden() ve süzgeç seçenekleri birlikte değişti ("Emlak Ofisinden"); veritabanındaki küçük veriler arayüzde sozluk ile gösterilir.
+- `fiyatVitrin(n)`: ≥10M → "22,5 M ₺", altı tam TL. AI FAB `body.ai-acik` alt tampon 52 px. Fotosuz ilan marka gradyan + "Fotoğraf Yok".
+- Endeks: `endeksSeri` localStorage gün önbelleği (`endeks:…`), hata halinde eski veri; üç istek Promise.all.
+- Kredi (banka.js): `amortismanTablosu(anapara, aylikFaiz, vade, tur, banka)` — DİKKAT: `t.faiz` aylık faizdir. Yıllık özet sheet; `[data-amort]` düğmeleri `hesapla()` içinde bağlanır.
+- Danışmanlar: `DAN_DURUM {il,ara}` arama + şehir çipleri + `.dan-fotos` portföy şeridi. Proje izleme: `projeTakip`/`projeTakipSon` localStorage, önplan bildirimi (`projeTakipKontrol`, sb.js). Sunucu push yok (şema onayı gerekir). Son gezdiklerin `S.gorulen` zaten vardı.
 
 ## Tanıtım sitesi
 - `scrollcraft/builds/mulkum360-tanitim/` (kaynak, yerel): scroll-craft ile yapılmış tanıtım sayfası. 15.11.2026'da premium sürüm: uydu karesi arka planlı kapak, altın "bir adım." başlığı, eğik gerçek ilan ekranı, cam üst çubuk (aşağı kaydırınca gizlenir), yetenek şeridi (4 madde, sayı yok), genişletilmiş künye, OG etiketleri. Giriş animasyonu `translate` özelliğiyle yapılır (kart `transform`unu ezmesin). Yayın kopyası `anasayfa/` (commit `a2f698f`).
