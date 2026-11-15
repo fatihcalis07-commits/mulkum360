@@ -108,15 +108,20 @@ html,body{overflow-x:hidden}
   .giris-p{font-size:.88rem;line-height:1.5}
   .liste{margin-top:0}.liste li{padding:.45rem 0;font-size:.88rem}
   .not{font-size:.82rem}
-  .halka{width:min(100%,10.5rem)}.halka span{font-size:.95rem;padding:0 .6rem}
+  .halka{width:min(100%,11.5rem)}.halka span{font-size:.82rem;padding:0 .5rem;line-height:1.2}
   .etiket{display:none}
   .alt{padding-top:.7rem;font-size:.75rem}
 }
 @media(max-width:860px) and (min-height:521px){
   .orta{grid-template-columns:1fr;gap:2.4rem}
-  .sag{justify-self:center;order:-1}
-  .halka{width:min(64%,13rem)}
-  .halka span{font-size:1.15rem;padding:0 1rem}
+  .sag{justify-self:stretch;order:-1;width:100%}
+  /* Telefon: halka yerine hedef simgeli cam şerit */
+  .halka{width:100%;aspect-ratio:auto;display:flex;align-items:center;justify-content:flex-start;gap:1rem;padding:.9rem 1.2rem;border-radius:18px;background:rgba(7,15,29,.72);box-shadow:inset 0 0 0 1px rgba(226,188,106,.35)}
+  .halka::before{position:static;flex:0 0 2.8rem;width:2.8rem;height:2.8rem;inset:auto;border:1.5px dashed rgba(255,255,255,.85);animation:none;background:radial-gradient(circle,var(--altin-a) 0 .28rem,transparent .3rem)}
+  .halka::after{display:none}
+  .halka span{padding:0;text-align:left;font-size:1.05rem;line-height:1.25;text-shadow:none}
+  .halka span b{display:inline-block;margin-left:.28em;white-space:nowrap}
+  .etiket{display:none}
 }
 @media(max-width:860px){
   .perde{background:linear-gradient(to bottom,rgba(7,15,29,.55),rgba(7,15,29,.9) 55%,var(--derin) 100%)}
