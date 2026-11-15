@@ -1,7 +1,7 @@
 // İlan başına en çok fotoğraf (veritabanı kuralıyla aynı)
 const FOTO_SINIR = 40;
 // Telefonda hangi APK'nın kurulu olduğunu görmek için (Hesabım → Uygulama sürümü)
-const SURUM = '14.29 · 15.11.2026 17:00';
+const SURUM = '14.30 · 15.11.2026 18:00';
 // Tanılama: aktarma adımlarını istemci_kayit tablosuna yazar (hata ayıklama için; yalnız giriş yapmış kullanıcı)
 const KAYIT_OTURUM = Math.random().toString(36).slice(2, 8);
 function kayit(olay, ayrinti = '') { try { if (typeof sb === 'undefined' || !ben()) return; sb.from('istemci_kayit').insert({ surum: SURUM, oturum: KAYIT_OTURUM, olay: String(olay).slice(0, 60), ayrinti: String(ayrinti).slice(0, 500) }).then(() => {}, () => {}); } catch (_) {} }
@@ -193,6 +193,7 @@ const gokIsla = () => {
   }
 };
 const kadreIzle = (el, u) => {
+  if (u.indexOf('kapak-marka') >= 0) return; // marka kapağı ölçülmez: tasarım zaten merkez, gökyüzü kadrajı gerekmez
   const AR = el.classList.contains('foto') ? (el.closest('.ilan-k') ? 4 / 3 : el.closest('.vitrin-k') ? 1 : 0) : 0;
   if (!AR) return;
   const boya = (m) => { if (!m || !el.isConnected) return; const s = kadra(m.w, m.h, m.c, AR); if (!s) return; el.style.backgroundSize = s.s; el.style.backgroundPosition = s.p; };
@@ -296,7 +297,9 @@ function yasGrubu(y) { if (YAS_GRUPLARI.includes(String(y))) return String(y); y
 const TEST_GORUNUR = true; // false yapılırsa test ilanları yalnız yöneticiye ve sahibine görünür
 const yayinda = () => S.ilanlar.filter((i) => i.durum === 'yayinda' && (TEST_GORUNUR || !i.ornek || S.yonetici || i.sahip === S.oturum));
 const gercekOnce = (l) => (l.some((i) => i.ornek) ? [...l.filter((i) => !i.ornek), ...l.filter((i) => i.ornek)] : l);
-const kapak = (i) => { const a = (i.fotolar && i.fotolar[0]) || ''; return a && i.alanlar?.kapakK && i.alanlar.kapakKk === a ? i.alanlar.kapakK : a; };
+// 14.30: test ilanları (ornek) ve fotosuz ilanlar marka kapağı taşır — kullanıcı onayı 15.11.2026 (A·Klasik montaj)
+const KAPAK_MARKA = 'img/kapak-marka.png';
+const kapak = (i) => { if (i.ornek || !(i.fotolar && i.fotolar[0])) return KAPAK_MARKA; const a = i.fotolar[0]; return i.alanlar?.kapakK && i.alanlar.kapakKk === a ? i.alanlar.kapakK : a; };
 function fotoKutu(i, boy = 40) {
   const a = ALT[i.alt] || ALT.konut;
   return kapak(i) ? '' : `<span class="foto-yok fy-p${boy >= 40 ? '' : ' fy-k'}"><i class="fy-halka">${ic(a.ikon, boy >= 40 ? 20 : 17, 'currentColor', 1.6)}</i>${boy >= 40 ? '<b class="fy-marka">mülküm<em>360</em></b>' : ''}</span>`;

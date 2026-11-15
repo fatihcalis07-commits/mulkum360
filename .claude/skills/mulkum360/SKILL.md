@@ -3,14 +3,14 @@ name: mulkum360
 description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, MülkümVideo) için güncel durum, sürüm, derleme, sunucu, yayın (mulkum360.com) ve değişmez kurallar. Mülküm360 kodu, APK, Supabase, video özelliği, alan adı/Pages veya @mulkum360 Instagram hesabıyla ilgili her işte kullan.
 ---
 
-# Mülküm360: güncel durum (15 Kasım 2026, sürüm 14.28)
+# Mülküm360: güncel durum (15 Kasım 2026, sürüm 14.30)
 
 > **Senkron:** Bu skill iki yerde birebir aynı tutulur: Claude `C:\Users\fcali\vitrin-app\.claude\skills\mulkum360\SKILL.md` ve DeepSeek Harness `C:\Users\fcali\.dsh\skills\mulkum360\SKILL.md`. Hangisi düzenlenirse düzenlensin diğerine de kopyalanır (hash ile doğrula). Ayrıntılı geçmiş `C:\Users\fcali\vitrin-app\DEVIR.md` sonunda, proje tanıtımı `AGENTS.md`'de. Önce bu skill, sonra DEVIR.md'nin son bölümleri okunur.
 
 ## Ürün ve teknoloji
 - Türkiye için emlak + vasıta ilan uygulaması, MülkümAI değerleme/PDF rapor, MülkümVideo. Slogan "Hayalindekine bir adım". Dil Türkçe.
 - Klasör `C:\Users\fcali\vitrin-app`. Vanilla JS (`www/`), Capacitor 8 Android, Supabase proje `klnabwqduyavaqmbzxpo` (Frankfurt). Yönetici e-postası `public.yonetici()` ile tanımlı.
-- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.28 / versionCode 168**.
+- Sürüm satırı: `www/app.js` 4. satır `SURUM`, ayrıca `android/app/build.gradle` versionCode/versionName. Şu an **14.30 / versionCode 170**.
 
 ## Yayın ve alan adı (ÖNEMLİ)
 - Uygulama adresi `https://mulkum360.com/` (`WEB_ADRES`, `www/app.js` satır ~1033; ilan paylaşım bağlantısı, video karekodu ve künye paylaşımı bunu kullanır).
@@ -44,15 +44,17 @@ description: Mülküm360 (emlak + vasıta ilan uygulaması, MülkümAI, Mülküm
 - Video kapağı kat yazımı düzeltildi (14.19): "1. Kat" gibi hazır değerler olduğu gibi, düz sayı "3. kat" olarak yazılır.
 - Pollinations/kie.ai gibi ücretli üretimler önce tek örnekle onaya sunulur.
 
-## Fotoğrafsız ilan kapağı (14.25)
-- Yalnız fotoğrafı OLMAYAN ilanlarda (kart `ilanKart`, liste `ilanSatir`, fırsat kartı) premium kapak: gece mavisi gradyan, ince altın harita ızgarası, altın iç çerçeve, altın halkalı tür simgesi, "mülküm360" yazısı (yalnız kart boyunda; liste küçük resminde yalnız halka). Fotoğraflı ilanlara dokunulmaz, onlarda yazı/rozet eklenmez.
-- Kod: `fotoKutu` (www/app.js, `.foto-yok.fy-p`), stil `www/premium.css` sonu "Fotoğrafsız ilan kapağı". Açık ve koyu temada, 320 px'te denendi (örnek kayıtlarla yerelde çizim, sunucuya yazma yok).
+## Fotoğrafsız ilan ve test ilanı kapağı (14.25 → 14.30 marka kapağı)
+- 14.30 (kullanıcı onayı, A·Klasik montaj): test ilanları (`ornek`) ve fotosuz ilanlar artık **marka kapağı** taşır — `kapak(i)` bu iki durumda `KAPAK_MARKA = 'img/kapak-marka.png'` döner (1200×1200 PNG; logo + mülküm360 + slogan; üretici `promo/kapak-marka.py`). Kart/liste/vitrin/fırsat/kıyas/harita/paylaşım/sohbet tek fonksiyondan beslenir. `kadreIzle` marka kapağını ölçüme sokmaz. 14.25 lacivert `.foto-yok` tasarımının görsel kuralı 14.30'da kalktı; premium.css'deki kural CSS yedeği olarak durur.
+- Kod: `fotoKutu` boş döner; stil `www/premium.css` sonu "Fotoğrafsız ilan kapağı".
 - Masaüstünde kullanıcı isteğiyle eski `Mulkum360-v14.24.apk/.aab` silinmedi (genel kuraldan istisna, o dosyaya dokunma). 14.27'de yer tutucu kutuları `.vitrin-k`, `.kiyas-bas`, `.harp-alt` ile genişletildi.
 
-## ⚠️ Fotoğraf kadrajı: istemci "konu takibi" YASAK (14.27 denendi → 14.28'de geri alındı)
-- 14.27'de kart fotoğraflarını `background-position` ile "en enerjik" bölgeye kaydıran fotoFokus modülü denendi. Kullanıcı APK'yı kurar kurmaz: "iyice bozdun resimleri, dünkü derlemede düzgündü" — enerji sezgisi mermer zemin/asfalt gibi dokulu alanları konu sanıp kadrajı bozuyor. 14.28'de modül söküldü; açılışta eski `fotoFokus` localStorage anahtarı silinir; fotoğraflar kalıcı **center/cover merkez kırpım**.
-- Kalıcı kural: görsel kadraj davranışı kullanıcı onaysız değiştirilmez. Konu odaklı kırpım istenirse tek yol: sunucu tarafı kapak üretimi (`kapakUret`, sb.js) + kapakK'ların yeniden üretilmesi = DB yazması = ayrı onay.
-- "Kayık/kayıt" şikâyeti KAYDIRMA ile ilgiliydi; 14.26 kaydırma düzeltmeleri yerinde ve testli (v1425 11/11). promo/v1427-fokus.mjs geçersizdir — çalıştırma. Geri alma doğrulaması: promo/v1428-geri.mjs 6/6.
+## ⚠️ Fotoğraf kadrajı: kanıtsız/onaysız dokunulmaz — 14.29 ONAYLI istisna yürürlükte
+- 14.27 enerji sezgisi (fotoFokus) kullanıcıda "iyice bozdun" tepkisi aldı → 14.28'de söküldü. 14.29'da doğru yol bulundu: çevrimdışı kanıt + kullanıcı onayı. 712 yayından ilanının 692'si ornek=true (test kapağı) çıktı (`promo/kapak-ornek.mjs`) — ham istatistikleri TEST verisi domine ediyor, her ölçümde GERÇEK/TEST ayrımı şart. Gerçek 15 ilanın kart görselleri indirilip önce/sonra montajı kullanıcıya gösterildi; kullanıcı seçti: "Evet, ikisi de olsun".
+- 14.29 kalıcı çözüm (yalnız istemci, DB'ye yazma yok): `fotoKadre` modülü (app.js, bgYukle üstü). Kesin gökyüzü bandı ölçeri (crossOrigin Image→96px canvas, üst kesintisiz mavi bant `c`) + `kadra`: `c>0.30` & pencere≥340px & zum faydalıysa gökyüzünü kesen zum; dikeyde içerik bandını ortalamaya kaydırma; iç mekân → null (center/cover). Yalnız `.vitrin-k .foto` (1:1) + `.ilan-k .foto` (4:3); liste küçük resmi, `.firsat-k`, `.kiyas-bas` kapsam dışı. Önbellek localStorage `fotoKadre`; eski `fotoFokus` temizlenmeye devam eder.
+- ASIL KÖK NEDEN (14.24→14.28 şikâyetinin kaynağı, 14.29'da bulundu): premium.css'deki `.foto:not([data-bg])` yer tutucu kuralı, `bgYukle`'ün `data-bg`'yi silmesiyle YÜKLENMİŞ fotoğrafa da uygulanıp `background` kısayoluyla `center/cover`'ı siliyordu → fotoğraflar doğal boyutta sol üst köşeden kırpılıyordu. 14.29'da seçici `:not([style*="background-image"])` ile sabitlendi; v1429-kadre testi computed `cover 50% 50%` ile kilitler. DERS: `background` kısayolu yazan her kural ya tüm alt özellikleri versin ya da satır içi stil taşıyan öğeleri dışarıda bıraksın.
+- Kalıcı kural: kadraj davranışı yalnız kullanıcıya KENDİ fotoğrafları üzerinden görsel kanıt gösterilip onay alınarak değişir (14.29 bu kurala uygun doğdu). Sunucu tarafı kapak yeniden üretimi (kapakUret/kapakK) DB yazmasıdır — her zaman ayrı onay.
+- Testler: promo/v1429-kadre.mjs 10/10, v1429-kapsam.mjs 6/6; v1428-geri.mjs GEÇERSİZ (stub), v1427-fokus.mjs geçersiz. "Kayık/kayıt" şikâyeti KAYDIRMA idi; 14.26 düzeltmeleri yerinde (v1425 11/11, v1424 25/25).
 
 ## Arama sonuçları ekranı (14.20 - 14.22)
 - 14.22: ekrandaki hızlı filtre çipleri (Satılık, Fotoğraflı, Videolu) kaldırıldı. Satılık/Kiralık zaten filtre ekranında (İşlem); Fotoğraflı, Videolu ve Fiyatı düşen filtre ekranına "Fotoğraf, video, fiyat" grubu olarak taşındı (`foto`, `video`, `dusen` anahtarları, seçiliyken üstte çıkarılabilir etiket olarak görünür).
